@@ -94,7 +94,7 @@ function res_darcy(u,p,c,v,q)
 end
 # Jacobian dr/du
 function jac_darcy(u,du,p,dp,c,dc,v,q)
-   q*∇ρ(∇(c))*du + q*ρ(c)*(∇*du) + ( v*κ(px,du) ) - (∇*v)*dp #+ q*∇ρ(∇(dc))*u + q*ρ(dc)*(∇*u) + v*(1/ρ0*Δρ(dc)*∇z)
+   q*∇ρ(∇(c))*du + q*ρ(c)*(∇*du) + ( v*κ(px,du) ) - (∇*v)*dp + q*∇ρ(∇(dc))*u + q*ρ(dc)*(∇*u) + v*(1/ρ0*Δρ(dc)*∇z)
 end
 #
 # Transport
@@ -104,7 +104,7 @@ function res_transport(u,c,w)
 end
 # Jacobian dr/du
 function jac_transport(u,du,c,dc,w)
-   w*ρ(c)*u*∇(dc) + ∇(w)*(ρ(c)*D(u)*∇(dc)) + w*ρ(c)*du*∇(c) + ∇(w)*(ρ(c)*D(du)*∇(c)) #+ w*ρ(dc)*u*∇(c) + ∇(w)*(ρ(dc)*D(u)*∇(c))
+   w*ρ(c)*u*∇(dc) + ∇(w)*(ρ(c)*D(u)*∇(dc)) + w*ρ(c)*du*∇(c) + ∇(w)*(ρ(c)*D(du)*∇(c)) + w*∇ρ(dc)*u*∇(c) + ∇(w)*(∇ρ(dc)*D(u)*∇(c))
 end
 #
 # Electrostatics
@@ -127,7 +127,7 @@ function res_electrostatics(c,ϕ,ξ)
 end
 # Jacobian dr/du
 function jac_electrostatics(c,ϕ,dc,dϕ,ξ)
-   ∇(ξ)*σ(c,∇(dϕ)) #+ ∇(ξ)*σ(dc,∇(ϕ))
+   ∇(ξ)*σ(c,∇(dϕ)) + ∇(ξ)*σ(dc,∇(ϕ))
 end
 #
 #=================================================#
