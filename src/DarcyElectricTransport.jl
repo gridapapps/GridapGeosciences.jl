@@ -110,20 +110,18 @@ end
 # Electrostatics
 const σ_s = 0.01
 const σ_m = 1.0
-n_src = 2
-xsrc = zeros((2,2))
-xsrc[1,:] = [0.4,1.0]
-xsrc[2,:] = [0.6,1.0]
-@law function fe(x)  # Source as exponential function
+const n_src = 2
+const xsrc = (0.4,1.0,0.6,1.0)
+function fe(x)  # Source as exponential function
   s = 0
   for i in 1:n_src
-    s += ((-1)^(i+1))*σ_m*exp(-((x[1]-xsrc[i,1])^2+(x[2]-xsrc[i,2])^2)/(2*σ_s^2))  
+    s += ((-1)^(i+1))*σ_m*exp(-((x[1]-xsrc[2*i-1])^2+(x[2]-xsrc[2*i])^2)/(2*σ_s^2))  
   end
   return s
 end
 # Residual r
 function res_electrostatics(c,ϕ,ξ)
-   ∇(ξ)*σ(c,∇(ϕ)) + ξ*fe(px)
+   ∇(ξ)*σ(c,∇(ϕ)) + ξ*fe
 end
 # Jacobian dr/du
 function jac_electrostatics(c,ϕ,dc,dϕ,ξ)
