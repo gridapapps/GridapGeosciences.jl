@@ -1,6 +1,7 @@
 using GridapGeosciences
 using Test
 
-@testset "GridapGeosciences.jl" begin
-    # Write your own tests here.
+@testset "GridapGeosciences" begin
+  @time @testset "CubedSphereDiscreteModelsTests" begin include("CubedSphereDiscreteModelsTests.jl") end
+  @time @testset "DarcyCubedSphereTests" begin include("DarcyCubedSphereTests.jl") end
 end

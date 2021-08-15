@@ -1,5 +1,12 @@
 module GridapGeosciences
 
-greet() = print("Hello World!")
+  using Gridap
+  using FillArrays
+
+  include("CubedSphereTriangulations.jl")
+  include("CubedSphereDiscreteModels.jl")
+
+  export CubedSphereTriangulation
+  export CubedSphereDiscreteModel
 
 end # module
