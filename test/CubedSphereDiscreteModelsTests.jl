@@ -41,7 +41,7 @@ module CubedSphereDiscreteModelsTests
  end
 
  _,_,s=convergence_discrete_cubed_sphere_surface(generate_n_values(2),1,0)
- @test s ≈ 1.960928154802903
+ @test s ≈ 1.9864987399144707
  _,_,s=convergence_discrete_cubed_sphere_surface(generate_n_values(2),2,4)
- @test s ≈ 4.0372255440047615
+ @test s ≈ 4.023208172525184
 end
