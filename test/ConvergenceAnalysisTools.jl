@@ -16,11 +16,11 @@ function generate_n_values(k;n_max=120)
     for coefficient=1:10
        n=coefficient*current
        if (n>n_max)
-        return n_values
+        return n_values[2:end]
        end
        append!(n_values,n)
     end
     current=current*10
   end
-  return n_values
+  return n_values[2:end]
 end

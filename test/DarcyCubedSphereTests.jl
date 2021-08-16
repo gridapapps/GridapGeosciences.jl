@@ -12,9 +12,8 @@ using Plots
 
 include("ConvergenceAnalysisTools.jl")
 
-function solve_darcy(n,order,degree)
+function solve_darcy(model,order,degree)
   g(x) = sin(0.5*π*x[2]) # x[1]*x[2]*x[3]
-  model = SmarterCubedSphereDiscreteModel(n,2)
   RT=ReferenceFE(raviart_thomas,Float64,order)
   DG=ReferenceFE(lagrangian,Float64,order)
   V = FESpace(model,RT; conformity=:Hdiv)
@@ -29,7 +28,6 @@ function solve_darcy(n,order,degree)
   X = MultiFieldFESpace([U, P, R])
 
   trian = Triangulation(model)
-  degree = 2
   dΩ = Measure(trian,degree)
   dω = Measure(trian,degree,ReferenceDomain())
 
@@ -53,11 +51,12 @@ Returns a tuple with three entries.
  [2] Relative errors.
  [3] Slope of the log(h)-log(err) relative error convergence curve.
 """
-function convergence_darcy_cubed_sphere(n_values,order,degree)
+function convergence_darcy_cubed_sphere(n_values,geo_order,order,degree)
   hs=Float64[]
   errors=Float64[]
   for n in n_values
-     err=solve_darcy(n,order,degree)
+     model=CubedSphereDiscreteModel(n,geo_order)
+     err=solve_darcy(model,order,degree)
      append!(errors,err)
   end
   println(n_values)
@@ -65,16 +64,36 @@ function convergence_darcy_cubed_sphere(n_values,order,degree)
   return hs,errors,slope(hs,errors)
 end
 
+function convergence_darcy_cubed_sphere(n_values,order,degree)
+  hs=Float64[]
+  errors=Float64[]
+  for n in n_values
+     model=CubedSphereDiscreteModel(n)
+     err=solve_darcy(model,order,degree)
+     append!(errors,err)
+  end
+  hs=[2.0/n for n in n_values]
+  return hs,errors,slope(hs,errors)
+end
 
-hs,k0errors,s=convergence_darcy_cubed_sphere(generate_n_values(2),0,2)
-@test s ≈ 1.0062026869499259
-err=solve_darcy(10,1,4)
-@test err < 1.e-14
+# Testing cubed sphere mesh with analytical geometric mapping
+@time hs0,k0errors,s0=convergence_darcy_cubed_sphere(generate_n_values(2),0,2)
+@test s0 ≈ 0.9995105545413888
 
-plot(hs,[k0errors],
-    xaxis=:log, yaxis=:log,
-    label=["L2 k=0"],
-    shape=:auto,
-    xlabel="h",ylabel="L2 error norm")
+@time hs1,k1errors,s1=convergence_darcy_cubed_sphere(generate_n_values(2,n_max=50),1,4)
+@test s1 ≈ 1.9319815695372853
+
+# Testing cubed sphere mesh with polynomial geometric mapping
+@time hs0,k0errors,s0=convergence_darcy_cubed_sphere(generate_n_values(2),2,0,2)
+@test s0 ≈ 0.999731431570144
+
+@time hs1,k1errors,s1=convergence_darcy_cubed_sphere(generate_n_values(2,n_max=50),2,1,4)
+@test s1 ≈ 1.9360614763401225
+
+plot([hs0,hs1],[k0errors,k1errors],
+     xaxis=:log, yaxis=:log,
+     label=["L2 k=0","L2 k=1"],
+     shape=:auto,
+     xlabel="h",ylabel="L2 error norm")
 
 end # module
