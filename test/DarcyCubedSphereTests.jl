@@ -33,11 +33,11 @@ function solve_darcy(n,order,degree)
   dΩ = Measure(trian,degree)
   dω = Measure(trian,degree,ReferenceDomain())
 
-  a((u,p,r),(v,q,t)) = ∫( v⋅u + q*r + t*p )*dΩ +  ∫(q*DIV(u)+DIV(v)*p)*dω
-  awrong((u,p,r),(v,q,t)) = ∫( v⋅u + q*r + t*p + q*(∇⋅u) + (∇⋅v)*p)*dΩ
+  aphy((u,p,r),(v,q,t)) = ∫( v⋅u + q*r + t*p )*dΩ +  ∫(q*DIV(u)+DIV(v)*p)*dω
+  aref((u,p,r),(v,q,t)) = ∫( v⋅u + q*r + t*p + q*(∇⋅u) + (∇⋅v)*p)*dΩ
   b((v,q,t)) = ∫(q*g)*dΩ
 
-  op = AffineFEOperator(a,b,X,Y)
+  op = AffineFEOperator(aref,b,X,Y)
   xh = solve(op)
   uh, ph, rh = xh
   # writevtk(trian, "u", cellfields=["uh"=>uh])
