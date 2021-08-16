@@ -14,7 +14,7 @@ include("ConvergenceAnalysisTools.jl")
 
 function solve_darcy(n,order,degree)
   g(x) = sin(0.5*π*x[2]) # x[1]*x[2]*x[3]
-  model = CubedSphereDiscreteModel(n,2)
+  model = SmarterCubedSphereDiscreteModel(n,2)
   RT=ReferenceFE(raviart_thomas,Float64,order)
   DG=ReferenceFE(lagrangian,Float64,order)
   V = FESpace(model,RT; conformity=:Hdiv)
