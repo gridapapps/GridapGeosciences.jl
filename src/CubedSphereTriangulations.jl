@@ -42,7 +42,16 @@ function Gridap.Geometry.is_included(
 end
 
 function Gridap.Geometry.get_facet_normal(trian::AnalyticalMapCubedSphereTriangulation)
-  Gridap.Helpers.@notimplemented
+  function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}})
+    n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
+    n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
+    n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
+    n = VectorValue(n1,n2,n3)
+    n/norm(n)
+  end
+  map = get_cell_map(trian)
+  Jt = lazy_map(∇,map)
+  lazy_map(Operation(_unit_outward_normal),Jt)
 end
 
 function Gridap.Geometry.get_cell_ref_map(trian::AnalyticalMapCubedSphereTriangulation)
