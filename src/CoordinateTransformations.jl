@@ -7,8 +7,14 @@ function xyz2θϕr(x)
   r = sqrt(x[1]^2 + x[2]^2 + x[3]^2)
   θ = atan(x[2], x[1])
   ϕ = asin(x[3]/r)
-  VectorValue(θ, ϕ, r)
+  VectorValue(θ,ϕ,r)
 end
+function xyz2θϕ(x)
+  θ = atan(x[2], x[1])
+  ϕ = asin(x[3])
+  VectorValue(θ,ϕ)
+end
+
 
 """
 Matrix transformation from spherical vector field to Cartesian vector field.
