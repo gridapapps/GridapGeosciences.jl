@@ -71,12 +71,12 @@ module WeakDivPerpTests
    @test biqs0 ≈ 2.08294675561341
 
 
-   plotd=plot([ahs0,bihs0,biqhs0],[ak0errors,bik0errors,biqk0errors],
-   xaxis=:log, yaxis=:log,
-   label=["k=0 analytical map" "k=0 bilinear map" "k=0 biquadratic map"],
-   shape=:auto,
-   xlabel="h",ylabel="L2 error norm", legend=:bottomright)
+  #  plotd=plot([ahs0,bihs0,biqhs0],[ak0errors,bik0errors,biqk0errors],
+  #  xaxis=:log, yaxis=:log,
+  #  label=["k=0 analytical map" "k=0 bilinear map" "k=0 biquadratic map"],
+  #  shape=:auto,
+  #  xlabel="h",ylabel="L2 error norm", legend=:bottomright)
 
-   savefig(plotd,"L2_error_weak_div_perp.png")
+  #  savefig(plotd,"L2_error_weak_div_perp.png")
 
 end
