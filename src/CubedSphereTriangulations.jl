@@ -25,7 +25,7 @@ Gridap.Geometry.get_cell_map(trian::AnalyticalMapCubedSphereTriangulation) = tri
 Gridap.Geometry.TriangulationStyle(::Type{<:AnalyticalMapCubedSphereTriangulation}) = SubTriangulation()
 
 Gridap.Geometry.get_background_triangulation(trian::AnalyticalMapCubedSphereTriangulation) =
-      get_background_triangulation(trian.btrian)
+      Gridap.Geometry.get_background_triangulation(trian.btrian)
 
 Gridap.Geometry.get_cell_to_bgcell(trian::AnalyticalMapCubedSphereTriangulation) = get_cell_to_bgcell(trian.btrian)
 
@@ -38,10 +38,6 @@ end
 function Gridap.Geometry.is_included(
   trian_in::AnalyticalMapCubedSphereTriangulation,
   trian_out::AnalyticalMapCubedSphereTriangulation)
-  Gridap.Helpers.@notimplemented
-end
-
-function Gridap.Geometry.get_facet_normal(trian::AnalyticalMapCubedSphereTriangulation)
   Gridap.Helpers.@notimplemented
 end
 

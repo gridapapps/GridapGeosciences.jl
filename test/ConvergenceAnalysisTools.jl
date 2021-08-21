@@ -24,3 +24,35 @@ function generate_n_values(k;n_max=120)
   end
   return n_values[2:end]
 end
+
+"""
+   Performs a convergence study.
+
+   Returns a tuple with three entries.
+     [1] Values of h.
+     [2] Relative errors.
+     [3] Slope of the log(h)-log(err) relative error convergence curve.
+"""
+function convergence_study(f,n_values,geo_order,order,degree)
+   hs=Float64[]
+   errors=Float64[]
+   for n in n_values
+     model=CubedSphereDiscreteModel(n,geo_order)
+     err=f(model,order,degree)
+     append!(errors,err)
+   end
+   hs=[2.0/n for n in n_values]
+   return hs,errors,slope(hs,errors)
+end
+
+function convergence_study(f,n_values,order,degree)
+  hs=Float64[]
+  errors=Float64[]
+  for n in n_values
+     model=CubedSphereDiscreteModel(n)
+     err=f(model,order,degree)
+     append!(errors,err)
+  end
+  hs=[2.0/n for n in n_values]
+  return hs,errors,slope(hs,errors)
+end
