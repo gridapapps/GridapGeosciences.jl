@@ -1,6 +1,6 @@
 name = "GridapGeosciences"
 uuid = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
-authors = ["Santiago Badia", "Alberto F. Martin"]
+authors = [ "Santiago Badia <santiago.badia@monash.edu>", "Christopher Bladwell <c.bladwell@unsw.edu.au>", "David R. Lee <davelee2804@gmail.com >",  "Alberto F. Martin <alberto.martin@monash.edu>"]
 version = "0.1.0"
 
 [deps]
