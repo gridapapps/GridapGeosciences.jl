@@ -43,51 +43,18 @@ function solve_darcy(model,order,degree)
   sqrt(sum(∫(e*e)dΩ))
 end
 
-"""
-Performs a convergence study.
-
-Returns a tuple with three entries.
- [1] Values of h.
- [2] Relative errors.
- [3] Slope of the log(h)-log(err) relative error convergence curve.
-"""
-function convergence_darcy_cubed_sphere(n_values,geo_order,order,degree)
-  hs=Float64[]
-  errors=Float64[]
-  for n in n_values
-     model=CubedSphereDiscreteModel(n,geo_order)
-     err=solve_darcy(model,order,degree)
-     append!(errors,err)
-  end
-  println(n_values)
-  hs=[2.0/n for n in n_values]
-  return hs,errors,slope(hs,errors)
-end
-
-function convergence_darcy_cubed_sphere(n_values,order,degree)
-  hs=Float64[]
-  errors=Float64[]
-  for n in n_values
-     model=CubedSphereDiscreteModel(n)
-     err=solve_darcy(model,order,degree)
-     append!(errors,err)
-  end
-  hs=[2.0/n for n in n_values]
-  return hs,errors,slope(hs,errors)
-end
-
 # Testing cubed sphere mesh with analytical geometric mapping
-@time hs0,k0errors,s0=convergence_darcy_cubed_sphere(generate_n_values(2),0,2)
+@time hs0,k0errors,s0=convergence_study(solve_darcy,generate_n_values(2),0,2)
 @test s0 ≈ 0.9995105545413888
 
-@time hs1,k1errors,s1=convergence_darcy_cubed_sphere(generate_n_values(2,n_max=50),1,4)
+@time hs1,k1errors,s1=convergence_study(solve_darcy,generate_n_values(2,n_max=50),1,4)
 @test s1 ≈ 1.9319815695372853
 
 # Testing cubed sphere mesh with polynomial geometric mapping
-@time hs0,k0errors,s0=convergence_darcy_cubed_sphere(generate_n_values(2),2,0,2)
+@time hs0,k0errors,s0=convergence_study(solve_darcy,generate_n_values(2),2,0,2)
 @test s0 ≈ 0.999731431570144
 
-@time hs1,k1errors,s1=convergence_darcy_cubed_sphere(generate_n_values(2,n_max=50),2,1,4)
+@time hs1,k1errors,s1=convergence_study(solve_darcy,generate_n_values(2,n_max=50),2,1,4)
 @test s1 ≈ 1.9360614763401225
 
 plot([hs0,hs1],[k0errors,k1errors],

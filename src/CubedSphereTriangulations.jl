@@ -25,7 +25,7 @@ Gridap.Geometry.get_cell_map(trian::AnalyticalMapCubedSphereTriangulation) = tri
 Gridap.Geometry.TriangulationStyle(::Type{<:AnalyticalMapCubedSphereTriangulation}) = SubTriangulation()
 
 Gridap.Geometry.get_background_triangulation(trian::AnalyticalMapCubedSphereTriangulation) =
-      get_background_triangulation(trian.btrian)
+      Gridap.Geometry.get_background_triangulation(trian.btrian)
 
 Gridap.Geometry.get_cell_to_bgcell(trian::AnalyticalMapCubedSphereTriangulation) = get_cell_to_bgcell(trian.btrian)
 
@@ -49,18 +49,4 @@ function Gridap.Geometry.get_cell_ref_map(
   trian_in::AnalyticalMapCubedSphereTriangulation,
   trian_out::AnalyticalMapCubedSphereTriangulation)
   Gridap.Helpers.@notimplemented
-end
-
-const T = Union{AnalyticalMapCubedSphereTriangulation,<:Gridap.Geometry.UnstructuredGrid{2,3}}
-function Gridap.Geometry.get_facet_normal(trian::T)
-  function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}})
-    n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
-    n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
-    n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
-    n = VectorValue(n1,n2,n3)
-    n/norm(n)
-  end
-  map = get_cell_map(trian)
-  Jt = lazy_map(∇,map)
-  lazy_map(Operation(_unit_outward_normal),Jt)
 end
