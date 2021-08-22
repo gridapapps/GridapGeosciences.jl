@@ -58,12 +58,29 @@ IMPORTANT NOTE:
     take values on the parametric space
 """
 function laplacian_unit_sphere(v)
+  # function tmp(θϕ)
+  #    Gθϕ=G_unit_sphere(θϕ)
+  #    Jθϕ=J_unit_sphere(θϕ)
+  #    function f(θϕ)
+  #       sqrt(det(Gθϕ))*inv(Gθϕ)⋅(∇(v)(θϕ))
+  #    end
+  #    1.0/sqrt(det(Gθϕ))*(∇⋅(f))(θϕ)
+  # end
+  function tmp(θϕ)
+    divergence_unit_sphere(gradient_unit_sphere(v))(θϕ)
+  end
+end
+
+"""
+Spherical gradient on unit sphere
+IMPORTANT NOTE:
+* The input function "v" and output function
+  take values on the parametric space
+"""
+function gradient_unit_sphere(v)
   function tmp(θϕ)
      Gθϕ=G_unit_sphere(θϕ)
      Jθϕ=J_unit_sphere(θϕ)
-     function f(θϕ)
-        sqrt(det(Gθϕ))*inv(Gθϕ)⋅(∇(v)(θϕ))
-     end
-     1.0/sqrt(det(Gθϕ))*(∇⋅(f))(θϕ)
+     Jθϕ⋅inv(Gθϕ)⋅(∇(v))(θϕ)
   end
 end
