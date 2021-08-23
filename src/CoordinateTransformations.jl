@@ -9,10 +9,27 @@ function xyz2θϕr(x)
   ϕ = asin(x[3]/r)
   VectorValue(θ,ϕ,r)
 end
+
+"""
+  Map point on the unit sphere on ambientspace to the parametric space of the unit sphere
+  (x,y,z) ↦ (θ,ϕ)
+"""
 function xyz2θϕ(x)
   θ = atan(x[2], x[1])
   ϕ = asin(x[3])
   VectorValue(θ,ϕ)
+end
+
+"""
+  Map point on the parametric space of the unit sphere to the ambient space
+  (θ,ϕ) ↦ (x,y,z)
+"""
+function θϕ2xyz(θϕ)
+  θ,ϕ = θϕ
+  x = cos(θ)*cos(ϕ)
+  y = sin(θ)*cos(ϕ)
+  z = sin(ϕ)
+  VectorValue(x,y,z)
 end
 
 
