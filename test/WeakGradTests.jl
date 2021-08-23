@@ -1,6 +1,7 @@
 module WeakGradTests
    using Gridap
    using GridapGeosciences
+   import Gridap.Fields: ∇, divergence
    using Plots
    using Test
 
@@ -18,7 +19,7 @@ module WeakGradTests
    end
 
    # spherical surface gradient computed analytically
-   function dω(xyz)
+   function gradω(xyz)
     θϕr = xyz2θϕr(xyz)
     θ,ϕ,r = θϕr
     dθ = -sin(θ)*cos(ϕ)
@@ -26,10 +27,9 @@ module WeakGradTests
     spherical_to_cartesian_matrix(θϕr)⋅VectorValue(dθ,dϕ,0)
   end
 
-   function ∇(::typeof(ωθϕ))
-    #gradient_unit_sphere(ωθϕ)
-    dω
-   end
+  #  function divergence(::typeof(ωθϕ))
+  #   divergence_unit_sphere(ωθϕ)
+  #  end
 
    function compute_error_weak_grad(model,order,degree)
      # Setup geometry
@@ -55,28 +55,29 @@ module WeakGradTests
 
      # Compute weak grad of wh
      a2(u,v) = ∫(v⋅u)dΩ
-     b2(v)   = ∫((-wh)*DIV(v))dω
+     b2(v)   = ∫((-wh)*divergence(v))dΩ
      op      = AffineFEOperator(a2,b2,U,V)
      gradwh  = solve(op)
 
-     e = gradwh-∇(ωθϕ)
-     sqrt(sum(∫(e⋅e)dΩ)),gradwh
+     e    = gradwh-gradω
+     dive = divergence(gradwh)-laplacian_unit_sphere(ωθϕ)∘xyz2θϕ
+     sqrt(sum(∫(e⋅e+dive*dive)dΩ))
    end
+   #model=CubedSphereDiscreteModel(24)
+   #e,gradwh=compute_error_weak_grad(model,1,4)
+   #writevtk(Triangulation(model),"RT124x24analyticalmap",cellfields=["gradwh"=>gradwh])
 
    @time ahs0,ak0errors,as0=convergence_study(compute_error_weak_grad,generate_n_values(2),0,4)
-   #@test as0 ≈ 2.0842745262542386
+   @test as0 ≈ 0.8346320885900106
 
-   @time bihs0,bik0errors,bis0=convergence_study(compute_error_weak_grad,generate_n_values(2),1,0,4)
-   #@test bis0 ≈ 0.9474505144846311
+   @time ahs1,ak1errors,as1=convergence_study(compute_error_weak_grad,generate_n_values(2,n_max=50),1,8)
+   @test as1 ≈ 1.1034326200306834
 
-   @time biqhs0,biqk0errors,biqs0=convergence_study(compute_error_weak_grad,generate_n_values(2),2,0,4)
-   #@test biqs0 ≈ 2.08294675561341
-
-  #  plotd=plot([ahs0,bihs0,biqhs0],[ak0errors,bik0errors,biqk0errors],
+  #  plotd=plot([ahs0,ahs1],[ak0errors,ak1errors],
   #  xaxis=:log, yaxis=:log,
-  #  label=["k=0 analytical map" "k=0 bilinear map" "k=0 biquadratic map"],
+  #  label=["k=0 analytical map" "k=1 analytical map"],
   #  shape=:auto,
-  #  xlabel="h",ylabel="L2 error norm", legend=:bottomright)
+  #  xlabel="h",ylabel="H(div) error norm", legend=:bottomright)
 
   #  savefig(plotd,"L2_error_weak_div_perp.png")
 
