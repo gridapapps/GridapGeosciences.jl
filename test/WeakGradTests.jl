@@ -55,7 +55,7 @@ module WeakGradTests
 
      # Compute weak grad of wh
      a2(u,v) = ∫(v⋅u)dΩ
-     b2(v)   = ∫((-wh)*divergence(v))dΩ
+     b2(v)   = ∫((-wh)*DIV(v))dω
      op      = AffineFEOperator(a2,b2,U,V)
      gradwh  = solve(op)
 
