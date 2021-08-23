@@ -61,7 +61,7 @@ module LaplaceBeltramiCubedSphereTests
   @test as1 ≈ 1.0040693202861342
 
   @time ahs2,ak2errors,as2=convergence_study(solve_laplace_beltrami,generate_n_values(2),2,8)
-  @test as2 ≈ 1.9839521370793092
+  @test last(ak2errors) < 1.0e-03
 
 
   #  plot([ahs1,ahs2],[ak1errors,ak2errors],
