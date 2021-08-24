@@ -126,12 +126,7 @@ function solve_wave_equation_ssrk2(
   # Interpolate initial condition into FE spaces
   hn=interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
   un=interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
-  if (write_results)
-    rm(out_dir,force=true,recursive=true)
-    mkdir(out_dir)
-  end
-  pvdfile=joinpath(out_dir,"wave_eq_ncells_$(num_cells(model))_order_$(order)_ssrk2")
-  paraview_collection(pvdfile) do pvd
+  function run_simulation(pvd=nothing)
     # Allocate work space vectors
     h1v = similar(get_free_dof_values(hn))
     h2v = similar(h1v)
@@ -179,8 +174,16 @@ function solve_wave_equation_ssrk2(
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
     end
+    un,hn
   end
-  un,hn
+  if (write_results)
+    rm(out_dir,force=true,recursive=true)
+    mkdir(out_dir)
+    pvdfile=joinpath(out_dir,"wave_eq_ncells_$(num_cells(model))_order_$(order)_ssrk2")
+    paraview_collection(run_simulation,pvdfile)
+  else
+    run_simulation()
+  end
 end
 
 model=CubedSphereDiscreteModel(10)
@@ -193,5 +196,6 @@ degree=4
 @time un,hn =
   solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
 
+Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.965769545039571e-10
 
 end # module
