@@ -150,14 +150,14 @@ function solve_wave_equation_ssrk2(
        # 1st step
        # inv(L2MM)*(L2MM*hnv - dt*Hqdivu*unv)
        # inv(RTMM)*(RTMM*unv + dt*gdivvh*hnv)
-       @time _ssrk2_update!(h1v, L2MM, L2MMchol, qdivu,-dtH, hnv, unv)
-       @time _ssrk2_update!(u1v, RTMM, RTMMchol, divvh, dtg, unv, hnv)
+       _ssrk2_update!(h1v, L2MM, L2MMchol, qdivu,-dtH, hnv, unv)
+       _ssrk2_update!(u1v, RTMM, RTMMchol, divvh, dtg, unv, hnv)
 
        # 2nd step
        # inv(L2MM)*(L2MM*h1v - dt*Hqdivu*u1v)
        # inv(RTMM)*(RTMM*u1v + dt*gdivvh*h1v)
-       @time _ssrk2_update!(h2v, L2MM, L2MMchol, qdivu, -dtH, h1v, u1v)
-       @time _ssrk2_update!(u2v, RTMM, RTMMchol, divvh,  dtg, u1v, h1v)
+       _ssrk2_update!(h2v, L2MM, L2MMchol, qdivu, -dtH, h1v, u1v)
+       _ssrk2_update!(u2v, RTMM, RTMMchol, divvh,  dtg, u1v, h1v)
 
        # Averaging steps
        hnv .= 0.5 .* ( hnv .+ h2v )
@@ -191,7 +191,7 @@ N=2000
 order=0
 degree=4
 @time un,hn =
-  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=true,out_period=10)
+  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
 
 
 end # module
