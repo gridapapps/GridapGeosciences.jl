@@ -6,6 +6,7 @@ using GridapGeosciences
 using Plots
 using LinearAlgebra
 using WriteVTK
+using JLD
 
 # Initial depth
 function h₀(xyz)
@@ -53,6 +54,14 @@ function compute_pot_to_kin!(w,hnv,qdivu,unv)
    mul!(w,qdivu,unv)
    hnv⋅w
 end
+
+"""
+Compute the total mass
+"""
+function compute_mass(L2MM,hh)
+  (L2MM*hh)⋅ones(length(hh))
+end
+
 
 
 function new_vtk_step(Ω,file,hn,un)
@@ -142,6 +151,7 @@ function solve_wave_equation_ssrk2(
       pe  = Vector{Float64}(undef,N)
       kin_to_pot = Vector{Float64}(undef,N)
       pot_to_kin = Vector{Float64}(undef,N)
+      mass = Vector{Float64}(undef,N)
     end
     dt  = T/N
     dtg = dt*g
@@ -168,6 +178,7 @@ function solve_wave_equation_ssrk2(
          pe[step]=Eₚ(hn,g,dΩ)
          kin_to_pot[step]=compute_kin_to_pot!(u1v,unv,divvh,hnv)
          pot_to_kin[step]=compute_pot_to_kin!(h1v,hnv,qdivu,unv)
+         mass[step] = compute_mass(L2MM,hnv)
          if mod(step, out_period) == 0
            println(step)
            pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
@@ -178,12 +189,18 @@ function solve_wave_equation_ssrk2(
       pvd[Float64(N)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(N)"),hn,un)
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
+      # save global scalar snapshots
+      save(joinpath(out_dir,"wave_eq_geosciences_data.jld"), "hn_dot_div_un", kin_to_pot,
+                                                "un_dot_grad_hn", pot_to_kin,
+                                                "mass", mass,
+                                                "kinetic", ke,
+                                                "potential", pe)
     end
   end
   un,hn
 end
 
-model=CubedSphereDiscreteModel(10)
+model=CubedSphereDiscreteModel(12)
 g=1.0
 H=1.0
 T=2π
