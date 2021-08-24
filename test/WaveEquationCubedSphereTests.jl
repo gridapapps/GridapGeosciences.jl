@@ -135,12 +135,7 @@ function solve_wave_equation_ssrk2(
   # Interpolate initial condition into FE spaces
   hn=interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
   un=interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
-  if (write_results)
-    rm(out_dir,force=true,recursive=true)
-    mkdir(out_dir)
-  end
-  pvdfile=joinpath(out_dir,"wave_eq_ncells_$(num_cells(model))_order_$(order)_ssrk2")
-  paraview_collection(pvdfile) do pvd
+  function run_simulation(pvd=nothing)
     # Allocate work space vectors
     h1v = similar(get_free_dof_values(hn))
     h2v = similar(h1v)
@@ -160,14 +155,14 @@ function solve_wave_equation_ssrk2(
        # 1st step
        # inv(L2MM)*(L2MM*hnv - dt*Hqdivu*unv)
        # inv(RTMM)*(RTMM*unv + dt*gdivvh*hnv)
-       @time _ssrk2_update!(h1v, L2MM, L2MMchol, qdivu,-dtH, hnv, unv)
-       @time _ssrk2_update!(u1v, RTMM, RTMMchol, divvh, dtg, unv, hnv)
+       _ssrk2_update!(h1v, L2MM, L2MMchol, qdivu,-dtH, hnv, unv)
+       _ssrk2_update!(u1v, RTMM, RTMMchol, divvh, dtg, unv, hnv)
 
        # 2nd step
        # inv(L2MM)*(L2MM*h1v - dt*Hqdivu*u1v)
        # inv(RTMM)*(RTMM*u1v + dt*gdivvh*h1v)
-       @time _ssrk2_update!(h2v, L2MM, L2MMchol, qdivu, -dtH, h1v, u1v)
-       @time _ssrk2_update!(u2v, RTMM, RTMMchol, divvh,  dtg, u1v, h1v)
+       _ssrk2_update!(h2v, L2MM, L2MMchol, qdivu, -dtH, h1v, u1v)
+       _ssrk2_update!(u2v, RTMM, RTMMchol, divvh,  dtg, u1v, h1v)
 
        # Averaging steps
        hnv .= 0.5 .* ( hnv .+ h2v )
@@ -196,8 +191,16 @@ function solve_wave_equation_ssrk2(
                                                 "kinetic", ke,
                                                 "potential", pe)
     end
+    un,hn
   end
-  un,hn
+  if (write_results)
+    rm(out_dir,force=true,recursive=true)
+    mkdir(out_dir)
+    pvdfile=joinpath(out_dir,"wave_eq_ncells_$(num_cells(model))_order_$(order)_ssrk2")
+    paraview_collection(run_simulation,pvdfile)
+  else
+    run_simulation()
+  end
 end
 
 model=CubedSphereDiscreteModel(12)
@@ -208,7 +211,8 @@ N=2000
 order=0
 degree=4
 @time un,hn =
-  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=true,out_period=10)
+  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
 
+Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.965769545039571e-10
 
 end # module
