@@ -17,6 +17,6 @@ The goal of this repository is to showcase the suitability of the [Gridap](https
   --- | ---
   RT0-DG0 10x10 2000 steps  | RT1-DG1 10x10 4000 steps  
   ![fig3](_readme/WAVE_24x24_0_2PI_2000_SSRK2.gif) |  ![fig7](_readme/WAVE_24x24_1_2PI_4000_SSRK2.gif)
-  RT0-DG0 10x10 2000 steps | RT1-DG1 24x24 4000 steps
+  RT0-DG0 24x24 2000 steps | RT1-DG1 24x24 4000 steps
 
   Wave equation velocity magnitude plots, time interval T=[0,2PI]
