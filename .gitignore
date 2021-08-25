@@ -2,6 +2,9 @@
 *.jl.cov
 *.jl.mem
 .DS_Store
+*.vtu
+*.pvd
+*.jld
 /Manifest.toml
 /dev/
 /docs/build/
