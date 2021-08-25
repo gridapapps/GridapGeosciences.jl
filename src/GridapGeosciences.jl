@@ -1,10 +1,12 @@
 module GridapGeosciences
   using Gridap
   using FillArrays
+  include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
   include("Operators.jl")
   include("CoordinateTransformations.jl")
+  export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
   export divergence_unit_sphere

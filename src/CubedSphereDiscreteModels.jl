@@ -1,19 +1,26 @@
 """
-Function to map points on the cube surface to the sphere. For a cubed sphere
-of radius 1 we need sides of length 2, centred at the origin using the approach
-of http://mathproofs.blogspot.com/2005/07/mapping-cube-to-sphere.html.
-Arguments:
-  xyz: 3d cartesian VectorValue
+Function object to map points on the cube surface to the sphere of radius r.
+We need sides of length 2 centred at the origin using the approach
+in http://mathproofs.blogspot.com/2005/07/mapping-cube-to-sphere.html.
+
+Construct arguments:
+  r  : sphere radius
+Function object arguments:
+  xyz: 3D cartesian coordinates of a point on the cube surface
 """
-function map_cube_to_sphere(xyz)
-    x,y,z = xyz
-    xₛ = x*sqrt(1-y^2/2-z^2/2+y^2*z^2/(3))
-    yₛ = y*sqrt(1-z^2/2-x^2/2+x^2*z^2/(3))
-    zₛ = z*sqrt(1-x^2/2-y^2/2+x^2*y^2/(3))
-    Point(xₛ,yₛ,zₛ)
+struct MapCubeToSphere{T} <: Function
+  radius::T
 end
 
-function CubedSphereDiscreteModel(n,order)
+function (map::MapCubeToSphere{T})(xyz) where T
+  x,y,z = xyz
+  xₛ = x*sqrt(1.0-y^2/2-z^2/2+y^2*z^2/(3.0))
+  yₛ = y*sqrt(1.0-z^2/2-x^2/2+x^2*z^2/(3.0))
+  zₛ = z*sqrt(1.0-x^2/2-y^2/2+x^2*y^2/(3.0))
+  map.radius*Point(xₛ,yₛ,zₛ)
+end
+
+function CubedSphereDiscreteModel(n,order; radius=1)
   function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
     cache_cell_node_ids = array_cache(cell_node_ids)
     cache_cell_vector   = array_cache(cell_vector)
@@ -39,7 +46,7 @@ function CubedSphereDiscreteModel(n,order)
   # Generate high-order FE map and ordering
   vector_reffe=ReferenceFE(lagrangian,VectorValue{3,Float64},order)
   V = FESpace(cube_surface_model,vector_reffe; conformity=:H1)
-  vh = interpolate(map_cube_to_sphere,V)
+  vh = interpolate(MapCubeToSphere(radius),V)
   scalar_reffe=ReferenceFE(QUAD,lagrangian,Float64,order)
   xref=Gridap.ReferenceFEs.get_node_coordinates(scalar_reffe)
   xrefₖ=Fill(xref,num_cells(cube_surface_model))
@@ -65,7 +72,7 @@ struct AnalyticalMapCubedSphereDiscreteModel{T,B,C} <: Gridap.Geometry.DiscreteM
   cell_map::T
   cubed_sphere_model::B
   trian::C
-  function AnalyticalMapCubedSphereDiscreteModel(n)
+  function AnalyticalMapCubedSphereDiscreteModel(n;radius=1)
     domain = (-1,1,-1,1,-1,1)
     cells  = (n,n,n)
     model  = CartesianDiscreteModel(domain,cells)
@@ -76,7 +83,7 @@ struct AnalyticalMapCubedSphereDiscreteModel{T,B,C} <: Gridap.Geometry.DiscreteM
     Γface_to_bgface = findall(bgface_to_mask)
     cube_surface_model = Gridap.Geometry.BoundaryDiscreteModel(Polytope{2},model,Γface_to_bgface)
 
-    m1=Fill(Gridap.Fields.GenericField(map_cube_to_sphere),num_cells(cube_surface_model))
+    m1=Fill(Gridap.Fields.GenericField(MapCubeToSphere(radius)),num_cells(cube_surface_model))
     m2=get_cell_map(cube_surface_model)
     m=lazy_map(∘,m1,m2)
 
@@ -102,8 +109,8 @@ Gridap.Geometry.get_face_labeling(model::AnalyticalMapCubedSphereDiscreteModel) 
 Gridap.Geometry.get_triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = a.trian
 Gridap.Geometry.Triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = a.trian
 
-function CubedSphereDiscreteModel(n)
-  AnalyticalMapCubedSphereDiscreteModel(n)
+function CubedSphereDiscreteModel(n;radius=1)
+  AnalyticalMapCubedSphereDiscreteModel(n;radius)
 end
 
 const CSDMT = Union{AnalyticalMapCubedSphereDiscreteModel,
