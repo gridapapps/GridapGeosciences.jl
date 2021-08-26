@@ -18,52 +18,6 @@ end
 # Initial velocity
 u₀(xyz) = zero(xyz)
 
-"""
-  Kinetic energy
-"""
-function Eₖ(uh,H,dΩ)
-  0.5*H*sum(∫(uh⋅uh)dΩ)
-end
-
-"""
-  Potential energy
-"""
-function Eₚ(hh,g,dΩ)
-  0.5*g*sum(∫(hh*hh)dΩ)
-end
-
-"""
-  Total energy
-"""
-function Eₜ(uh,H,hh,g,dΩ)
-  Eₖ(uh,H,dΩ)+Eₚ(hh,g,dΩ)
-end
-
-"""
-  Kinetic to potential
-"""
-function compute_kin_to_pot!(w,unv,divvh,hnv)
-  mul!(w,divvh,hnv)
-  unv⋅w
-end
-
-"""
-  Potential to kinetic
-"""
-function compute_pot_to_kin!(w,hnv,qdivu,unv)
-   mul!(w,qdivu,unv)
-   hnv⋅w
-end
-
-"""
-Compute the total mass
-"""
-function compute_mass(L2MM,hh)
-  (L2MM*hh)⋅ones(length(hh))
-end
-
-
-
 function new_vtk_step(Ω,file,hn,un)
   createvtk(Ω,
             file,
@@ -173,7 +127,7 @@ function solve_wave_equation_ssrk2(
          pe[step]=Eₚ(hn,g,dΩ)
          kin_to_pot[step]=compute_kin_to_pot!(u1v,unv,divvh,hnv)
          pot_to_kin[step]=compute_pot_to_kin!(h1v,hnv,qdivu,unv)
-         mass[step] = compute_mass(L2MM,hnv)
+         mass[step] = compute_total_mass!(h1v,L2MM,hnv)
          if mod(step, out_period) == 0
            println(step)
            pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
@@ -213,6 +167,6 @@ degree=4
 @time un,hn =
   solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
 
-Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.965769545039571e-10
+@test Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.6984501177784049e-10
 
 end # module
