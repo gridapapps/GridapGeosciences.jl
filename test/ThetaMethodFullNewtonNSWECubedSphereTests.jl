@@ -77,52 +77,6 @@ function uhqF₀(q₀,F₀,X,Y,dΩ)
   solve(AffineFEOperator(a,b,X,Y))
 end
 
-"""
-  Kinetic energy
-"""
-function Eₖ(uh,H,dΩ)
-  0.5*H*sum(∫(uh⋅uh)dΩ)
-end
-
-"""
-  Potential energy
-"""
-function Eₚ(hh,g,dΩ)
-  0.5*g*sum(∫(hh*hh)dΩ)
-end
-
-"""
-  Total energy
-"""
-function Eₜ(uh,H,hh,g,dΩ)
-  Eₖ(uh,H,dΩ)+Eₚ(hh,g,dΩ)
-end
-
-"""
-  Kinetic to potential
-"""
-function compute_kin_to_pot!(w,unv,divvh,hnv)
-  mul!(w,divvh,hnv)
-  unv⋅w
-end
-
-"""
-  Potential to kinetic
-"""
-function compute_pot_to_kin!(w,hnv,qdivu,unv)
-   mul!(w,qdivu,unv)
-   hnv⋅w
-end
-
-"""
-Compute the total mass
-"""
-function compute_mass(L2MM,hh)
-  (L2MM*hh)⋅ones(length(hh))
-end
-
-
-
 function new_vtk_step(Ω,file,hn,un)
   createvtk(Ω,
             file,
