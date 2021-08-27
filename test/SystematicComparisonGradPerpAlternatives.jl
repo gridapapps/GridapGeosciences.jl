@@ -131,16 +131,15 @@ module systematic_comparison_grad_perp_alternatives
 
     u=FEFunction(V,ones(num_free_dofs(V)))
     n=get_normal_vector(model)
-    a(v)=∫(perp(∇(v),n)⋅u)dΩ
+    a(v)=∫(perp(∇(v),n)⋅(u))dΩ
     b1=assemble_vector(a,E)
 
     quad_cell_point = get_cell_points(dΩ.quad)
     qₖ = Gridap.CellData.get_data(quad_cell_point)
     wₖ = dΩ.quad.cell_weight
-    #iwqc=grad_perp_phys_domain(model, order, Ω, E,F,U,V,u, qₖ, wₖ)
     iwqc=grad_perp_ref_domain(model, order, Ω, E,F,U,V,u, qₖ, wₖ)
     dc    = Gridap.CellData.DomainContribution()
-    Gridap.CellData.add_contribution!(dc, Ω, iwqc)
+    Gridap.CellData.add_contribution!(dc, Ω, iwqc, -)
     data  = Gridap.FESpaces.collect_cell_vector(E, dc)
     assem = SparseMatrixAssembler(U,E)
     b2 = assemble_vector(assem, data)
