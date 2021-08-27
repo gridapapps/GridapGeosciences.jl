@@ -218,7 +218,7 @@ function solve_nswe_theta_method_full_newton(
 end
 
 T=432000
-model=CubedSphereDiscreteModel(10)
+model=CubedSphereDiscreteModel(10;radius=rₑ)
 N=120
 order=0
 degree=4
