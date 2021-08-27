@@ -22,7 +22,7 @@ module WeakDivPerpTests
    Spherical divergence on unit sphere applied to perp(W)
    """
    function divM_perpW(θϕ)
-     n_times_W=(θϕ)->(normal_unit_sphere(θϕ)×W(θϕ))
+     n_times_W=(θϕ)->(W(θϕ)×normal_unit_sphere(θϕ))
      f=divergence_unit_sphere(n_times_W)
      f(θϕ)
    end
@@ -54,7 +54,7 @@ module WeakDivPerpTests
 
      # Compute weak div_perp operator
      a2(u,v) = ∫(v*u)dΩ
-     b2(v)   = ∫(⟂(∇(v),n)⋅(wh) )dΩ
+     b2(v)   = ∫(⟂(∇(v),n)⋅(-wh) )dΩ
      op      = AffineFEOperator(a2,b2,R,S)
      divwh   = solve(op)
      e = divwh-divM_perpW∘xyz2θϕ
