@@ -139,7 +139,7 @@ module systematic_comparison_grad_perp_alternatives
     wₖ = dΩ.quad.cell_weight
     iwqc=grad_perp_ref_domain(model, order, Ω, E,F,U,V,u, qₖ, wₖ)
     dc    = Gridap.CellData.DomainContribution()
-    Gridap.CellData.add_contribution!(dc, Ω, iwqc, -)
+    Gridap.CellData.add_contribution!(dc, Ω, -1.0*iwqc)
     data  = Gridap.FESpaces.collect_cell_vector(E, dc)
     assem = SparseMatrixAssembler(U,E)
     b2 = assemble_vector(assem, data)
