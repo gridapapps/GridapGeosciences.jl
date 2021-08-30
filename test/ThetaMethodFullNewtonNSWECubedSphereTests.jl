@@ -7,6 +7,7 @@ using Plots
 using LinearAlgebra
 using WriteVTK
 using JLD
+using LineSearches
 
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
@@ -25,13 +26,6 @@ function fₘ(xyz)
    θϕr   = xyz2θϕr(xyz)
    θ,ϕ,r = θϕr
    2.0*Ωₑ*( -cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α) )
-end
-
-# Initial vorticity
-function ω₀(xyz)
-  θϕr = xyz2θϕr(xyz)
-  θ,ϕ,r = θϕr
-  (2.0*U₀/rₑ + 2.0*Ωₑ)*(-cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α))
 end
 
 # Initial velocity
@@ -140,7 +134,7 @@ function solve_nswe_theta_method_full_newton(
   #     - Initial volume flux (F₀)
   #     - Initial full solution
   ΔuΔhqF=uhqF₀(q₀(R,S,n,dΩ),F₀(U,V,dΩ),X,Y,dΩ)
-
+  Δu,Δh,_,_ = ΔuΔhqF
   function run_simulation(pvd=nothing)
     # Allocate work space vectors
     # if (write_results)
@@ -152,32 +146,44 @@ function solve_nswe_theta_method_full_newton(
     # end
     dt  = T/N
     τ   = dt/2 # APVM stabilization parameter
+    nlcache=nothing
     for step=1:N
-       Δu,Δh,_,_=ΔuΔhqF
+       e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))
+       e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))
+       println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
+               " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
+
        uiv  .= (unv        .+ (1-θ) .* get_free_dof_values(Δu))
        hiv  .= (hnv        .+ (1-θ) .* get_free_dof_values(Δh))
        hbiv .= (hnv .+ bv  .+ (1-θ) .* get_free_dof_values(Δh))
 
        # APVM weak residual
-       eq1((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbi + 0.5*ui⋅ui)
+       eq1((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v⋅Δu - dt*∇⋅(v)*(g*hbi + 0.5*ui⋅ui)
                                          + dt*(qvort-τ*(ui⋅∇(qvort)))*(v⋅⟂(F,n)))dΩ
        eq2((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω
        eq3((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(s*qvort*hi + ⟂(∇(s),n)⋅ui - s*fₘ)dΩ
        eq4((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v2⋅F - v2⋅(hi*ui))dΩ
        res(x,y)                        = eq1(x,y)+eq2(x,y)+eq3(x,y)+eq4(x,y)
 
+       # APVM weak jacobian
+       jeq1((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v⋅du +
+                                                      + dt*(dr-τ*(ui⋅∇(dr)))*(v⋅⟂(F,n))
+                                                      + dt*(qvort-τ*(ui⋅∇(qvort)))*(v⋅⟂(du2,n)))dΩ
+       jeq2((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(q*dp)dΩ+∫(dt*q*(DIV(du2)))dω
+       jeq3((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(s*(dr*hi))dΩ
+       jeq4((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v2⋅du2)dΩ
 
-       # APVM weak jacobian (currently not implemented)
-       jac((Δu,Δh,qvort,F),(u,p,r,u2),(v,q,s,v2))=Gridap.Helpers.@notimplemented
+       jac(u,du,v)= jeq1(u,du,v)+jeq2(u,du,v)+jeq3(u,du,v)+jeq4(u,du,v)
 
        # Solve fully-coupled monolithic nonlinear problem
        op=FEOperator(res,jac,X,Y)
-       nls = NLSolver(show_trace=true, method=:newton)
+       nls = NLSolver(linesearch=BackTracking(),show_trace=true, method=:newton, iterations=2)
        solver = FESolver(nls)
-       ΔuΔhqF, = solve(solver,op)
+       # Use previous time-step solution, ΔuΔhqF, as initial guess
+       # Overwrite solution into ΔuΔhqF
+       solve!(ΔuΔhqF,solver,op)
 
        # Update current solution
-       Δu,Δh,_,_ = ΔuΔhqF
        unv .= unv .+ get_free_dof_values(Δu)
        hnv .= hnv .+ get_free_dof_values(Δh)
 
@@ -218,10 +224,10 @@ function solve_nswe_theta_method_full_newton(
 end
 
 T=432000
-model=CubedSphereDiscreteModel(10;radius=rₑ)
+model=CubedSphereDiscreteModel(30;radius=rₑ)
 N=120
-order=0
-degree=4
+order=1
+degree=8
 θ=0.5
 @time solve_nswe_theta_method_full_newton(model, order, degree, θ, T, N;
                                           write_results=false,out_period=10)
