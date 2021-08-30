@@ -125,9 +125,6 @@ function solve_nswe_theta_method_full_newton(
   un = interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
   hn = interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
   b  = interpolate_everywhere(topography,P); bv=get_free_dof_values(b)
-  ui = FEFunction(U,zeros(num_free_dofs(U))); uiv  = get_free_dof_values(ui)
-  hi = FEFunction(P,zeros(num_free_dofs(P))); hiv  = get_free_dof_values(hi)
-  hbi= FEFunction(P,zeros(num_free_dofs(P))); hbiv = get_free_dof_values(hbi)
 
   # Compute:
   #     - Initial potential vorticity (q₀)
@@ -153,34 +150,40 @@ function solve_nswe_theta_method_full_newton(
        println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
                " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
 
-       uiv  .= (unv        .+ (1-θ) .* get_free_dof_values(Δu))
-       hiv  .= (hnv        .+ (1-θ) .* get_free_dof_values(Δh))
-       hbiv .= (hnv .+ bv  .+ (1-θ) .* get_free_dof_values(Δh))
+       ui(Δu)  = un       + (1-θ) * Δu
+       hi(Δh)  = hn       + (1-θ) * Δh
+       hbi(Δh) = hn + b   + (1-θ) * Δh
 
-       # APVM weak residual
-       eq1((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v⋅Δu - dt*∇⋅(v)*(g*hbi + 0.5*ui⋅ui)
-                                         + dt*(qvort-τ*(ui⋅∇(qvort)))*(v⋅⟂(F,n)))dΩ
-       eq2((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω
-       eq3((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(s*qvort*hi + ⟂(∇(s),n)⋅ui - s*fₘ)dΩ
-       eq4((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v2⋅F - v2⋅(hi*ui))dΩ
-       res(x,y)                        = eq1(x,y)+eq2(x,y)+eq3(x,y)+eq4(x,y)
+       # APVM residual
+       req1((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbi(Δh) + 0.5*ui(Δu)⋅ui(Δu))
+                                         + dt*(qvort-τ*(ui(Δu)⋅∇(qvort)))*(v⋅⟂(F,n)))dΩ
+       req2((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω
+       req3((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(s*qvort*hi(Δh) + ⟂(∇(s),n)⋅ui(Δu) - s*fₘ)dΩ
+       req4((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v2⋅F - v2⋅(hi(Δh)*ui(Δu)))dΩ
+       res(x,y)                         = req1(x,y)+req2(x,y)+req3(x,y)+req4(x,y)
 
-       # APVM weak jacobian
+       # APVM jacobian
        jeq1((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v⋅du +
-                                                      + dt*(dr-τ*(ui⋅∇(dr)))*(v⋅⟂(F,n))
-                                                      + dt*(qvort-τ*(ui⋅∇(qvort)))*(v⋅⟂(du2,n)))dΩ
+                            +  dt*(dr    - τ*(ui(Δu)⋅∇(dr)+ui(du)⋅∇(qvort)))*(v⋅⟂(F  ,n))
+                            +  dt*(qvort - τ*(             ui(Δu)⋅∇(qvort)))*(v⋅⟂(du2,n))
+                            -  dt*(∇⋅(v))*(g*hbi(dp) +ui(Δu)⋅ui(du)))dΩ
        jeq2((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(q*dp)dΩ+∫(dt*q*(DIV(du2)))dω
-       jeq3((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(s*(dr*hi))dΩ
-       jeq4((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v2⋅du2)dΩ
+       jeq3((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(s*qvort*hi(dr)+
+                                                         s*dr*hi(Δh)+
+                                                         ⟂(∇(s),n)⋅ui(du))dΩ
+       jeq4((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v2⋅du2-
+                                                         v2⋅(hi(Δh)*ui(du))-
+                                                         v2⋅(hi(dp)*ui(Δu)))dΩ
 
        jac(u,du,v)= jeq1(u,du,v)+jeq2(u,du,v)+jeq3(u,du,v)+jeq4(u,du,v)
 
        # Solve fully-coupled monolithic nonlinear problem
-       op=FEOperator(res,jac,X,Y)
-       nls = NLSolver(linesearch=BackTracking(),show_trace=true, method=:newton, iterations=2)
-       solver = FESolver(nls)
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
+       op=FEOperator(res,jac,X,Y)
+       nls=NLSolver(show_trace=true, method=:newton)
+       solver=FESolver(nls)
+
        solve!(ΔuΔhqF,solver,op)
 
        # Update current solution
@@ -224,10 +227,10 @@ function solve_nswe_theta_method_full_newton(
 end
 
 T=432000
-model=CubedSphereDiscreteModel(30;radius=rₑ)
+model=CubedSphereDiscreteModel(10;radius=rₑ)
 N=120
-order=1
-degree=8
+order=0
+degree=2
 θ=0.5
 @time solve_nswe_theta_method_full_newton(model, order, degree, θ, T, N;
                                           write_results=false,out_period=10)
