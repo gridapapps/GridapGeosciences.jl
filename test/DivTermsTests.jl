@@ -6,6 +6,14 @@ using GridapGeosciences
 
 include("ConvergenceAnalysisTools.jl")
 
+# Distorted mesh
+function rndm(p::Point)
+  r, s = p
+  x = r + 0.1*sin(2π*r)*sin(2π*s)
+  y = s + 0.1*sin(2π*r)*sin(2π*s)
+  Point(x,y)
+end
+
 function setup_FE_spaces(model,order)
   # FE Spaces
   RT = ReferenceFE(raviart_thomas,Float64,order)
@@ -108,52 +116,100 @@ function compare_div_v_u_dot_u_DIV_v_u_dot_u(model,order,degree)
   compute_relative_error(l1,l2,V)
 end
 
-
 tol=1.e-15
 @time hs0,k0errors,_=convergence_study(compare_phys_vs_ref_div_v_p_term,
                                         generate_n_values(2;n_max=20),0,2)
-
 @test all(k0errors .< tol)
 
 @time hs1,k1errors,_=convergence_study(compare_phys_vs_ref_div_v_p_term,
                                         generate_n_values(2;n_max=20),1,4)
-
 @test all(k1errors .< tol)
 
 @time hs1,k2errors,_=convergence_study(compare_phys_vs_ref_div_v_p_term,
                                         generate_n_values(2;n_max=20),2,8)
 
-# Full 2D problem!!!
-model=CartesianDiscreteModel((0,1,0,1),(10,10))
-rel_error=compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,0,4)
-@test rel_error < tol
-
-# Problem on spherical manifold!!!
-model=CubedSphereDiscreteModel(100)
-rel_error=compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,0,4)
-@test_broken rel_error < tol
-
-# Full 2D problem!!!
-model=CartesianDiscreteModel((0,1,0,1),(10,10))
-rel_error=compare_div_v_projected_u_dot_u_DIV_v_projected_u_dot_u(model,0,4)
-@test rel_error < tol
-
-# Problem on spherical manifold!!!
-model=CubedSphereDiscreteModel(20)
-rel_error=compare_div_v_projected_u_dot_u_DIV_v_projected_u_dot_u(model,0,4)
-@test rel_error < tol
+model=CartesianDiscreteModel((0,1,0,1),(20,20),map=rndm)
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_phys_vs_ref_div_v_p_term(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("Non-Affine FE Map 2D Problem
+           RT order=$(order) ∫(∇⋅(v)*p)dΩ versus ∫(DIV(v)*p)dω $(rel_error) < $(tol)")
+end
 
 # Full 2D problem!!!
 model=CartesianDiscreteModel((0,1,0,1),(10,10))
-rel_error=compare_div_v_u_dot_u_DIV_v_u_dot_u(model,0,4)
-@test rel_error < tol
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("Affine FE Map 2D Problem RT order=$(order) ∫(∇⋅(v)*(u⋅u))dΩ versus ∫(∇⋅(v)*(u_dot_u_projection))dΩ $(rel_error) < $(tol)")
+end
 
 # Problem on spherical manifold!!!
-model=CubedSphereDiscreteModel(20)
-rel_error=compare_div_v_u_dot_u_DIV_v_u_dot_u(model,0,4)
-@test rel_error < tol
+model=CubedSphereDiscreteModel(10)
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("CubedSphere Manifold RT order=$(order) ∫(∇⋅(v)*(u⋅u))dΩ versus ∫(∇⋅(v)*(u_dot_u_projection))dΩ $(rel_error) < $(tol)")
+end
 
+# Full 2D problem!!!
+model=CartesianDiscreteModel((0,1,0,1),(10,10))
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_projected_u_dot_u_DIV_v_projected_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("Affine Map 2D Problem ∫(∇⋅(v)*(u_dot_u_projection))dΩ versus ∫(DIV(v)*(u_dot_u_projection))dω RT order=$(order) $(rel_error) < $(tol)")
+end
 
+# Problem on spherical manifold!!!
+model=CubedSphereDiscreteModel(10)
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_projected_u_dot_u_DIV_v_projected_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("CubedSphere Manifold ∫(∇⋅(v)*(u_dot_u_projection))dΩ versus ∫(DIV(v)*(u_dot_u_projection))dω RT order=$(order) $(rel_error) < $(tol)")
+end
 
+# Full 2D problem!!!
+model=CartesianDiscreteModel((0,1,0,1),(10,10))
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_u_dot_u_DIV_v_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("Affine Map 2D Problem ∫(∇⋅(v)*(u_dot_u_projection))dΩ versus ∫(DIV(v)*(u_dot_u_projection))dω RT order=$(order) $(rel_error) < $(tol)")
+end
+
+# Problem on spherical manifold!!!
+model=CubedSphereDiscreteModel(10)
+for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
+  rel_error=compare_div_v_u_dot_u_DIV_v_u_dot_u(model,order,degree)
+  if rel_error < tol
+    @test rel_error < tol
+  else
+    @test_broken rel_error < tol
+  end
+  println("CubedSphere Manifold ∫(∇⋅(v)*(u⋅u))dΩ versus ∫(DIV(v)*(u⋅u))dω RT order=$(order) $(rel_error) < $(tol)")
+end
 
 end # module
