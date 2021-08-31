@@ -5,6 +5,7 @@
 *.vtu
 *.pvd
 *.jld
+.vscode/settings.json
 /Manifest.toml
 /dev/
 /docs/build/
