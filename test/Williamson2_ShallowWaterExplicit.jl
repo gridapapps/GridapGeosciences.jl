@@ -204,7 +204,7 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   hₚ     = solve(op)
 
   # 2.1: the mass flux
-  b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅u₂*(h₁ + 2.0*hₚ)/6.0)*dΩ
+  b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)*dΩ
   rhs5   = assemble_rhs_vector(U, V, b₅(v))
   op     = AffineFEOperator(U, V, RTMM, rhs5)
   F      = solve(op)
@@ -226,7 +226,7 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   op     = AffineFEOperator(P, Q, L2MM, rhs8)
   h₂     = solve(op)
 
-  h₂, u₂, Φ, F
+  h₂, u₂, ϕ, F
 end
 
 function total_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
@@ -301,7 +301,7 @@ function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, w
     um1          = new_field(V, un)
     hn, un, ϕ, F = shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
-    compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow1, pow2, istep)
+    compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep)
 
     if mod(istep, dump_freq) == 0
       iwqc  = grad_perp_ref_domain(model, order, Ω, R, S, U, V, un, qₖ, wₖ)
