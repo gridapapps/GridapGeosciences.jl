@@ -54,6 +54,27 @@ function compare_phys_vs_ref_div_v_p_term(model,order,degree)
   norm(Aphys-Aref)/norm(Aref)
 end
 
+function compare_div_v_DIV_v(model,order)
+  # FE Spaces
+  U,V,P,Q = setup_FE_spaces(model,order)
+  v       = get_fe_basis(V)
+
+  # Geometry
+  Ω  = Triangulation(model); dΩ = Measure(Ω,0)
+
+  divv = ∇⋅(v)
+  DIVv = DIV(v)
+
+  p=get_cell_points(dΩ.quad)
+  divvq=divv(p)
+  DIVvq=DIVv(p)
+  println( "divvq[1]=",divvq[1])
+  println( "DIVvq[1]=",DIVvq[1])
+  println( "Δ    [1]=",abs.(divvq[1] .- DIVvq[1]))
+  norm(divvq[1] .- DIVvq[1])
+end
+
+
 function compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,order,degree)
   # FE Spaces
   U,V,P,Q=setup_FE_spaces(model,order)
@@ -131,6 +152,7 @@ tol=1.e-15
 model=CartesianDiscreteModel((0,1,0,1),(20,20),map=rndm)
 for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
   rel_error=compare_phys_vs_ref_div_v_p_term(model,order,degree)
+  err_div_v_DIV_v=compare_div_v_DIV_v(model,order)
   if rel_error < tol
     @test rel_error < tol
   else
@@ -140,10 +162,12 @@ for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
            RT order=$(order) ∫(∇⋅(v)*p)dΩ versus ∫(DIV(v)*p)dω $(rel_error) < $(tol)")
 end
 
+
 # Full 2D problem!!!
 model=CartesianDiscreteModel((0,1,0,1),(10,10))
 for (order,degree) in [(0,30),(1,30),(2,30),(3,30),(4,30),(5,30)]
   rel_error=compare_div_v_u_dot_u_versus_div_v_projected_u_dot_u(model,order,degree)
+  err_div_v_DIV_v=compare_div_v_DIV_v(model,order)
   if rel_error < tol
     @test rel_error < tol
   else
