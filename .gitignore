@@ -6,6 +6,7 @@
 *.pvd
 *.jld
 #/Manifest.toml
+.vscode/settings.json
 /dev/
 /docs/build/
 /docs/site/
