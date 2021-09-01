@@ -57,8 +57,8 @@ module LaplaceBeltramiCubedSphereTests
   #e,uh=solve_laplace_beltrami(model,1,8)
   #writevtk(Triangulation(model),"u",nsubcells=4,cellfields=["u"=>u,"uh"=>uh])
 
-  @time ahs1,ak1errors,as1=convergence_study(solve_laplace_beltrami,generate_n_values(2),1,4)
-  @test round(as1,digits=3) ≈ 1.044
+  @time ahs1,ak1errors,as1=convergence_study(solve_laplace_beltrami,generate_n_values(2),1,8)
+  @test round(as1,digits=3) ≈ 1.001
 
   @time ahs2,ak2errors,as2=convergence_study(solve_laplace_beltrami,generate_n_values(2),2,8)
   @test round(as2,digits=3) ≈ 1.995
