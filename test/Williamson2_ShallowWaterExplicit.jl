@@ -1,9 +1,10 @@
 module Williamson2_ShallowWaterExplicit
 
+using FillArrays
+using Test
+using WriteVTK
 using Gridap
 using GridapGeosciences
-using FillArrays
-using WriteVTK
 
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
@@ -13,8 +14,6 @@ using WriteVTK
 # J Comp. Phys. 102 211-224
 
 # Constants of the Williamson2 test case
-const rₑ = 6371220.0          # earth's radius
-const g  = 9.80616            # gravitational acceleration
 const α  = π/4.0              # deviation of the coriolis term from zonal forcing
 const U₀ = 38.61068276698372  # velocity scale
 const H₀ = 2998.1154702758267 # mean fluid depth
@@ -100,6 +99,18 @@ function grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
   intcq = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(⋅), ϕₖsq, uq)
   iwqc  = lazy_map(Gridap.Fields.IntegrationMap(), intcq, wₖ, Jq)
   -1.0*iwqc
+end
+
+function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
+  # ∇×u, weak form: ∫ααdΩ^{-1}∫-∇⟂α⋅udΩ; ∀α∈ H₁(Ω)
+  iwqc  = grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
+  assem = SparseMatrixAssembler(U, S)
+  dc    = Gridap.CellData.DomainContribution()
+  Gridap.CellData.add_contribution!(dc, Ω, iwqc)
+  data  = Gridap.FESpaces.collect_cell_vector(S, dc)
+  rhs   = assemble_vector(assem, data)
+  op    = AffineFEOperator(R, S, H1MM, rhs)
+  w     = solve(op)
 end
 
 function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u, U, V, R, S)
@@ -229,24 +240,10 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   h₂, u₂, ϕ, F
 end
 
-function total_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
-  # ∫∇×udΩ
-  iwqc  = grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
-  assem = SparseMatrixAssembler(U, S)
-  dc    = Gridap.CellData.DomainContribution()
-  Gridap.CellData.add_contribution!(dc, Ω, iwqc)
-  data  = Gridap.FESpaces.collect_cell_vector(S, dc)
-  rhs   = assemble_vector(assem, data)
-  op    = AffineFEOperator(R, S, H1MM, rhs)
-  w     = solve(op)
-
-  w_dof = Gridap.FESpaces.get_free_dof_values(w)
-  sum(H1MM*w_dof)
-end
-
-function compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, h, u, ϕ, F, mass, vort, kin, pot, pow, step)
+function compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, h, u, ϕ, F, mass, vort, kin, pot, pow, step, do_print)
   mass_i = sum(L2MM*Gridap.FESpaces.get_free_dof_values(h))
-  vort_i = total_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
+  w      = diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
+  vort_i = sum(H1MM*Gridap.FESpaces.get_free_dof_values(w))
   kin_i  = 0.5*sum(∫(h*(u⋅u))dΩ)
   pot_i  = 0.5*g*sum(∫(h*h)dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
@@ -257,11 +254,13 @@ function compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S,
   append!(pot, pot_i)
   append!(pow, pow_i)
 
-  # normalised conservation errors
-  mass_norm = (mass_i-mass[1])/mass[1]
-  vort_norm = vort_i-vort[1]
-  en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
-  println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
+  if do_print
+    # normalised conservation errors
+    mass_norm = (mass_i-mass[1])/mass[1]
+    vort_norm = vort_i-vort[1]
+    en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
+    println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
+  end
 end
 
 function new_field(A, a)
@@ -291,7 +290,7 @@ function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, w
   istep        = 1
   hn, un, ϕ, F = shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm1, um1, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
-  compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep)
+  compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
@@ -301,17 +300,10 @@ function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, w
     um1          = new_field(V, un)
     hn, un, ϕ, F = shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
-    compute_diagnostics(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep)
+    compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
 
     if mod(istep, dump_freq) == 0
-      iwqc  = grad_perp_ref_domain(model, order, Ω, R, S, U, V, un, qₖ, wₖ)
-      assem = SparseMatrixAssembler(U, S)
-      dc    = Gridap.CellData.DomainContribution()
-      Gridap.CellData.add_contribution!(dc, Ω, iwqc)
-      data  = Gridap.FESpaces.collect_cell_vector(S, dc)
-      rhs   = assemble_vector(assem, data)
-      op    = AffineFEOperator(R, S, H1MM, rhs)
-      wn    = solve(op)
+      wn = diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, un)
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
     end
   end
@@ -322,7 +314,7 @@ end
 l2_err_u = [0.011504453807392859, 0.003188984305055811, 0.0008192298898147198]
 l2_err_h = [0.005636335001937436, 0.0014571807037802682, 0.0003681933640549439]
 
-function forward_step(n)
+function forward_step(i, n)
   order = 1
   degree = 4
 
@@ -378,11 +370,14 @@ function forward_step(n)
   e = uc-uf
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
+
+  @test abs(err_u - l2_err_u[i]) < 10^-12
+  @test abs(err_h - l2_err_h[i]) < 10^-12
 end
 
-for nn in 1:4
-  n = 2*2^nn
-  forward_step(n)
+for i in 1:3
+  n = 2*2^i
+  forward_step(i, n)
 end
 
 end
