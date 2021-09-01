@@ -154,33 +154,35 @@ function solve_nswe_theta_method_full_newton(
        hi(Δh)  = hn       + (1-θ) * Δh
        hbi(Δh) = hn + b   + (1-θ) * Δh
 
-       # APVM residual
-       req1((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbi(Δh) + 0.5*ui(Δu)⋅ui(Δu))
-                                         + dt*(qvort-τ*(ui(Δu)⋅∇(qvort)))*(v⋅⟂(F,n)))dΩ
-       req2((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω
-       req3((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(s*qvort*hi(Δh) + ⟂(∇(s),n)⋅ui(Δu) - s*fₘ)dΩ
-       req4((Δu,Δh,qvort,F),(v,q,s,v2)) = ∫(v2⋅F - v2⋅(hi(Δh)*ui(Δu)))dΩ
-       res(x,y)                         = req1(x,y)+req2(x,y)+req3(x,y)+req4(x,y)
+       function residual((Δu,Δh,qvort,F),(v,q,s,v2))
+         uiΔu  = ui(Δu)
+         hiΔh  = hi(Δh)
+         hbiΔh = hbi(Δh)
+         ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
+           dt*(qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n))+ # eq1
+           q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω +           # eq2
+         ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fₘ +   # eq3
+           v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
+       end
 
-       # APVM jacobian
-       jeq1((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v⋅du +
-                            +  dt*(dr    - τ*(ui(Δu)⋅∇(dr)+ui(du)⋅∇(qvort)))*(v⋅⟂(F  ,n))
-                            +  dt*(qvort - τ*(             ui(Δu)⋅∇(qvort)))*(v⋅⟂(du2,n))
-                            -  dt*(∇⋅(v))*(g*hbi(dp) +ui(Δu)⋅ui(du)))dΩ
-       jeq2((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(q*dp)dΩ+∫(dt*q*(DIV(du2)))dω
-       jeq3((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(s*qvort*hi(dr)+
-                                                         s*dr*hi(Δh)+
-                                                         ⟂(∇(s),n)⋅ui(du))dΩ
-       jeq4((Δu,Δh,qvort,F),(du,dp,dr,du2),(v,q,s,v2))=∫(v2⋅du2-
-                                                         v2⋅(hi(Δh)*ui(du))-
-                                                         v2⋅(hi(dp)*ui(Δu)))dΩ
-
-       jac(u,du,v)= jeq1(u,du,v)+jeq2(u,du,v)+jeq3(u,du,v)+jeq4(u,du,v)
+       function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
+         uiΔu  = ui(Δu)
+         uidu  = ui(du)
+         hiΔh  = hi(Δh)
+         hidh  = hi(dh)
+         hbidh = hbi(dh)
+         ∫(v⋅du +  dt*(dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
+                +  dt*(qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
+                -  dt*(∇⋅(v))*(g*hbidh +uiΔu⋅uidu)   +    # eq1
+           q*dh)dΩ + ∫(dt*q*(DIV(dF)))dω             +    # eq2
+           ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu +    # eq3
+             v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ               # eq4
+       end
 
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
-       op=FEOperator(res,jac,X,Y)
+       op=FEOperator(residual,jacobian,X,Y)
        nls=NLSolver(show_trace=true, method=:newton)
        solver=FESolver(nls)
 
