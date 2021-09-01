@@ -319,11 +319,14 @@ function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, w
   hn, un
 end
 
+l2_err_u = [0.011504453807392859, 0.003188984305055811, 0.0008192298898147198]
+l2_err_h = [0.005636335001937436, 0.0014571807037802682, 0.0003681933640549439]
+
 function forward_step(n)
   order = 1
   degree = 4
 
-  model = CubedSphereDiscreteModel(n, order, radius=rₑ)
+  model = CubedSphereDiscreteModel(n, order+1, radius=rₑ)
 
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)
