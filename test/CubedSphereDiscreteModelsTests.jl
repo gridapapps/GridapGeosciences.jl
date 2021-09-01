@@ -41,9 +41,9 @@ module CubedSphereDiscreteModelsTests
  end
 
  _,_,s=convergence_discrete_cubed_sphere_surface(generate_n_values(2),1,0)
- @test s ≈ 1.9864987399144707
+ @test round(s,digits=3) ≈ 1.986
  _,_,s=convergence_discrete_cubed_sphere_surface(generate_n_values(2),2,4)
- @test s ≈ 4.023208172525184
+ @test round(s,digits=3) ≈ 4.023
 
  model=CubedSphereDiscreteModel(10;radius=rₑ)
  ψₖ = get_cell_map(model)
