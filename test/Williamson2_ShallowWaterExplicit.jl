@@ -193,12 +193,12 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   # 1.3: the potential vorticity
   q₁     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
   # 1.4: solve for the provisional velocity
-  b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)) + dt1*DIV(v)*ϕ)*dω
+  b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)*dω
   rhs3   = assemble_rhs_vector(U, V, b₃(v))
   op     = AffineFEOperator(U, V, RTMM, rhs3)
   uₚ     = solve(op)
   # 1.5: solve for the provisional depth
-  b₄(q)  = ∫(q*hₘ - dt1*q*DIV(F))*dω
+  b₄(q)  = ∫(q*hₘ)dΩ - ∫(dt1*q*DIV(F))*dω
   rhs4   = assemble_rhs_vector(P, Q, b₄(q))
   op     = AffineFEOperator(P, Q, L2MM, rhs4)
   hₚ     = solve(op)
@@ -216,12 +216,12 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   # 2.3: the potential vorticity
   q₂     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
   # 2.4: solve for the final velocity
-  b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)) + dt*DIV(v)*ϕ)*dω
+  b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)*dω
   rhs7   = assemble_rhs_vector(U, V, b₇(v))
   op     = AffineFEOperator(U, V, RTMM, rhs7)
   u₂     = solve(op)
   # 2.5: solve for the final depth
-  b₈(q)  = ∫(q*h₁ - dt*q*DIV(F))*dω
+  b₈(q)  = ∫(q*h₁)dΩ - ∫(dt*q*DIV(F))*dω
   rhs8   = assemble_rhs_vector(P, Q, b₈(q))
   op     = AffineFEOperator(P, Q, L2MM, rhs8)
   h₂     = solve(op)
