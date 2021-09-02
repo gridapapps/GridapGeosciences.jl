@@ -47,7 +47,7 @@ function F(xyz)
 end
 
 function perpu(θϕ)
-  n_times_u=(θϕ)->(u(θϕ)×normal_unit_sphere(θϕ))
+  n_times_u=(θϕ)->(normal_unit_sphere(θϕ)×u(θϕ))
   n_times_u(θϕ)
 end
 
@@ -196,8 +196,14 @@ function solve_nswe_theta_method_full_newton(
   dΩ = Measure(Ω,degree)
   dω = Measure(Ω,degree,ReferenceDomain())
 
-  un = interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
-  hn = interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
+  # Williamsom2
+  #un = interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
+  #hn = interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
+
+  # Manufactured
+  un = interpolate_everywhere(u,U); unv=get_free_dof_values(un)
+  hn = interpolate_everywhere(h,P); hnv=get_free_dof_values(hn)
+
   b  = interpolate_everywhere(topography,P); bv=get_free_dof_values(b)
 
   # Compute:
