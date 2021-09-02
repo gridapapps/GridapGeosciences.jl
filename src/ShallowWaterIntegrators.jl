@@ -1,4 +1,4 @@
-function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
+function shallow_water_explicit(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -16,12 +16,7 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   # order      : polynomial order
   # dΩ         : measure of the elements
 
-  u = get_trial_fe_basis(U)
-  v = get_fe_basis(V)
-  p = get_trial_fe_basis(P)
-  q = get_fe_basis(Q)
   n = get_normal_vector(model)
-
   # explicit step for provisional velocity, uₚ
   dt1 = dt
   if leap_frog
@@ -39,7 +34,7 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   op     = AffineFEOperator(P, Q, L2MM, rhs2)
   ϕ      = solve(op)
   # 1.3: the potential vorticity
-  q₁     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
+  q₁     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
   # 1.4: solve for the provisional velocity
   b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)*dω
   rhs3   = assemble_vector(b₃, V)
@@ -62,7 +57,7 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   op     = AffineFEOperator(P, Q, L2MM, rhs6)
   ϕ      = solve(op)
   # 2.3: the potential vorticity
-  q₂     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
+  q₂     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
   # 2.4: solve for the final velocity
   b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)*dω
   rhs7   = assemble_vector(b₇, V)
@@ -94,22 +89,22 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   pow  = zeros(0)
 
   # first step, no leap frog integration
-  hm1          = FEFunction(Q, copy(Gridap.FESpaces.get_free_dof_values(hn)))
-  um1          = FEFunction(V, copy(Gridap.FESpaces.get_free_dof_values(un)))
-  hm2          = FEFunction(Q, copy(Gridap.FESpaces.get_free_dof_values(hn)))
-  um2          = FEFunction(V, copy(Gridap.FESpaces.get_free_dof_values(un)))
-  hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
+  hm1          = FEFunction(Q, copy(get_free_dof_values(hn)))
+  um1          = FEFunction(V, copy(get_free_dof_values(un)))
+  hm2          = FEFunction(Q, copy(get_free_dof_values(hn)))
+  um2          = FEFunction(V, copy(get_free_dof_values(un)))
+  hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
   wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    Gridap.FESpaces.get_free_dof_values(hm2) .= Gridap.FESpaces.get_free_dof_values(hm1)
-    Gridap.FESpaces.get_free_dof_values(um2) .= Gridap.FESpaces.get_free_dof_values(um1)
-    Gridap.FESpaces.get_free_dof_values(hm1) .= Gridap.FESpaces.get_free_dof_values(hn)
-    Gridap.FESpaces.get_free_dof_values(um1) .= Gridap.FESpaces.get_free_dof_values(un)
+    get_free_dof_values(hm2) .= get_free_dof_values(hm1)
+    get_free_dof_values(um2) .= get_free_dof_values(um1)
+    get_free_dof_values(hm1) .= get_free_dof_values(hn)
+    get_free_dof_values(um1) .= get_free_dof_values(un)
 
-    hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
+    hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
     wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
     if mod(istep, dump_freq) == 0

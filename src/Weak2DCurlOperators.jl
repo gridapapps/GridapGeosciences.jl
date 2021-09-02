@@ -1,4 +1,4 @@
-function grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
+function grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   # ∫∇⟂α⋅udΩ
   # α: Test function,  ∈ H₁(Ω)
   # u: velocity,       ∈ H(div,Ω)
@@ -6,7 +6,6 @@ function grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
   # arguments:
   # model: geometry of the domain
   # order: polynomial degree of the test functions
-  # Ω:     the domain
   # U:     trial functions
   # V:     test functions
   # qₖ:    quadrature points
@@ -49,7 +48,7 @@ end
 
 function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
   # ∇×u, weak form: ∫ααdΩ^{-1}∫-∇⟂α⋅udΩ; ∀α∈ H₁(Ω)
-  iwqc  = grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
+  iwqc  = grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   assem = SparseMatrixAssembler(U, S)
   dc    = Gridap.CellData.DomainContribution()
   Gridap.CellData.add_contribution!(dc, Ω, iwqc)
@@ -59,7 +58,7 @@ function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
   w     = solve(op)
 end
 
-function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u, U, V, R, S)
+function diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, h, u, U, V, R, S)
   # solve the system:
   #
   # ∫αhqdΩ = -∫∇⟂α⋅udΩ + ∫αfdΩ, ∀α∈ H₁(Ω)
@@ -71,7 +70,6 @@ function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u
   # u : velocity
   #
   # order      : polynomial order
-  # Ω          : domain
   # dΩ         : measure of the elements
   # qₖ         : quadrature points
   # wₖ         : quadrature weights
@@ -81,7 +79,7 @@ function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u
   s      = get_fe_basis(S)
   a(r,s) = ∫(s*h*r)*dΩ
   # the linear form right hand side
-  grad_perp = grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
+  grad_perp = grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   b(s)  = ∫(s*f)*dΩ
   rhsdc = b(s)
   # subtract the weak form curl as evaluated using the low level API
