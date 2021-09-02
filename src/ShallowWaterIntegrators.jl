@@ -72,7 +72,7 @@ function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f,
   h₂, u₂, ϕ, F
 end
 
-function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, dump_freq, τ, P, Q, U, V, R, S, method)
+function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, diag_freq, dump_freq, τ, P, Q, U, V, R, S, method)
   # Forward integration of the shallow water equations using a supplied method
 
   # assemble the mass matrices
@@ -97,6 +97,8 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um1          = FEFunction(V, copy(get_free_dof_values(un)))
   hm2          = FEFunction(Q, copy(get_free_dof_values(hn)))
   um2          = FEFunction(V, copy(get_free_dof_values(un)))
+  hn_dof       = get_free_dof_values(hn)
+  un_dof       = get_free_dof_values(un)
   hm1_dof      = get_free_dof_values(hm1)
   hm2_dof      = get_free_dof_values(hm2)
   um1_dof      = get_free_dof_values(um1)
@@ -113,7 +115,9 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
     um1_dof     .= un_dof
     hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
-    wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+    if mod(istep, diag_freq) == 0
+      wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+    end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
     end
