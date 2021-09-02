@@ -97,17 +97,20 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um1          = FEFunction(V, copy(get_free_dof_values(un)))
   hm2          = FEFunction(Q, copy(get_free_dof_values(hn)))
   um2          = FEFunction(V, copy(get_free_dof_values(un)))
+  hm1_dof      = get_free_dof_values(hm1)
+  hm2_dof      = get_free_dof_values(hm2)
+  um1_dof      = get_free_dof_values(um1)
+  um2_dof      = get_free_dof_values(um2)
   hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
   wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    get_free_dof_values(hm2) .= get_free_dof_values(hm1)
-    get_free_dof_values(um2) .= get_free_dof_values(um1)
-    get_free_dof_values(hm1) .= get_free_dof_values(hn)
-    get_free_dof_values(um1) .= get_free_dof_values(un)
-
+    hm2_dof     .= hm1_dof
+    um2_dof     .= um1_dof
+    hm1_dof     .= hn_dof
+    um1_dof     .= un_dof
     hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
     wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)

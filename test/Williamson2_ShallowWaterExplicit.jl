@@ -93,10 +93,12 @@ function forward_step(i, n)
   println("timestep: ", dt)   # gravity wave time step
   hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit_time_step)
 
+  hc = CellFild(h₀, Ω)
   e = h₀-hf
-  err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(h₀⋅h₀)*dΩ))
+  err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
+  uc = CellFild(u₀, Ω)
   e = u₀-uf
-  err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(u₀⋅u₀)*dΩ))
+  err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
 
   @test abs(err_u - l2_err_u[i]) < 10.0^-12
