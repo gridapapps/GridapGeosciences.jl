@@ -77,16 +77,6 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
   h₂, u₂, ϕ, F
 end
 
-function new_field(A, a)
-  # short cut routine to initialise a new FEFunction 
-  # A: test function
-  # a: dofs to copy into the FEFunction
-  a_dof  = Gridap.FESpaces.get_free_dof_values(a)
-  b_dof  = similar(a_dof)
-  b_dof .= a_dof
-  b      = FEFunction(A, b_dof)
-end
-
 function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, dump_freq, τ, P, Q, U, V, R, S, method)
   # Forward integration of the shallow water equations using a supplied method
 
@@ -104,10 +94,10 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   pow  = zeros(0)
 
   # first step, no leap frog integration
-  hm1          = new_field(Q, hn)
-  um1          = new_field(V, un)
-  hm2          = new_field(Q, hn)
-  um2          = new_field(V, un)
+  hm1          = FEFunction(Q, copy(Gridap.FESpaces.get_free_dof_values(hn)))
+  um1          = FEFunction(V, copy(Gridap.FESpaces.get_free_dof_values(un)))
+  hm2          = FEFunction(Q, copy(Gridap.FESpaces.get_free_dof_values(hn)))
+  um2          = FEFunction(V, copy(Gridap.FESpaces.get_free_dof_values(un)))
   hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
   wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
