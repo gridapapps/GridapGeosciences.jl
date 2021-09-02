@@ -1,13 +1,3 @@
-function assemble_rhs_vector(A, B, dc)
-  # short cut routine to assemble a domain contribution into a vector
-  # A:  test function
-  # B:  trial function
-  # dc: domain contribution
-  data  = Gridap.FESpaces.collect_cell_vector(B, dc)
-  assem = SparseMatrixAssembler(A, B)
-  rhs   = assemble_vector(assem, data)
-end
-
 function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
@@ -40,47 +30,47 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
 
   # 1.1: the mass flux
   b₁(v)  = ∫(v⋅u₁*h₁)*dΩ
-  rhs1   = assemble_rhs_vector(U, V, b₁(v))
+  rhs1   = assemble_vector(b₁, V)
   op     = AffineFEOperator(U, V, RTMM, rhs1)
   F      = solve(op)
   # 1.2: the bernoulli function
   b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
-  rhs2   = assemble_rhs_vector(P, Q, b₂(q))
+  rhs2   = assemble_vector(b₂, Q)
   op     = AffineFEOperator(P, Q, L2MM, rhs2)
   ϕ      = solve(op)
   # 1.3: the potential vorticity
   q₁     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
   # 1.4: solve for the provisional velocity
   b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)*dω
-  rhs3   = assemble_rhs_vector(U, V, b₃(v))
+  rhs3   = assemble_vector(b₃, V)
   op     = AffineFEOperator(U, V, RTMM, rhs3)
   uₚ     = solve(op)
   # 1.5: solve for the provisional depth
   b₄(q)  = ∫(q*hₘ)dΩ - ∫(dt1*q*DIV(F))*dω
-  rhs4   = assemble_rhs_vector(P, Q, b₄(q))
+  rhs4   = assemble_vector(b₄, Q)
   op     = AffineFEOperator(P, Q, L2MM, rhs4)
   hₚ     = solve(op)
 
   # 2.1: the mass flux
   b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)*dΩ
-  rhs5   = assemble_rhs_vector(U, V, b₅(v))
+  rhs5   = assemble_vector(b₅, V)
   op     = AffineFEOperator(U, V, RTMM, rhs5)
   F      = solve(op)
   # 2.2: the bernoulli function
   b₆(q)  = ∫(q*((u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/6.0 + 0.5*g*(h₁ + hₚ)))*dΩ
-  rhs6   = assemble_rhs_vector(P, Q, b₆(q))
+  rhs6   = assemble_vector(b₆, Q)
   op     = AffineFEOperator(P, Q, L2MM, rhs6)
   ϕ      = solve(op)
   # 2.3: the potential vorticity
   q₂     = diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
   # 2.4: solve for the final velocity
   b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)*dω
-  rhs7   = assemble_rhs_vector(U, V, b₇(v))
+  rhs7   = assemble_vector(b₇, V)
   op     = AffineFEOperator(U, V, RTMM, rhs7)
   u₂     = solve(op)
   # 2.5: solve for the final depth
   b₈(q)  = ∫(q*h₁)dΩ - ∫(dt*q*DIV(F))*dω
-  rhs8   = assemble_rhs_vector(P, Q, b₈(q))
+  rhs8   = assemble_vector(b₈, Q)
   op     = AffineFEOperator(P, Q, L2MM, rhs8)
   h₂     = solve(op)
 
