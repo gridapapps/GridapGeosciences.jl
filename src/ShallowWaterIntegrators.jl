@@ -1,4 +1,4 @@
-function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
+function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, RTMMchol, L2MMchol, dt, leap_frog, τ, P, Q, U, V, R, S)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -100,20 +100,20 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um1          = FEFunction(V, copy(get_free_dof_values(un)))
   hm2          = FEFunction(Q, copy(get_free_dof_values(hn)))
   um2          = FEFunction(V, copy(get_free_dof_values(un)))
-  hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
+  hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S)
 
-  wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
+  wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    get_free_dof_values(hm2_dof .= get_free_dof_values(hm1_dof)
-    get_free_dof_values(um2_dof .= get_free_dof_values(um1_dof)
-    get_free_dof_values(hm1_dof .= get_free_dof_values(hn_dof)
-    get_free_dof_values(um1_dof .= get_free_dof_values(un_dof)
-    hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
+    get_free_dof_values(hm2_dof) .= get_free_dof_values(hm1_dof)
+    get_free_dof_values(um2_dof) .= get_free_dof_values(um1_dof)
+    get_free_dof_values(hm1_dof) .= get_free_dof_values(hn_dof)
+    get_free_dof_values(um1_dof) .= get_free_dof_values(un_dof)
+    hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S)
 
     if mod(istep, diag_freq) == 0
-      wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+      wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
     end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])

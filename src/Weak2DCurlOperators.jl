@@ -46,7 +46,7 @@ function grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   -1.0*iwqc
 end
 
-function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, u)
+function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, H1MMchol, u)
   # ∇×u, weak form: ∫ααdΩ^{-1}∫-∇⟂α⋅udΩ; ∀α∈ H₁(Ω)
   iwqc  = grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   assem = SparseMatrixAssembler(U, S)
