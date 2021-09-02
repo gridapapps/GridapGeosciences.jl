@@ -27,7 +27,7 @@ module GridapGeosciences
   export compute_kin_to_pot!, compute_pot_to_kin!, compute_total_mass!
   export compute_diagnostics_shallow_water!
   export grad_perp_ref_domain
-  export diagnose_vorticity, diagnose_potential_vorticity
+  export diagnose_vorticity!, diagnose_potential_vorticity
   export shallow_water_explicit_time_step!
   export shallow_water_time_stepper
 end # module

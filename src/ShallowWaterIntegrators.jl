@@ -27,12 +27,12 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   b₁(v)  = ∫(v⋅u₁*h₁)*dΩ
   rhs1   = assemble_vector(b₁, V)
   mul!(get_free_dof_values(F), RTMM, rhs1)
-  ldiv!(get_free_dof_values(F), RTMMchol)
+  ldiv!(RTMMchol, get_free_dof_values(F))
   # 1.2: the bernoulli function
   b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
   rhs2   = assemble_vector(b₂, Q)
   mul!(get_free_dof_values(ϕ), L2MM, rhs2)
-  ldiv!(get_free_dof_values(ϕ), L2MMchol)
+  ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 1.3: the potential vorticity
   q₁     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
   # 1.4: solve for the provisional velocity
@@ -50,12 +50,12 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)*dΩ
   rhs5   = assemble_vector(b₅, V)
   mul!(get_free_dof_values(F), RTMM, rhs5)
-  ldiv!(get_free_dof_values(F), RTMMchol)
+  ldiv!(RTMMchol, get_free_dof_values(F))
   # 2.2: the bernoulli function
   b₆(q)  = ∫(q*((u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/6.0 + 0.5*g*(h₁ + hₚ)))*dΩ
   rhs6   = assemble_vector(b₆, Q)
   mul!(get_free_dof_values(ϕ), L2MM, rhs6)
-  ldiv!(get_free_dof_values(ϕ), L2MMchol)
+  ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 2.3: the potential vorticity
   q₂     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
   # 2.4: solve for the final velocity
@@ -102,9 +102,10 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um2    = FEFunction(V, copy(get_free_dof_values(un)))
   ϕ      = FEFunction(Q, copy(get_free_dof_values(hn)))
   F      = FEFunction(V, copy(get_free_dof_values(un)))
+  wn     = FEFunction(S, copy(get_free_dof_values(f)))
   hn, un = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S, ϕ, F)
 
-  wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
+  compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
@@ -115,7 +116,7 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
     hn, un = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S, ϕ, F)
 
     if mod(istep, diag_freq) == 0
-      wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+      compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true, wn)
     end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])

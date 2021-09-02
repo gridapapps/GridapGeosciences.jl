@@ -46,7 +46,7 @@ function grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   -1.0*iwqc
 end
 
-function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, H1MMchol, u)
+function diagnose_vorticity!(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, H1MMchol, u, w)
   # ∇×u, weak form: ∫ααdΩ^{-1}∫-∇⟂α⋅udΩ; ∀α∈ H₁(Ω)
   iwqc  = grad_perp_ref_domain(model, order, R, S, U, V, u, qₖ, wₖ)
   assem = SparseMatrixAssembler(U, S)
@@ -54,8 +54,8 @@ function diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, H1MM
   Gridap.CellData.add_contribution!(dc, Ω, iwqc)
   data  = Gridap.FESpaces.collect_cell_vector(S, dc)
   rhs   = assemble_vector(assem, data)
-  op    = AffineFEOperator(R, S, H1MM, rhs)
-  w     = solve(op)
+  mul!(get_free_dof_values(w), H1MM, rhs)
+  ldiv!(H1MMchol, get_free_dof_values(w))
 end
 
 function diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, h, u, U, V, R, S)
