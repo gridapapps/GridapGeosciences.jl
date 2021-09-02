@@ -150,14 +150,14 @@ function solve_nswe_theta_method_full_newton(
        println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
                " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
 
-       ui(Δu)  = un       + (1-θ) * Δu
-       hi(Δh)  = hn       + (1-θ) * Δh
-       hbi(Δh) = hn + b   + (1-θ) * Δh
+       ui(Δu,un)  = un       + (1-θ) * Δu
+       hi(Δh,hn)  = hn       + (1-θ) * Δh
+       hbi(Δh,hn,b) = hn + b   + (1-θ) * Δh
 
        function residual((Δu,Δh,qvort,F),(v,q,s,v2))
-         uiΔu  = ui(Δu)
-         hiΔh  = hi(Δh)
-         hbiΔh = hbi(Δh)
+         uiΔu  = Operation(ui)(Δu,un)
+         hiΔh  = Operation(hi)(Δh,hn)
+         hbiΔh = Operation(hbi)(Δh,hn,b)
          ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
            dt*(qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n))+ # eq1
            q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω +           # eq2
@@ -166,11 +166,11 @@ function solve_nswe_theta_method_full_newton(
        end
 
        function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
-         uiΔu  = ui(Δu)
-         uidu  = ui(du)
-         hiΔh  = hi(Δh)
-         hidh  = hi(dh)
-         hbidh = hbi(dh)
+         uiΔu  = Operation(ui)(Δu,un)
+         uidu  = Operation(ui)(du,un)
+         hiΔh  = Operation(hi)(Δh,hn)
+         hidh  = Operation(hi)(dh,hn)
+         hbidh = Operation(hbi)(dh,hn,b)
          ∫(v⋅du +  dt*(dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
                 +  dt*(qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
                 -  dt*(∇⋅(v))*(g*hbidh +uiΔu⋅uidu)   +    # eq1
