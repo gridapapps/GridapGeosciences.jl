@@ -89,11 +89,7 @@ function grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
   # pull back the H(div) test functions into global coordinates
   m             = Gridap.ReferenceFEs.ContraVariantPiolaMap()
   sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
-  ϕₖs   = lazy_map(Broadcasting(Operation(m)),
-                                grad_perp_αₖ,
-                                Jt,
-                                sqrt_det_JtxJ,
-                                fpanel_flip)
+  ϕₖs   = lazy_map(Broadcasting(Operation(m)), grad_perp_αₖ, Jt, sqrt_det_JtxJ, fpanel_flip)
   uq    = lazy_map(evaluate, Gridap.CellData.get_data(u), qₖ)
   ϕₖsq  = lazy_map(evaluate, ϕₖs, qₖ)
   intcq = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(⋅), ϕₖsq, uq)
@@ -134,8 +130,6 @@ function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u
   r      = get_trial_fe_basis(R)
   s      = get_fe_basis(S)
   a(r,s) = ∫(s*h*r)*dΩ
-  lhsdc  = a(r,s)
-
   # the linear form right hand side
   grad_perp = grad_perp_ref_domain(model, order, Ω, R, S, U, V, u, qₖ, wₖ)
   b(s)  = ∫(s*f)*dΩ
@@ -147,7 +141,7 @@ function diagnose_potential_vorticity(model, order, Ω, dΩ, qₖ, wₖ, f, h, u
   assem = SparseMatrixAssembler(R, S)
   rhs   = assemble_vector(assem, data)
   # assemble the left hand side
-  data  = Gridap.FESpaces.collect_cell_matrix(R, S, lhsdc)
+  data  = Gridap.FESpaces.collect_cell_matrix(R, S, a(r,s))
   assem = SparseMatrixAssembler(R, S)
   lhs   = assemble_matrix(assem, data)
 
@@ -261,6 +255,8 @@ function compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, w�
     en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
     println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
   end
+
+  w
 end
 
 function new_field(A, a)
@@ -270,7 +266,7 @@ function new_field(A, a)
   b      = FEFunction(A, b_dof)
 end
 
-function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, dump_freq, τ, P, Q, U, V, R, S)
+function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, dump_freq, τ, P, Q, U, V, R, S, method)
   # assemble the mass matrices
   amm(a,b) = ∫(a⋅b)dΩ
   H1MM = assemble_matrix(amm, R, S)
@@ -287,23 +283,23 @@ function shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, w
   # first step, no leap frog integration
   hm1          = new_field(Q, hn)
   um1          = new_field(V, un)
-  istep        = 1
-  hn, un, ϕ, F = shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm1, um1, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
+  hm2          = new_field(Q, hn)
+  um2          = new_field(V, un)
+  hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
-  compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+  wn = compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    hm2          = new_field(Q, hm1)
-    um2          = new_field(V, um1)
-    hm1          = new_field(Q, hn)
-    um1          = new_field(V, un)
-    hn, un, ϕ, F = shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
+    Gridap.FESpaces.get_free_dof_values(hm2) .= Gridap.FESpaces.get_free_dof_values(hm1)
+    Gridap.FESpaces.get_free_dof_values(um2) .= Gridap.FESpaces.get_free_dof_values(um1)
+    Gridap.FESpaces.get_free_dof_values(hm1) .= Gridap.FESpaces.get_free_dof_values(hn)
+    Gridap.FESpaces.get_free_dof_values(um1) .= Gridap.FESpaces.get_free_dof_values(un)
 
-    compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+    hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
+    wn = compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
     if mod(istep, dump_freq) == 0
-      wn = diagnose_vorticity(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MM, un)
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
     end
   end
@@ -363,7 +359,7 @@ function forward_step(i, n)
   dx     = 2.0*π*rₑ/(4*n)
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
-  hf, uf = shallow_water_explicit_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 20, 0.0*dt, P, Q, U, V, R, S)
+  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit)
 
   e = hc-hf
   err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
@@ -371,8 +367,8 @@ function forward_step(i, n)
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
 
-  @test abs(err_u - l2_err_u[i]) < 10^-12
-  @test abs(err_h - l2_err_h[i]) < 10^-12
+  @test abs(err_u - l2_err_u[i]) < 10.0^-12
+  @test abs(err_h - l2_err_h[i]) < 10.0^-12
 end
 
 for i in 1:3
