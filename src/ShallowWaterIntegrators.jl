@@ -1,4 +1,4 @@
-function shallow_water_explicit(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
+function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, dt, leap_frog, τ, P, Q, U, V, R, S)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -82,11 +82,11 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   L2MM = assemble_matrix(amm, P, Q)
 
   # initialise the diagnostics arrays
-  mass = zeros(0)
-  vort = zeros(0)
-  kin  = zeros(0)
-  pot  = zeros(0)
-  pow  = zeros(0)
+  mass = Vector{Float64}(undef, nstep)
+  vort = Vector{Float64}(undef, nstep)
+  kin  = Vector{Float64}(undef, nstep)
+  pot  = Vector{Float64}(undef, nstep)
+  pow  = Vector{Float64}(undef, nstep)
 
   # first step, no leap frog integration
   hm1          = FEFunction(Q, copy(get_free_dof_values(hn)))

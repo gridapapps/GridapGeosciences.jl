@@ -71,21 +71,18 @@ function forward_step(i, n)
   R = TrialFESpace(S)
 
   # Project the initial conditions onto the trial spaces
-  hc      = CellField(h₀, Ω)
   a₁(p,q) = ∫(q*p)dΩ
-  b₁(q)   = ∫(q*hc)dΩ
+  b₁(q)   = ∫(q*h₀)dΩ
   op      = AffineFEOperator(a₁, b₁, P, Q)
   hp      = solve(op)
 
-  uc      = CellField(u₀, Ω)
   a₂(u,v) = ∫(v⋅u)dΩ
-  b₂(v)   = ∫(v⋅uc)dΩ
+  b₂(v)   = ∫(v⋅u₀)dΩ
   op      = AffineFEOperator(a₂, b₂, U, V)
   up      = solve(op)
 
-  fc      = CellField(f₀, Ω)
   a₃(r,s) = ∫(s*r)*dΩ
-  b₃(s)   = ∫(s*fc)*dΩ
+  b₃(s)   = ∫(s*f₀)*dΩ
   op      = AffineFEOperator(a₃, b₃, R, S)
   fp      = solve(op)
 
@@ -94,7 +91,7 @@ function forward_step(i, n)
   dx     = 2.0*π*rₑ/(4*n)
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
-  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit)
+  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit_time_step)
 
   e = hc-hf
   err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))

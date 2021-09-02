@@ -54,11 +54,11 @@ function compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, w�
   pot_i  = 0.5*g*sum(∫(h*h)dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
-  append!(mass, mass_i)
-  append!(vort, vort_i)
-  append!(kin, kin_i)
-  append!(pot, pot_i)
-  append!(pow, pow_i)
+  mass[step] = mass_i
+  vort[step] = vort_i
+  kin[step]  = kin_i
+  pot[step]  = pot_i
+  pow[step]  = pow_i
 
   if do_print
     # normalised conservation errors
