@@ -1,4 +1,8 @@
 function assemble_rhs_vector(A, B, dc)
+  # short cut routine to assemble a domain contribution into a vector
+  # A:  test function
+  # B:  trial function
+  # dc: domain contribution
   data  = Gridap.FESpaces.collect_cell_vector(B, dc)
   assem = SparseMatrixAssembler(A, B)
   rhs   = assemble_vector(assem, data)
@@ -84,6 +88,9 @@ function shallow_water_explicit(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, h�
 end
 
 function new_field(A, a)
+  # short cut routine to initialise a new FEFunction 
+  # A: test function
+  # a: dofs to copy into the FEFunction
   a_dof  = Gridap.FESpaces.get_free_dof_values(a)
   b_dof  = similar(a_dof)
   b_dof .= a_dof
@@ -91,6 +98,8 @@ function new_field(A, a)
 end
 
 function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, dump_freq, τ, P, Q, U, V, R, S, method)
+  # Forward integration of the shallow water equations using a supplied method
+
   # assemble the mass matrices
   amm(a,b) = ∫(a⋅b)dΩ
   H1MM = assemble_matrix(amm, R, S)
@@ -111,7 +120,7 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um2          = new_field(V, un)
   hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, false, τ, P, Q, U, V, R, S)
 
-  wn = compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
+  wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
@@ -122,7 +131,7 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
 
     hn, un, ϕ, F = method(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, dt, true, τ, P, Q, U, V, R, S)
 
-    wn = compute_diagnostics_shallow_water(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
+    wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
     end
