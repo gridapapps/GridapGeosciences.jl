@@ -91,7 +91,7 @@ function forward_step(i, n)
   dx     = 2.0*π*rₑ/(4*n)
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
-  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 1, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit_time_step)
+  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 1, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit_time_step!)
 
   hc = CellField(h₀, Ω)
   e = h₀-hf

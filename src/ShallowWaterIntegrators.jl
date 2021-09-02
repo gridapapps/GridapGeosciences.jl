@@ -1,4 +1,4 @@
-function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, RTMMchol, L2MMchol, dt, leap_frog, τ, P, Q, U, V, R, S)
+function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, RTMMchol, L2MMchol, dt, leap_frog, τ, P, Q, U, V, R, S, ϕ, F)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -26,13 +26,13 @@ function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f,
   # 1.1: the mass flux
   b₁(v)  = ∫(v⋅u₁*h₁)*dΩ
   rhs1   = assemble_vector(b₁, V)
-  op     = AffineFEOperator(U, V, RTMM, rhs1)
-  F      = solve(op)
+  mul!(get_free_dof_values(F), RTMM, rhs1)
+  ldiv!(get_free_dof_values(F), RTMMchol)
   # 1.2: the bernoulli function
   b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
   rhs2   = assemble_vector(b₂, Q)
-  op     = AffineFEOperator(P, Q, L2MM, rhs2)
-  ϕ      = solve(op)
+  mul!(get_free_dof_values(ϕ), L2MM, rhs2)
+  ldiv!(get_free_dof_values(ϕ), L2MMchol)
   # 1.3: the potential vorticity
   q₁     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, h₁, u₁, U, V, R, S)
   # 1.4: solve for the provisional velocity
@@ -49,13 +49,13 @@ function shallow_water_explicit_time_step(model, order, dΩ, dω, qₖ, wₖ, f,
   # 2.1: the mass flux
   b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)*dΩ
   rhs5   = assemble_vector(b₅, V)
-  op     = AffineFEOperator(U, V, RTMM, rhs5)
-  F      = solve(op)
+  mul!(get_free_dof_values(F), RTMM, rhs5)
+  ldiv!(get_free_dof_values(F), RTMMchol)
   # 2.2: the bernoulli function
   b₆(q)  = ∫(q*((u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/6.0 + 0.5*g*(h₁ + hₚ)))*dΩ
   rhs6   = assemble_vector(b₆, Q)
-  op     = AffineFEOperator(P, Q, L2MM, rhs6)
-  ϕ      = solve(op)
+  mul!(get_free_dof_values(ϕ), L2MM, rhs6)
+  ldiv!(get_free_dof_values(ϕ), L2MMchol)
   # 2.3: the potential vorticity
   q₂     = diagnose_potential_vorticity(model, order, dΩ, qₖ, wₖ, f, hₚ, uₚ, U, V, R, S)
   # 2.4: solve for the final velocity
@@ -96,21 +96,23 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   w_tmp = copy(get_free_dof_values(f))
 
   # first step, no leap frog integration
-  hm1          = FEFunction(Q, copy(get_free_dof_values(hn)))
-  um1          = FEFunction(V, copy(get_free_dof_values(un)))
-  hm2          = FEFunction(Q, copy(get_free_dof_values(hn)))
-  um2          = FEFunction(V, copy(get_free_dof_values(un)))
-  hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S)
+  hm1    = FEFunction(Q, copy(get_free_dof_values(hn)))
+  um1    = FEFunction(V, copy(get_free_dof_values(un)))
+  hm2    = FEFunction(Q, copy(get_free_dof_values(hn)))
+  um2    = FEFunction(V, copy(get_free_dof_values(un)))
+  ϕ      = FEFunction(Q, copy(get_free_dof_values(hn)))
+  F      = FEFunction(V, copy(get_free_dof_values(un)))
+  hn, un = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S, ϕ, F)
 
   wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true)
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    get_free_dof_values(hm2_dof) .= get_free_dof_values(hm1_dof)
-    get_free_dof_values(um2_dof) .= get_free_dof_values(um1_dof)
-    get_free_dof_values(hm1_dof) .= get_free_dof_values(hn_dof)
-    get_free_dof_values(um1_dof) .= get_free_dof_values(un_dof)
-    hn, un, ϕ, F = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S)
+    get_free_dof_values(hm2) .= get_free_dof_values(hm1)
+    get_free_dof_values(um2) .= get_free_dof_values(um1)
+    get_free_dof_values(hm1) .= get_free_dof_values(hn)
+    get_free_dof_values(um1) .= get_free_dof_values(un)
+    hn, un = method(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S, ϕ, F)
 
     if mod(istep, diag_freq) == 0
       wn = compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true)
