@@ -21,6 +21,80 @@ const α  = π/4.0              # deviation of the coriolis term from zonal forc
 const U₀ = 38.61068276698372  # velocity scale
 const H₀ = 2998.1154702758267 # mean fluid depth
 
+# Manufactured solution (u,q,h,b,F)
+function u(θϕ)
+  θ,ϕ = θϕ
+  u = 2*sin(θ)^2*sin(2*ϕ) + 2π/5*cos(ϕ)
+  v = 2*sin(2*θ)*cos(ϕ)
+  spherical_to_cartesian_matrix(VectorValue(θ,ϕ,1.0))⋅VectorValue(u,v,0)
+end
+
+function q(xyz)
+  return xyz[1]+xyz[2]+xyz[3]
+end
+
+function h(xyz)
+  return xyz[1]*xyz[2]*xyz[3]
+end
+
+function b(xyz)
+  return 0.0
+end
+
+function F(xyz)
+  θϕ = xyz2θϕ(xyz)
+  return u(θϕ)*h(xyz)
+end
+
+function perpu(θϕ)
+  n_times_u=(θϕ)->(u(θϕ)×normal_unit_sphere(θϕ))
+  n_times_u(θϕ)
+end
+
+function gradientghplus12uu(θϕ)
+  ghplus12uu=(θϕ)->( g*(h(θϕ2xyz(θϕ))+b(θϕ2xyz(θϕ)))+ (1.0/2.0)*(u(θϕ)⋅u(θϕ)) )
+  t=gradient_unit_sphere(ghplus12uu)
+  t(θϕ)
+end
+
+function RHSeq1(xyz)
+  θϕ = xyz2θϕ(xyz)
+  q(xyz)*h(xyz)*perpu(θϕ)+gradientghplus12uu(θϕ)
+end
+
+"""
+Spherical divergence on unit sphere applied to h*u
+"""
+function divM_hu(θϕ)
+  hu=(θϕ)->( u(θϕ) * h(θϕ2xyz(θϕ)) )
+  div_hu=divergence_unit_sphere(hu)
+  div_hu(θϕ)
+end
+function RHSeq2(xyz)
+  θϕ = xyz2θϕ(xyz)
+  divM_hu(θϕ)
+end
+
+"""
+Spherical divergence on unit sphere applied to perp(u)
+"""
+function divM_perpu(θϕ)
+  n_times_u=(θϕ)->(u(θϕ)×normal_unit_sphere(θϕ))
+  div_n_times_u=divergence_unit_sphere(n_times_u)
+  div_n_times_u(θϕ)
+end
+
+function RHSeq3(xyz)
+  θϕ = xyz2θϕ(xyz)
+  q(xyz)*h(xyz)-divM_perpu(θϕ)-f(xyz) # Note f is defined in GridapGeosciences
+end
+
+function RHSeq4(xyz)
+  θϕ = xyz2θϕ(xyz)
+  F(xyz)-h(xyz)*u(θϕ)
+end
+
+
 # Modified coriolis term
 function fₘ(xyz)
    θϕr   = xyz2θϕr(xyz)
@@ -28,7 +102,7 @@ function fₘ(xyz)
    2.0*Ωₑ*( -cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α) )
 end
 
-# Initial velocity
+# Initial velocity (williamsom2)
 function u₀(xyz)
   θϕr   = xyz2θϕr(xyz)
   θ,ϕ,r = θϕr
@@ -37,7 +111,7 @@ function u₀(xyz)
   spherical_to_cartesian_matrix(θϕr)⋅VectorValue(u,v,0)
 end
 
-# Initial fluid depth
+# Initial fluid depth (williamsom2)
 function h₀(xyz)
   θϕr   = xyz2θϕr(xyz)
   θ,ϕ,r = θϕr
@@ -50,21 +124,21 @@ function topography(xyz)
   0.0
 end
 
-# Compute initial volume flux
+# Compute initial volume flux (williamsom2)
 function F₀(U,V,dΩ)
   a(u,v) = ∫(v⋅u)dΩ
   b(v)   = ∫(h₀*(v⋅u₀))dΩ
   solve(AffineFEOperator(a,b,U,V))
 end
 
-# Compute initial potential vorticity
+# Compute initial potential vorticity (williamsom2)
 function q₀(R,S,n,dΩ)
   a(r,s) = ∫( s*h₀*r )dΩ
   b(s)   = ∫( s*fₘ - ⟂(∇(s),n)⋅u₀ )dΩ
   solve(AffineFEOperator(a,b,R,S))
 end
 
-# Generate initial monolothic solution
+# Generate initial monolothic solution (williamsom2)
 function uhqF₀(q₀,F₀,X,Y,dΩ)
   a((u,p,r,u2),(v,q,s,v2))=∫(v⋅u+q*p+s*r+v2⋅u2)dΩ
   b((v,q,s,v2))=∫( s*q₀ + v2⋅F₀ )dΩ
@@ -130,7 +204,11 @@ function solve_nswe_theta_method_full_newton(
   #     - Initial potential vorticity (q₀)
   #     - Initial volume flux (F₀)
   #     - Initial full solution
-  ΔuΔhqF=uhqF₀(q₀(R,S,n,dΩ),F₀(U,V,dΩ),X,Y,dΩ)
+  # Williamsom2
+  #ΔuΔhqF=uhqF₀(q₀(R,S,n,dΩ),F₀(U,V,dΩ),X,Y,dΩ)
+
+  #Manufactured
+  ΔuΔhqF=uhqF₀(q,F,X,Y,dΩ)
   Δu,Δh,_,_ = ΔuΔhqF
   function run_simulation(pvd=nothing)
     # Allocate work space vectors
@@ -145,8 +223,14 @@ function solve_nswe_theta_method_full_newton(
     τ   = dt/2 # APVM stabilization parameter
     nlcache=nothing
     for step=1:N
-       e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))
-       e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))
+       # Williamsom2
+       #e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))
+       #e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))
+
+       # Manufactured
+       e = hn-h;err_h = sqrt(sum(∫(e⋅e)*dΩ))
+       e = un-u;err_u = sqrt(sum(∫(e⋅e)*dΩ))
+
        println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
                " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
 
@@ -154,7 +238,7 @@ function solve_nswe_theta_method_full_newton(
        hi(Δh,hn)  = hn       + (1-θ) * Δh
        hbi(Δh,hn,b) = hn + b   + (1-θ) * Δh
 
-       function residual((Δu,Δh,qvort,F),(v,q,s,v2))
+       function residualwilliamsom2((Δu,Δh,qvort,F),(v,q,s,v2))
          uiΔu  = Operation(ui)(Δu,un)
          hiΔh  = Operation(hi)(Δh,hn)
          hbiΔh = Operation(hbi)(Δh,hn,b)
@@ -164,6 +248,17 @@ function solve_nswe_theta_method_full_newton(
          ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fₘ +   # eq3
            v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
        end
+
+       function residualmanu((Δu,Δh,qvort,F),(v,q,s,v2))
+        uiΔu  = Operation(ui)(Δu,un)
+        hiΔh  = Operation(hi)(Δh,hn)
+        hbiΔh = Operation(hbi)(Δh,hn,b)
+        ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
+          dt*(qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n))-v⋅RHSeq1+ # eq1
+          q*Δh-q*RHSeq2)dΩ + ∫(dt*q*(DIV(F)))dω +           # eq2
+        ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*f -s*RHSeq3 +   # eq3
+          v2⋅(F-hiΔh*uiΔu)-v2⋅RHSeq3)dΩ                      # eq4
+      end
 
        function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
          uiΔu  = Operation(ui)(Δu,un)
@@ -182,7 +277,7 @@ function solve_nswe_theta_method_full_newton(
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
-       op=FEOperator(residual,jacobian,X,Y)
+       op=FEOperator(residualmanu,jacobian,X,Y)
        nls=NLSolver(show_trace=true, method=:newton)
        solver=FESolver(nls)
 
@@ -228,12 +323,31 @@ function solve_nswe_theta_method_full_newton(
   end
 end
 
-T=432000
-model=CubedSphereDiscreteModel(10;radius=rₑ)
-N=120
+θ=π/4
+ϕ=π/4
+θϕ=Point(θ,ϕ)
+xyz=θϕ2xyz(θϕ)
+println(RHSeq1(xyz))
+println(RHSeq2(xyz))
+println(RHSeq3(xyz))
+println(RHSeq4(xyz))
+
+#Williamsom
+#T=432000
+#model=CubedSphereDiscreteModel(10;radius=rₑ)
+#N=120
+#order=0
+#degree=2
+#θ=0.5
+
+# Manu
+T=1
+model=CubedSphereDiscreteModel(10)
+N=2
 order=0
 degree=2
 θ=0.5
+
 @time solve_nswe_theta_method_full_newton(model, order, degree, θ, T, N;
                                           write_results=false,out_period=10)
 
