@@ -1,4 +1,4 @@
-function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, RTMM, L2MM, RTMMchol, L2MMchol, u_tmp, h_tmp, dt, leap_frog, τ, P, Q, U, V, R, S)
+function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, h₁, u₁, hₘ, uₘ, hp, up, RTMM, L2MM, RTMMchol, L2MMchol, dt, leap_frog, τ, P, Q, U, V, R, S)
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -77,7 +77,7 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   op     = AffineFEOperator(P, Q, L2MM, rhs8)
   h₂     = solve(op)
 
-  hn, un, ϕ, F
+  h₂, u₂, ϕ, F
 end
 
 function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, diag_freq, dump_freq, τ, P, Q, U, V, R, S, method)
@@ -101,7 +101,6 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
 
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
-  u_tmp = copy(get_free_dof_values(un))
   w_tmp = copy(get_free_dof_values(f))
 
   # first step, no leap frog integration
@@ -109,10 +108,12 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   um1    = FEFunction(V, copy(get_free_dof_values(un)))
   hm2    = FEFunction(Q, copy(get_free_dof_values(hn)))
   um2    = FEFunction(V, copy(get_free_dof_values(un)))
+  hp     = FEFunction(Q, copy(get_free_dof_values(hn)))
+  up     = FEFunction(V, copy(get_free_dof_values(un)))
   #ϕ      = FEFunction(Q, copy(get_free_dof_values(hn)))
   #F      = FEFunction(V, copy(get_free_dof_values(un)))
   wn     = FEFunction(S, copy(get_free_dof_values(f)))
-  hn, un, ϕ, F = shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, u_tmp, h_tmp, dt, false, τ, P, Q, U, V, R, S)
+  hn, un, ϕ, F = shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMM, L2MM, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S)
 
   compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
   
@@ -122,7 +123,7 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
     get_free_dof_values(um2) .= get_free_dof_values(um1)
     get_free_dof_values(hm1) .= get_free_dof_values(hn)
     get_free_dof_values(um1) .= get_free_dof_values(un)
-    hn, un, ϕ, F = shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, RTMM, L2MM, RTMMchol, L2MMchol, u_tmp, h_tmp, dt, true, τ, P, Q, U, V, R, S)
+    hn, un, ϕ, F = shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMM, L2MM, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S)
 
     if mod(istep, diag_freq) == 0
       compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true, wn)
