@@ -58,10 +58,10 @@ module LaplaceBeltramiCubedSphereTests
   #writevtk(Triangulation(model),"u",nsubcells=4,cellfields=["u"=>u,"uh"=>uh])
 
   @time ahs1,ak1errors,as1=convergence_study(solve_laplace_beltrami,generate_n_values(2),1,8)
-  @test round(as1,digits=3) ≈ 1.001
+  @test round(as1,digits=1) ≈ 1.0
 
   @time ahs2,ak2errors,as2=convergence_study(solve_laplace_beltrami,generate_n_values(2),2,12)
-  @test round(as2,digits=2) ≈ 2.01
+  @test round(as2,digits=1) ≈ 2.0
 
 
   #  plot([ahs1,ahs2],[ak1errors,ak2errors],
