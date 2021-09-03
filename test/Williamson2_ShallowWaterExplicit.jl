@@ -42,72 +42,36 @@ function h₀(xyz)
   H₀ - (rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*h*h/g
 end
 
-l2_err_u = [0.011504453807392859, 0.003188984305055811, 0.0008192298898147198]
+l2_err_u = [0.011504453807392859, 0.003188984305055811,  0.0008192298898147198]
 l2_err_h = [0.005636335001937436, 0.0014571807037802682, 0.0003681933640549439]
 
-function forward_step(i, n)
-  order = 1
-  degree = 4
+order  = 1 
+degree = 4
 
-  model = CubedSphereDiscreteModel(n, order+1, radius=rₑ)
-
-  Ω = Triangulation(model)
-  dΩ = Measure(Ω, degree)
-  dω = Measure(Ω, degree, ReferenceDomain())
-  quad_cell_point = get_cell_points(dΩ.quad)
-  qₖ = Gridap.CellData.get_data(quad_cell_point)
-  wₖ = dΩ.quad.cell_weight
-  ξₖ = get_cell_map(Ω)
-
-  # Setup the trial and test spaces
-  reffe_rt  = ReferenceFE(raviart_thomas, Float64, order)
-  V = FESpace(model, reffe_rt ; conformity=:HDiv)
-  U = TrialFESpace(V)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order)
-  Q = FESpace(model, reffe_lgn; conformity=:L2)
-  P = TrialFESpace(Q)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order+1)
-  S = FESpace(model, reffe_lgn; conformity=:H1)
-  R = TrialFESpace(S)
-
-  # Project the initial conditions onto the trial spaces
-  a₁(p,q) = ∫(q*p)dΩ
-  b₁(q)   = ∫(q*h₀)dΩ
-  op      = AffineFEOperator(a₁, b₁, P, Q)
-  hp      = solve(op)
-
-  a₂(u,v) = ∫(v⋅u)dΩ
-  b₂(v)   = ∫(v⋅u₀)dΩ
-  op      = AffineFEOperator(a₂, b₂, U, V)
-  up      = solve(op)
-
-  a₃(r,s) = ∫(s*r)*dΩ
-  b₃(s)   = ∫(s*f₀)*dΩ
-  op      = AffineFEOperator(a₃, b₃, R, S)
-  fp      = solve(op)
-
+for i in 1:3
+  n      = 2*2^i
   nstep  = 5*n
   Uc     = sqrt(g*H₀)
   dx     = 2.0*π*rₑ/(4*n)
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
-  hf, uf = shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, fp, g, hp, up, dt, nstep, 1, 20, 0.0*dt, P, Q, U, V, R, S, shallow_water_explicit_time_step!)
 
-  hc = CellField(h₀, Ω)
-  e = h₀-hf
+  model = CubedSphereDiscreteModel(n, order+1, radius=rₑ)
+
+  shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, 1, 20, dt, 0.5*dt, shallow_water_explicit_time_step!)
+
+  Ω     = Triangulation(model)
+  dΩ    = Measure(Ω, degree)
+  hc    = CellField(h₀, Ω)
+  e     = h₀-hf
   err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
-  uc = CellField(u₀, Ω)
-  e = u₀-uf
+  uc    = CellField(u₀, Ω)
+  e     = u₀-uf
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
 
   @test abs(err_u - l2_err_u[i]) < 10.0^-12
   @test abs(err_h - l2_err_h[i]) < 10.0^-12
-end
-
-for i in 1:3
-  n = 2*2^i
-  forward_step(i, n)
 end
 
 end

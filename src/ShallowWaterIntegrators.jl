@@ -70,8 +70,26 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   ldiv!(L2MMchol, get_free_dof_values(h₂))
 end
 
-function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g, hn, un, dt, nstep, diag_freq, dump_freq, τ, P, Q, U, V, R, S, method)
+function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ, method)
   # Forward integration of the shallow water equations using a supplied method
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω, degree)
+  dω = Measure(Ω, degree, ReferenceDomain())
+  quad_cell_point = get_cell_points(dΩ.quad)
+  qₖ = Gridap.CellData.get_data(quad_cell_point)
+  wₖ = dΩ.quad.cell_weight
+  ξₖ = get_cell_map(Ω)
+
+  # Setup the trial and test spaces
+  reffe_rt  = ReferenceFE(raviart_thomas, Float64, order)
+  V = FESpace(model, reffe_rt ; conformity=:HDiv)
+  U = TrialFESpace(V)
+  reffe_lgn = ReferenceFE(lagrangian, Float64, order)
+  Q = FESpace(model, reffe_lgn; conformity=:L2)
+  P = TrialFESpace(Q)
+  reffe_lgn = ReferenceFE(lagrangian, Float64, order+1)
+  S = FESpace(model, reffe_lgn; conformity=:H1)
+  R = TrialFESpace(S)
 
   # assemble the mass matrices
   amm(a,b) = ∫(a⋅b)dΩ
@@ -81,6 +99,22 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   H1MMchol = lu(H1MM)
   RTMMchol = lu(RTMM)
   L2MMchol = lu(L2MM)
+
+  # Project the initial conditions onto the trial spaces
+  b₁(q)   = ∫(q*h₀)dΩ
+  rhs1    = assemble_vector(b₁, Q)
+  hn      = FEFunction(Q, copy(rhs1))
+  ldiv!(L2MMchol, get_free_dof_values(hn))
+
+  b₂(v)   = ∫(v⋅u₀)dΩ
+  rhs2    = assemble_vector(b₂, V)
+  un      = FEFunction(Q, copy(rhs2))
+  ldiv!(RTMMchol, get_free_dof_values(un))
+
+  b₃(s)   = ∫(s*f₀)*dΩ
+  rhs3    = assemble_vector(b₃, S)
+  f       = FEFunction(S, copy(rhs3))
+  ldiv!(H1MMchol, get_free_dof_values(f))
 
   # initialise the diagnostics arrays
   mass = Vector{Float64}(undef, nstep)
@@ -104,8 +138,9 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
   wn     = FEFunction(S, copy(get_free_dof_values(f)))
   # first step, no leap frog integration
   shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S, hn, un, ϕ, F)
-
-  compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
+  if mod(1, diag_freq) == 0
+    compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
+  end
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
@@ -113,8 +148,8 @@ function shallow_water_time_stepper(model, order, Ω, dΩ, dω, qₖ, wₖ, f, g
     get_free_dof_values(um2) .= get_free_dof_values(um1)
     get_free_dof_values(hm1) .= get_free_dof_values(hn)
     get_free_dof_values(um1) .= get_free_dof_values(un)
-    shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S, hn, un, ϕ, F)
 
+    shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S, hn, un, ϕ, F)
     if mod(istep, diag_freq) == 0
       compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true, wn)
     end
