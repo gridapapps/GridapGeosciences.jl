@@ -108,7 +108,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
 
   b₂(v)   = ∫(v⋅u₀)dΩ
   rhs2    = assemble_vector(b₂, V)
-  un      = FEFunction(Q, copy(rhs2))
+  un      = FEFunction(V, copy(rhs2))
   ldiv!(RTMMchol, get_free_dof_values(un))
 
   b₃(s)   = ∫(s*f₀)*dΩ
