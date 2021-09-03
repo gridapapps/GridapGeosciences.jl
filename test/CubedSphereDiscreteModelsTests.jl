@@ -117,4 +117,16 @@ module CubedSphereDiscreteModelsTests
  println(JJtp[1][3])
  println(JJtp[1][4])
 
+ vJt = lazy_map(Broadcasting(∇),get_cell_map(model))
+ cfJt  = Gridap.CellData.GenericCellField(vJt,Ω,ReferenceDomain())
+ p=get_cell_points(dΩ.quad)
+ Jtp=cfJt(p)
+
+ println(Jtp[1][1])
+ println(Jtp[1][2])
+ println(Jtp[1][3])
+ println(Jtp[1][4])
+
+
+
 end
