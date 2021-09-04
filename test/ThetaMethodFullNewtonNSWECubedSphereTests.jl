@@ -21,82 +21,8 @@ const α  = π/4.0              # deviation of the coriolis term from zonal forc
 const U₀ = 38.61068276698372  # velocity scale
 const H₀ = 2998.1154702758267 # mean fluid depth
 
-# Manufactured solution (u,q,h,b,F)
-function u(θϕ)
-  θ,ϕ = θϕ
-  u = 2*sin(θ)^2*sin(2*ϕ) + 2π/5*cos(ϕ)
-  v = 2*sin(2*θ)*cos(ϕ)
-  spherical_to_cartesian_matrix(VectorValue(θ,ϕ,1.0))⋅VectorValue(u,v,0)
-end
-
-function q(xyz)
-  return xyz[1]+xyz[2]+xyz[3]
-end
-
-function h(xyz)
-  return xyz[1]*xyz[2]*xyz[3]
-end
-
-function b(xyz)
-  return 0.0
-end
-
-function F(xyz)
-  θϕ = xyz2θϕ(xyz)
-  return u(θϕ)*h(xyz)
-end
-
-function perpu(θϕ)
-  n_times_u=(θϕ)->(normal_unit_sphere(θϕ)×u(θϕ))
-  n_times_u(θϕ)
-end
-
-function gradientghplus12uu(θϕ)
-  ghplus12uu=(θϕ)->( g*(h(θϕ2xyz(θϕ))+b(θϕ2xyz(θϕ)))+ (1.0/2.0)*(u(θϕ)⋅u(θϕ)) )
-  t=gradient_unit_sphere(ghplus12uu)
-  t(θϕ)
-end
-
-function RHSeq1(xyz)
-  θϕ = xyz2θϕ(xyz)
-  q(xyz)*h(xyz)*perpu(θϕ)+gradientghplus12uu(θϕ)
-end
-
-"""
-Spherical divergence on unit sphere applied to h*u
-"""
-function divM_hu(θϕ)
-  hu=(θϕ)->( u(θϕ) * h(θϕ2xyz(θϕ)) )
-  div_hu=divergence_unit_sphere(hu)
-  div_hu(θϕ)
-end
-function RHSeq2(xyz)
-  θϕ = xyz2θϕ(xyz)
-  divM_hu(θϕ)
-end
-
-"""
-Spherical divergence on unit sphere applied to perp(u)
-"""
-function divM_perpu(θϕ)
-  n_times_u=(θϕ)->(u(θϕ)×normal_unit_sphere(θϕ))
-  div_n_times_u=divergence_unit_sphere(n_times_u)
-  div_n_times_u(θϕ)
-end
-
-function RHSeq3(xyz)
-  θϕ = xyz2θϕ(xyz)
-  q(xyz)*h(xyz)-divM_perpu(θϕ)-f(xyz) # Note f is defined in GridapGeosciences
-end
-
-function RHSeq4(xyz)
-  θϕ = xyz2θϕ(xyz)
-  F(xyz)-h(xyz)*u(θϕ)
-end
-
-
 # Modified coriolis term
-function fₘ(xyz)
+function f₀(xyz)
    θϕr   = xyz2θϕr(xyz)
    θ,ϕ,r = θϕr
    2.0*Ωₑ*( -cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α) )
@@ -125,23 +51,23 @@ function topography(xyz)
 end
 
 # Compute initial volume flux (williamsom2)
-function F₀(U,V,dΩ)
+function F₀(u₀,h₀,U,V,dΩ)
   a(u,v) = ∫(v⋅u)dΩ
-  b(v)   = ∫(h₀*(v⋅u₀))dΩ
+  b(v)   = ∫((v⋅(h₀*u₀)))dΩ
   solve(AffineFEOperator(a,b,U,V))
 end
 
 # Compute initial potential vorticity (williamsom2)
-function q₀(R,S,n,dΩ)
-  a(r,s) = ∫( s*h₀*r )dΩ
-  b(s)   = ∫( s*fₘ - ⟂(∇(s),n)⋅u₀ )dΩ
+function q₀(u₀,h₀,f,R,S,n,dΩ)
+  a(r,s) = ∫( s*(r*h₀) )dΩ
+  b(s)   = ∫( s*f - ⟂(∇(s),n)⋅u₀ )dΩ
   solve(AffineFEOperator(a,b,R,S))
 end
 
 # Generate initial monolothic solution (williamsom2)
-function uhqF₀(q₀,F₀,X,Y,dΩ)
+function uhqF₀(u₀,h₀,q₀,F₀,X,Y,dΩ)
   a((u,p,r,u2),(v,q,s,v2))=∫(v⋅u+q*p+s*r+v2⋅u2)dΩ
-  b((v,q,s,v2))=∫( s*q₀ + v2⋅F₀ )dΩ
+  b((v,q,s,v2))=∫( v⋅u₀+ q*h₀ + s*q₀ + v2⋅F₀ )dΩ
   solve(AffineFEOperator(a,b,X,Y))
 end
 
@@ -173,6 +99,7 @@ end
 """
 function solve_nswe_theta_method_full_newton(
       model,order,degree,θ,T,N;
+      nlrtol=1.0e-08, # Newton solver relative residual tolerance
       write_results=false,
       out_dir="nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton",
       out_period=N/10)
@@ -196,25 +123,25 @@ function solve_nswe_theta_method_full_newton(
   dΩ = Measure(Ω,degree)
   dω = Measure(Ω,degree,ReferenceDomain())
 
-  # Williamsom2
-  #un = interpolate_everywhere(u₀,U); unv=get_free_dof_values(un)
-  #hn = interpolate_everywhere(h₀,P); hnv=get_free_dof_values(hn)
+  a1(u,v)=∫(v⋅u)dΩ
+  l1(v)=∫(v⋅u₀)dΩ
+  un=solve(AffineFEOperator(a1,l1,U,V)); unv=get_free_dof_values(un)
 
-  # Manufactured
-  un = interpolate_everywhere(u,U); unv=get_free_dof_values(un)
-  hn = interpolate_everywhere(h,P); hnv=get_free_dof_values(hn)
+  a2(u,v)=∫(v*u)dΩ
+  l2(v)=∫(v*h₀)dΩ
+  hn=solve(AffineFEOperator(a2,l2,P,Q)); hnv=get_free_dof_values(hn)
 
-  b  = interpolate_everywhere(topography,P); bv=get_free_dof_values(b)
+  a3(u,v)=∫(v*u)dΩ
+  l3(v)=∫(v*f₀)dΩ
+  fn=solve(AffineFEOperator(a3,l3,R,S))
+
+  b = interpolate_everywhere(topography,P)
 
   # Compute:
   #     - Initial potential vorticity (q₀)
   #     - Initial volume flux (F₀)
   #     - Initial full solution
-  # Williamsom2
-  #ΔuΔhqF=uhqF₀(q₀(R,S,n,dΩ),F₀(U,V,dΩ),X,Y,dΩ)
-
-  #Manufactured
-  ΔuΔhqF=uhqF₀(q,F,X,Y,dΩ)
+  ΔuΔhqF=uhqF₀(un,hn,q₀(un,hn,fn,R,S,n,dΩ),F₀(un,hn,U,V,dΩ),X,Y,dΩ)
   Δu,Δh,_,_ = ΔuΔhqF
   function run_simulation(pvd=nothing)
     # Allocate work space vectors
@@ -227,71 +154,61 @@ function solve_nswe_theta_method_full_newton(
     # end
     dt  = T/N
     τ   = dt/2 # APVM stabilization parameter
-    nlcache=nothing
+    hc  = CellField(h₀,Ω)
+    uc  = CellField(u₀,Ω)
     for step=1:N
        # Williamsom2
-       #e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))
-       #e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))
-
-       # Manufactured
-       e = hn-h;err_h = sqrt(sum(∫(e⋅e)*dΩ))
-       e = un-u;err_u = sqrt(sum(∫(e⋅e)*dΩ))
+       e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
+       e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
 
        println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
                " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
 
-       ui(Δu,un)  = un       + (1-θ) * Δu
-       hi(Δh,hn)  = hn       + (1-θ) * Δh
-       hbi(Δh,hn,b) = hn + b   + (1-θ) * Δh
+       # ui(Δu,un)  = un       + (1-θ) * Δu
+       # hi(Δh,hn)  = hn       + (1-θ) * Δh
+       # hbi(Δh,hn,b) = hn + b   + (1-θ) * Δh
 
-       function residualwilliamsom2((Δu,Δh,qvort,F),(v,q,s,v2))
-         uiΔu  = Operation(ui)(Δu,un)
-         hiΔh  = Operation(hi)(Δh,hn)
-         hbiΔh = Operation(hbi)(Δh,hn,b)
-         ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
-           dt*(qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n))+ # eq1
-           q*Δh)dΩ + ∫(dt*q*(DIV(F)))dω +           # eq2
-         ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fₘ +   # eq3
-           v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
+       function residual((u,h,qvort,F),(v,q,s,v2))
+         uiΔu  = u
+         hiΔh  = h
+         hbiΔh = h
+         ∫((1.0/dt)*v⋅(u-un)-(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
+             (qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n)) +   # eq1
+           (1.0/dt)*q*(h-hn))dΩ + ∫(q*(DIV(F)))dω +  # eq2
+         ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
+             v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
        end
 
-       function residualmanu((Δu,Δh,qvort,F),(v,q,s,v2))
-        uiΔu  = Operation(ui)(Δu,un)
-        hiΔh  = Operation(hi)(Δh,hn)
-        hbiΔh = Operation(hbi)(Δh,hn,b)
-        ∫(v⋅Δu - dt*(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
-          dt*(qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n))-v⋅RHSeq1+ # eq1
-          q*Δh-q*RHSeq2)dΩ + ∫(dt*q*(DIV(F)))dω +           # eq2
-        ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*f -s*RHSeq3 +   # eq3
-          v2⋅(F-hiΔh*uiΔu)-v2⋅RHSeq3)dΩ                      # eq4
-      end
-
-       function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
-         uiΔu  = Operation(ui)(Δu,un)
-         uidu  = Operation(ui)(du,un)
-         hiΔh  = Operation(hi)(Δh,hn)
-         hidh  = Operation(hi)(dh,hn)
-         hbidh = Operation(hbi)(dh,hn,b)
-         ∫(v⋅du +  dt*(dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
-                +  dt*(qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
-                -  dt*(∇⋅(v))*(g*hbidh +uiΔu⋅uidu)   +    # eq1
-           q*dh)dΩ + ∫(dt*q*(DIV(dF)))dω             +    # eq2
-           ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu +    # eq3
-             v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ               # eq4
+       function jacobian((u,h,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
+         uiΔu  = u
+         uidu  = du
+         hiΔh  = h
+         hidh  = dh
+         hbidh = dh
+         ∫((1.0/dt)*v⋅du +  (dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
+                         +  (qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
+                         -  (∇⋅(v))*(g*hbidh +uiΔu⋅uidu)   +  # eq1
+           (1.0/dt)*q*dh)dΩ + ∫(q*(DIV(dF)))dω             +  # eq2
+           ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu       +  # eq3
+             v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ                   # eq4
        end
 
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
-       op=FEOperator(residualmanu,jacobian,X,Y)
-       nls=NLSolver(show_trace=true, method=:newton)
+       # Adjust absolute tolerance ftol s.t. it actually becomes relative
+       dY = get_fe_basis(Y)
+       residualΔuΔhqF=residual(ΔuΔhqF,dY)
+       @time r=assemble_vector(residualΔuΔhqF,Y)
+       op=FEOperator(residual,jacobian,X,Y)
+       nls=NLSolver(show_trace=true, method=:newton, ftol=nlrtol*norm(r,Inf), xtol=1.0e-02)
        solver=FESolver(nls)
 
        solve!(ΔuΔhqF,solver,op)
 
        # Update current solution
-       unv .= unv .+ get_free_dof_values(Δu)
-       hnv .= hnv .+ get_free_dof_values(Δh)
+       unv .= get_free_dof_values(Δu)
+       hnv .= get_free_dof_values(Δh)
 
        if (write_results)
         #  ke[step]=Eₖ(un,H,dΩ)
@@ -329,33 +246,83 @@ function solve_nswe_theta_method_full_newton(
   end
 end
 
-θ=π/4
-ϕ=π/4
-θϕ=Point(θ,ϕ)
-xyz=θϕ2xyz(θϕ)
-println(RHSeq1(xyz))
-println(RHSeq2(xyz))
-println(RHSeq3(xyz))
-println(RHSeq4(xyz))
-
-#Williamsom
-#T=432000
-#model=CubedSphereDiscreteModel(10;radius=rₑ)
-#N=120
-#order=0
-#degree=2
-#θ=0.5
-
-# Manu
-T=1
-model=CubedSphereDiscreteModel(10)
-N=2
-order=0
-degree=2
+T=14580
+model=CubedSphereDiscreteModel(8;radius=rₑ)
+N=20
+order=1
+degree=4
 θ=0.5
-
 @time solve_nswe_theta_method_full_newton(model, order, degree, θ, T, N;
                                           write_results=false,out_period=10)
+
+
+# RT = ReferenceFE(raviart_thomas,Float64,order)
+# DG = ReferenceFE(lagrangian,Float64,order)
+# CG = ReferenceFE(lagrangian,Float64,order+1)
+# V  = FESpace(model,RT; conformity=:Hdiv) # Velocity and mass flux FE space
+# Q  = FESpace(model,DG; conformity=:L2)   # Fluid depth FE space
+# S  = FESpace(model,CG; conformity=:H1)   # Potential vorticity FE space
+# U  = TrialFESpace(V)
+# P  = TrialFESpace(Q)
+# R  = TrialFESpace(S)
+
+# Y = MultiFieldFESpace([V,Q,S,V])         # Monolithic FE space
+# X = MultiFieldFESpace([U,P,R,U])
+
+# Ω  = Triangulation(model)
+# n  = get_normal_vector(model)
+# dΩ = Measure(Ω,degree)
+# dω = Measure(Ω,degree,ReferenceDomain())
+
+# dt  = T/N
+# τ   = dt/2
+
+
+# #un = interpolate_everywhere(u₀_rognes,U)
+# #hn = interpolate_everywhere(h₀_rognes,P)
+# #b  = interpolate_everywhere(topography,P)
+
+# a(u,v)=∫(v⋅u)dΩ
+# l(v)=∫(v⋅u₀)dΩ
+# un=solve(AffineFEOperator(a,l,U,V))
+
+# a(u,v)=∫(v*u)dΩ
+# l(v)=∫(v*h₀)dΩ
+# hn=solve(AffineFEOperator(a,l,P,Q))
+
+# a(u,v)=∫(v*u)dΩ
+# l(v)=∫(v*f₀)dΩ
+# fn=solve(AffineFEOperator(a,l,R,S))
+
+# # Williamsom2
+
+# function residual((Δu,Δh,qvort,F),(v,q,s,v2))
+#   uiΔu  = un#+Δu #Operation(ui)(Δu,un)
+#   hiΔh  = hn#+Δh #Operation(hi)(Δh,hn)
+#   hbiΔh = hn#+Δh #Operation(hbi)(Δh,hn,b)
+#   #∫((1.0/dt)*v⋅Δu
+#   ∫(-(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
+#        (qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n)))dΩ +   # eq1
+#     #(1.0/dt)*q*Δh)dΩ
+#      ∫(q*(divergence(F)))dΩ +  # eq2
+#   ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
+#     v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
+# end
+
+# ΔuΔhqF=uhqF₀(q₀(un,hn,fn,R,S,n,dΩ),F₀(un,hn,U,V,dΩ),X,Y,dΩ)
+# #Δu,Δh,q,F = ΔuΔhqF
+# dY = get_fe_basis(Y)
+# residualΔuΔhqF=residual(ΔuΔhqF,dY)
+# @time r=assemble_vector(residualΔuΔhqF,Y)
+# println(norm(r))
+
+# rh=FEFunction(X,r)
+# ruh,rhh,rqh,rFh=rh
+
+# writevtk(Triangulation(model),"kk",cellfields=["un"=>un,"un_"=>u₀,
+#                                                "hn"=>hn,"hn_"=>h₀,
+#                                                "fn"=>fn,"fn_"=>f₀])
+# writevtk(Triangulation(model),"rr",cellfields=["ruh"=>ruh,"rhh"=>rhh,"rqh"=>rqh,"rFh"=>rFh])
 
 
 end # module
