@@ -56,7 +56,7 @@ for i in 1:3
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
 
-  model = CubedSphereDiscreteModel(n, order+1, radius=rₑ)
+  model = CubedSphereDiscreteModel(n; radius=rₑ)
 
   hf, uf = shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, 1, 20, dt, 0.0*dt)
 
