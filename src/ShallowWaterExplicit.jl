@@ -70,7 +70,7 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   ldiv!(L2MMchol, get_free_dof_values(h₂))
 end
 
-function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ, method)
+function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ)
   # Forward integration of the shallow water equations using a supplied method
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)

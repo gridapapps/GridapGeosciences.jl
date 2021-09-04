@@ -8,8 +8,7 @@ module GridapGeosciences
   include("Operators.jl")
   include("CoordinateTransformations.jl")
   include("DiagnosticTools.jl")
-  include("Weak2DCurlOperators.jl")
-  include("ShallowWaterIntegrators.jl")
+  include("ShallowWaterExplicit.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
