@@ -34,7 +34,7 @@ function shallow_water_explicit_time_step!(model, dΩ, dω, f, g, h₁, u₁, h�
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 1.3: the potential vorticity
   a₁(r,s) = ∫(s*h₁*r)dΩ
-  c₁(s)   = ∫(perp(∇(s),n)⋅(u₁) + s*f)dΩ
+  c₁(s)   = ∫(perp(n,∇(s))⋅(u₁) + s*f)dΩ
   H1h     = assemble_matrix(a₁, R, S)
   rhs_q₁  = assemble_vector(c₁, S)
   op      = AffineFEOperator(R, S, H1h, rhs_q₁)
@@ -62,7 +62,7 @@ function shallow_water_explicit_time_step!(model, dΩ, dω, f, g, h₁, u₁, h�
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 2.3: the potential vorticity
   a₂(r,s) = ∫(s*hₚ*r)dΩ
-  c₂(s)   = ∫(perp(∇(s),n)⋅(uₚ) + s*f)dΩ
+  c₂(s)   = ∫(perp(n,∇(s))⋅(uₚ) + s*f)dΩ
   H2h     = assemble_matrix(a₂, R, S)
   rhs_q₂  = assemble_vector(c₂, S)
   op      = AffineFEOperator(R, S, H2h, rhs_q₂)

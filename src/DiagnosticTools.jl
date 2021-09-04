@@ -50,7 +50,7 @@ function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MM
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
   # diagnose the vorticity
   n    = get_normal_vector(model)
-  a(s) = ∫(perp(∇(s),n)⋅(u))dΩ
+  a(s) = ∫(perp(n,∇(s))⋅(u))dΩ
   rhs  = assemble_vector(a, S)
   copy!(get_free_dof_values(w), rhs)
   ldiv!(H1MMchol, get_free_dof_values(w))
