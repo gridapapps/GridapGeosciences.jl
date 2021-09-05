@@ -60,18 +60,9 @@ function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MM
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
   # save to file
-  save(joinpath(out_dir,"swe_diagnostics.jld"), "mass", mass_i,
-                                                "vort", vort_i,
-                                                "kinetic", kin_i,
-                                                "potential", pot_i,
-						"power",pow_i)
-
+  save(joinpath(out_dir,"swe_diagnostics.jld"), "mass", mass_i, "vort", vort_i, "kinetic", kin_i, "potential", pot_i, "power", pow_i)
   if to_std
-    # normalised conservation errors
-    mass_norm = (mass_i-mass[1])/mass[1]
-    vort_norm = vort_i-vort[1]
-    en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
-    println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
+    println(step, "\t", mass_i, "\t", vort_i, "\t", kin_i, "\t", pot_i, "\t", kin_i+pot+i, "\t", pow_i)
   end
 end
 
