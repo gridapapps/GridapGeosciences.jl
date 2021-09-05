@@ -2,6 +2,7 @@ module GridapGeosciences
   using Gridap
   using FillArrays
   using LinearAlgebra
+  using JLD
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
