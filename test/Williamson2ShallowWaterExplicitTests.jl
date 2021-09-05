@@ -58,7 +58,7 @@ for i in 1:3
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
 
-  hf, uf = shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, 1, 20, dt, 0.0*dt)
+  hf, uf = shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, dt, 0.0*dt, nstep, "sw_exp", 1, 20)
 
   Ω     = Triangulation(model)
   dΩ    = Measure(Ω, degree)

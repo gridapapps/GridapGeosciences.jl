@@ -84,12 +84,3 @@ function gradient_unit_sphere(v)
      Jθϕ⋅inv(Gθϕ)⋅(∇(v))(θϕ)
   end
 end
-
-"""
-Reference domain 2D ∇⟂
-"""
-function grad_perp(α)
-  grad_α = ∇(α)
-  A = TensorValue{2,2}(0, -1, 1, 0)
-  A⋅grad_α
-end

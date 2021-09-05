@@ -46,7 +46,7 @@ end
 """
   Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
 """
-function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, mass, vort, kin, pot, pow, step, do_print, w)
+function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, step, to_std, out_dir, w)
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
   # diagnose the vorticity
   n    = get_normal_vector(model)
@@ -59,20 +59,19 @@ function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MM
   pot_i  = 0.5*g*sum(∫(h*h)dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
-  mass[step] = mass_i
-  vort[step] = vort_i
-  kin[step]  = kin_i
-  pot[step]  = pot_i
-  pow[step]  = pow_i
+  # save to file
+  save(joinpath(out_dir,"swe_diagnostics.jld"), "mass", mass_i,
+                                                "vort", vort_i,
+                                                "kinetic", kin_i,
+                                                "potential", pot_i,
+						"power",pow_i)
 
-  if do_print
+  if to_std
     # normalised conservation errors
     mass_norm = (mass_i-mass[1])/mass[1]
     vort_norm = vort_i-vort[1]
     en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
     println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
   end
-
-  w
 end
 

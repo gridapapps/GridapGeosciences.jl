@@ -35,9 +35,7 @@ function shallow_water_explicit_time_step!(model, dΩ, dω, f, g, h₁, u₁, h�
   # 1.3: the potential vorticity
   a₁(r,s) = ∫(s*h₁*r)dΩ
   c₁(s)   = ∫(perp(n,∇(s))⋅(u₁) + s*f)dΩ
-  H1h     = assemble_matrix(a₁, R, S)
-  rhs_q₁  = assemble_vector(c₁, S)
-  op      = AffineFEOperator(R, S, H1h, rhs_q₁)
+  op      = AffineFEOperator(a₁, c₁, R, S)
   q₁      = solve(op)
   # 1.4: solve for the provisional velocity
   b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)*dω
@@ -63,9 +61,7 @@ function shallow_water_explicit_time_step!(model, dΩ, dω, f, g, h₁, u₁, h�
   # 2.3: the potential vorticity
   a₂(r,s) = ∫(s*hₚ*r)dΩ
   c₂(s)   = ∫(perp(n,∇(s))⋅(uₚ) + s*f)dΩ
-  H2h     = assemble_matrix(a₂, R, S)
-  rhs_q₂  = assemble_vector(c₂, S)
-  op      = AffineFEOperator(R, S, H2h, rhs_q₂)
+  op      = AffineFEOperator(a₂, c₂, R, S)
   q₂      = solve(op)
   # 2.4: solve for the final velocity
   b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)*dω
@@ -79,15 +75,11 @@ function shallow_water_explicit_time_step!(model, dΩ, dω, f, g, h₁, u₁, h�
   ldiv!(L2MMchol, get_free_dof_values(h₂))
 end
 
-function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ)
-  # Forward integration of the shallow water equations using a supplied method
+function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, dt, τ, nstep, out_dir, diag_freq=1, dump_freq=100)
+  # Forward integration of the shallow water equations
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)
   dω = Measure(Ω, degree, ReferenceDomain())
-  quad_cell_point = get_cell_points(dΩ.quad)
-  qₖ = Gridap.CellData.get_data(quad_cell_point)
-  wₖ = dΩ.quad.cell_weight
-  ξₖ = get_cell_map(Ω)
 
   # Setup the trial and test spaces
   reffe_rt  = ReferenceFE(raviart_thomas, Float64, order)
@@ -125,13 +117,6 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
   f       = FEFunction(S, copy(rhs3))
   ldiv!(H1MMchol, get_free_dof_values(f))
 
-  # initialise the diagnostics arrays
-  mass = Vector{Float64}(undef, nstep)
-  vort = Vector{Float64}(undef, nstep)
-  kin  = Vector{Float64}(undef, nstep)
-  pot  = Vector{Float64}(undef, nstep)
-  pow  = Vector{Float64}(undef, nstep)
-
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
   w_tmp = copy(get_free_dof_values(f))
@@ -148,7 +133,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
   # first step, no leap frog integration
   shallow_water_explicit_time_step!(model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, false, τ, Q, V, R, S, hn, un, ϕ, F)
   if mod(1, diag_freq) == 0
-    compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
+    compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, 1, true, out_dir, wn)
   end
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
@@ -160,7 +145,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
 
     shallow_water_explicit_time_step!(model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, true, τ, Q, V, R, S, hn, un, ϕ, F)
     if mod(istep, diag_freq) == 0
-      compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true, wn)
+      compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, istep, true, out_dir, wn)
     end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
