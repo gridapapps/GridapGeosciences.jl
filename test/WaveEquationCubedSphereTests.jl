@@ -7,6 +7,8 @@ using Plots
 using LinearAlgebra
 using WriteVTK
 using JLD
+using TypedTables
+using CSV
 
 # Initial depth
 function h₀(xyz)
@@ -42,6 +44,11 @@ function generate_energy_plots(outdir,N,ke,pe,kin_to_pot,pot_to_kin)
        label=["hⁿ∇⋅uⁿ" "uⁿ⋅∇(hⁿ)" "Balance"],
        xlabel="Step",ylabel="Kinetic to potential energy balance",legend = :outertopleft)
   savefig(joinpath(outdir,"kinetic_to_potential_energy_balance.png"))
+end
+
+function get_scalar_field_from_csv(csv_file, field_name; delim=",")
+  v = CSV.File(csvpath, delim=",", header=1, select=[field_name]) |> Table
+  v.fieldname
 end
 
 """
@@ -139,11 +146,18 @@ function solve_wave_equation_ssrk2(
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
       # save global scalar snapshots
-      save(joinpath(out_dir,"wave_eq_geosciences_data.jld"), "hn_dot_div_un", kin_to_pot,
-                                                "un_dot_grad_hn", pot_to_kin,
-                                                "mass", mass,
-                                                "kinetic", ke,
-                                                "potential", pe)
+      # save(joinpath(out_dir,"wave_eq_geosciences_data.jld"), "hn_dot_div_un", kin_to_pot,
+      #                                           "un_dot_grad_hn", pot_to_kin,
+      #                                           "mass", mass,
+      #                                           "kinetic", ke,
+      #                                           "potential", pe)
+      header = ["time", "hn_dot_div_un", "un_dot_grad_hn", "mass", "kinetic", "potential"]
+      CSV.write(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
+                         Table(t = collect(1:N)*dt, hn_dot_div_un = kin_to_pot,
+                         un_dot_grad_hn = pot_to_kin,
+                         mass = mass,
+                         kinetic = ke,
+                         potential= pe), header=header)
     end
     un,hn
   end
@@ -165,7 +179,7 @@ N=2000
 order=0
 degree=4
 @time un,hn =
-  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
+  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=true,out_period=10)
 
 @test Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.6984501177784049e-10
 
