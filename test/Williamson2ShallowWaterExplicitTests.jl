@@ -1,4 +1,4 @@
-module Williamson2_ShallowWaterExplicit
+module Williamson2ShallowWaterExplicitTests
 
 using FillArrays
 using Test

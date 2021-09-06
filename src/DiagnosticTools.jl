@@ -46,13 +46,12 @@ end
 """
   Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
 """
-function compute_diagnostics_shallow_water!(model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, step, to_std, out_dir, w)
+function compute_diagnostics_shallow_water!(w, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, step, to_std, out_dir)
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
   # diagnose the vorticity
   n    = get_normal_vector(model)
   a(s) = ∫(perp(n,∇(s))⋅(u))dΩ
-  rhs  = assemble_vector(a, S)
-  copy!(get_free_dof_values(w), rhs)
+  Gridap.FESpaces.assemble_vector!(get_free_dof_values(w), a, S)
   ldiv!(H1MMchol, get_free_dof_values(w))
   vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
   kin_i  = 0.5*sum(∫(h*(u⋅u))dΩ)
