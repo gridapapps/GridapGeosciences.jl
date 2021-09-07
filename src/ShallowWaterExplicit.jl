@@ -23,12 +23,12 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   end
 
   # 1.1: the mass flux
-  b₁(v)  = ∫(v⋅u₁*h₁)*dΩ
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(F), b₁, V)
+  b₁(v)  = ∫(v⋅u₁*h₁)dΩ
+  Gridap.FESpaces.assemble_vector!b₁, (get_free_dof_values(F), V)
   ldiv!(RTMMchol, get_free_dof_values(F))
   # 1.2: the bernoulli function
   b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(ϕ), b₂, Q)
+  Gridap.FESpaces.assemble_vector!(b₂, get_free_dof_values(ϕ), Q)
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 1.3: the potential vorticity
   a₁(r,s) = ∫(s*h₁*r)dΩ
@@ -38,20 +38,20 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   ldiv!(H1hchol, get_free_dof_values(q₁))
   # 1.4: solve for the provisional velocity
   b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(uₚ), b₃, V)
+  Gridap.FESpaces.assemble_vector!(b₃, get_free_dof_values(uₚ), V)
   ldiv!(RTMMchol, get_free_dof_values(uₚ))
   # 1.5: solve for the provisional depth
-  b₄(q)  = ∫(q*hₘ)dΩ - ∫(dt1*q*DIV(F))*dω
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(hₚ), b₄, Q)
+  b₄(q)  = ∫(q*hₘ)dΩ - ∫(dt1*q*DIV(F))dω
+  Gridap.FESpaces.assemble_vector!(b₄, get_free_dof_values(hₚ), Q)
   ldiv!(L2MMchol, get_free_dof_values(hₚ))
 
   # 2.1: the mass flux
   b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)dΩ
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(F), b₅, V)
+  Gridap.FESpaces.assemble_vector!(b₅, get_free_dof_values(F), V)
   ldiv!(RTMMchol, get_free_dof_values(F))
   # 2.2: the bernoulli function
   b₆(q)  = ∫(q*((u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/6.0 + 0.5*g*(h₁ + hₚ)))dΩ
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(ϕ), b₆, Q)
+  Gridap.FESpaces.assemble_vector!(b₆, get_free_dof_values(ϕ), Q)
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
   # 2.3: the potential vorticity
   a₂(r,s) = ∫(s*hₚ*r)dΩ
@@ -61,11 +61,11 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   ldiv!(H1hchol, get_free_dof_values(q₂))
   # 2.4: solve for the final velocity
   b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(u₂), b₇, V)
+  Gridap.FESpaces.assemble_vector!(b₇, get_free_dof_values(u₂), V)
   ldiv!(RTMMchol, get_free_dof_values(u₂))
   # 2.5: solve for the final depth
   b₈(q)  = ∫(q*h₁)dΩ - ∫(dt*q*DIV(F))dω
-  Gridap.FESpaces.assemble_vector!(get_free_dof_values(h₂), b₈, Q)
+  Gridap.FESpaces.assemble_vector!(b₈, get_free_dof_values(h₂), Q)
   ldiv!(L2MMchol, get_free_dof_values(h₂))
 end
 
@@ -132,8 +132,9 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, d
   q2     = FEFunction(S, copy(get_free_dof_values(f)))
   # first step, no leap frog integration
   shallow_water_explicit_time_step!(hn, un, ϕ, F, q1, q2, model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, H1h, H1hchol, dt, false, τ, Q, V, R, S)
+  initialize_csv(joinpath(out_dir,"swe_diagnostics.csv"), "time", "mass", "vorticity", "kinetic", "potential", "power")
   if mod(1, diag_freq) == 0
-    compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, 1, true, out_dir)
+    compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, 1, dt, true, out_dir)
   end
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
@@ -145,7 +146,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, d
 
     shallow_water_explicit_time_step!(hn, un, ϕ, F, q1, q2, model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, H1h, H1hchol, dt, true, τ, Q, V, R, S)
     if mod(istep, diag_freq) == 0
-      compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, istep, true, out_dir)
+      compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, istep, dt, true, out_dir)
     end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])

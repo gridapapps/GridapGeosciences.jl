@@ -2,7 +2,8 @@ module GridapGeosciences
   using Gridap
   using FillArrays
   using LinearAlgebra
-  using JLD
+  using CSV
+  using DataFrames
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
@@ -27,4 +28,5 @@ module GridapGeosciences
   export compute_diagnostics_shallow_water!
   export shallow_water_explicit_time_step!
   export shallow_water_time_stepper
+  export append_to_csv, initialize_csv
 end # module
