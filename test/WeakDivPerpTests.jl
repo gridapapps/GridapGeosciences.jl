@@ -62,13 +62,13 @@ module WeakDivPerpTests
      sqrt(sum(∫(e*e)dΩ))
    end
    @time ahs0,ak0errors,as0=convergence_study(compute_error_weak_div_perp,generate_n_values(2),0,4)
-   @test as0 ≈ 2.0842745262542386
+   @test round(as0,digits=3) ≈ 2.084
 
    @time bihs0,bik0errors,bis0=convergence_study(compute_error_weak_div_perp,generate_n_values(2),1,0,4)
-   @test bis0 ≈ 0.9474505144846311
+   @test round(bis0,digits=3) ≈ 0.947
 
    @time biqhs0,biqk0errors,biqs0=convergence_study(compute_error_weak_div_perp,generate_n_values(2),2,0,4)
-   @test biqs0 ≈ 2.08294675561341
+   @test round(biqs0,digits=3) ≈ 2.083
 
 
   #  plotd=plot([ahs0,bihs0,biqhs0],[ak0errors,bik0errors,biqk0errors],
