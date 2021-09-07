@@ -5,8 +5,9 @@
 *.vtu
 *.pvd
 *.jld
-#/Manifest.toml
+# /Manifest.toml
 .vscode/settings.json
 /dev/
 /docs/build/
 /docs/site/
+wave_eq_ncells*/*

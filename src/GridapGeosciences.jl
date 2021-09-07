@@ -2,6 +2,8 @@ module GridapGeosciences
   using Gridap
   using FillArrays
   using LinearAlgebra
+  using CSV
+  using DataFrames
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
@@ -22,4 +24,5 @@ module GridapGeosciences
   export cartesian_to_spherical_matrix
   export Eₖ, Eₚ, Eₜ
   export compute_kin_to_pot!, compute_pot_to_kin!, compute_total_mass!
+  export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
 end # module
