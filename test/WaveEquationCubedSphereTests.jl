@@ -6,8 +6,7 @@ using GridapGeosciences
 using Plots
 using LinearAlgebra
 using WriteVTK
-using JLD
-using TypedTables
+using DataFrames
 using CSV
 
 # Initial depth
@@ -44,18 +43,6 @@ function generate_energy_plots(outdir,N,ke,pe,kin_to_pot,pot_to_kin)
        label=["hⁿ∇⋅uⁿ" "uⁿ⋅∇(hⁿ)" "Balance"],
        xlabel="Step",ylabel="Kinetic to potential energy balance",legend = :outertopleft)
   savefig(joinpath(outdir,"kinetic_to_potential_energy_balance.png"))
-end
-
-"""Wrapper to get a vector from a csv field. The fieldname argument should be passed as a symbol,
-i.e. :<fieldname>"""
-function get_scalar_field_from_csv(csv_file_path, fieldname)
-  t = CSV.read(csv_file_path, Table)
-  getproperty(t, fieldname)
-end
-
-"""Write scalar diagnostics to csv"""
-function write_to_csv(csv_file_path, header; kwargs...)
-  CSV.write(csv_file_path,Table(kwargs.data ), header=header)
 end
 
 
@@ -120,6 +107,11 @@ function solve_wave_equation_ssrk2(
     dt  = T/N
     dtg = dt*g
     dtH = dt*H
+
+    initialize_csv(joinpath(out_dir,"wave_eq_geosciences_data1.csv"),
+                  "time", "hn_dot_div_un", "un_dot_grad_hn",
+                  "mass", "kinetic", "potential")
+
     for step=1:N
        # 1st step
        # inv(L2MM)*(L2MM*hnv - dt*Hqdivu*unv)
@@ -147,28 +139,20 @@ function solve_wave_equation_ssrk2(
            println(step)
            pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
          end
+         # save global scalar snapshots
+         append_to_csv(joinpath(out_dir,"wave_eq_geosciences_data1.csv");
+                        time = step*dt,
+                        hn_dot_div_un = kin_to_pot[step],
+                        un_dot_grad_hn = pot_to_kin[step],
+                        mass = mass[step],
+                        kinetic = ke[step],
+                        potential= pe[step])
        end
     end
     if (write_results)
       pvd[Float64(N)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(N)"),hn,un)
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
-      # save global scalar snapshots
-      # save(joinpath(out_dir,"wave_eq_geosciences_data.jld"), "hn_dot_div_un", kin_to_pot,
-      #                                           "un_dot_grad_hn", pot_to_kin,
-      #                                           "mass", mass,
-      #                                           "kinetic", ke,
-      #                                           "potential", pe)
-
-      write_to_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
-                            ["time", "hn_dot_div_un", "un_dot_grad_hn", "mass", "kinetic", "potential"];
-                            t = collect(1:N)*dt,
-                            hn_dot_div_un = kin_to_pot,
-                            un_dot_grad_hn = pot_to_kin,
-                            mass = mass,
-                            kinetic = ke,
-                            potential= pe)
-
 
     end
     un,hn
@@ -191,7 +175,8 @@ N=2000
 order=0
 degree=4
 @time un,hn =
-  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=true,out_period=10)
+  solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
+
 
 @test Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.6984501177784049e-10
 
