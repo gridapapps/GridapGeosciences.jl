@@ -103,14 +103,14 @@ function solve_wave_equation_ssrk2(
       kin_to_pot = Vector{Float64}(undef,N)
       pot_to_kin = Vector{Float64}(undef,N)
       mass = Vector{Float64}(undef,N)
+      initialize_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
+                  "time", "hn_dot_div_un", "un_dot_grad_hn",
+                  "mass", "kinetic", "potential")
     end
     dt  = T/N
     dtg = dt*g
     dtH = dt*H
 
-    initialize_csv(joinpath(out_dir,"wave_eq_geosciences_data1.csv"),
-                  "time", "hn_dot_div_un", "un_dot_grad_hn",
-                  "mass", "kinetic", "potential")
 
     for step=1:N
        # 1st step
@@ -140,7 +140,7 @@ function solve_wave_equation_ssrk2(
            pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
          end
          # save global scalar snapshots
-         append_to_csv(joinpath(out_dir,"wave_eq_geosciences_data1.csv");
+         append_to_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv");
                         time = step*dt,
                         hn_dot_div_un = kin_to_pot[step],
                         un_dot_grad_hn = pot_to_kin[step],
