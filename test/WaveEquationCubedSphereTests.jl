@@ -46,10 +46,18 @@ function generate_energy_plots(outdir,N,ke,pe,kin_to_pot,pot_to_kin)
   savefig(joinpath(outdir,"kinetic_to_potential_energy_balance.png"))
 end
 
-function get_scalar_field_from_csv(csv_file, field_name; delim=",")
-  v = CSV.File(csvpath, delim=",", header=1, select=[field_name]) |> Table
-  v.fieldname
+"""Wrapper to get a vector from a csv field. The fieldname argument should be passed as a symbol,
+i.e. :<fieldname>"""
+function get_scalar_field_from_csv(csv_file_path, fieldname)
+  t = CSV.read(csv_file_path, Table)
+  getproperty(t, fieldname)
 end
+
+"""Write scalar diagnostics to csv"""
+function write_to_csv(csv_file_path, header; kwargs...)
+  CSV.write(csv_file_path,Table(kwargs.data ), header=header)
+end
+
 
 """
   Solves the wave equation using a 2nd order
@@ -151,13 +159,17 @@ function solve_wave_equation_ssrk2(
       #                                           "mass", mass,
       #                                           "kinetic", ke,
       #                                           "potential", pe)
-      header = ["time", "hn_dot_div_un", "un_dot_grad_hn", "mass", "kinetic", "potential"]
-      CSV.write(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
-                         Table(t = collect(1:N)*dt, hn_dot_div_un = kin_to_pot,
-                         un_dot_grad_hn = pot_to_kin,
-                         mass = mass,
-                         kinetic = ke,
-                         potential= pe), header=header)
+
+      write_to_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
+                            ["time", "hn_dot_div_un", "un_dot_grad_hn", "mass", "kinetic", "potential"];
+                            t = collect(1:N)*dt,
+                            hn_dot_div_un = kin_to_pot,
+                            un_dot_grad_hn = pot_to_kin,
+                            mass = mass,
+                            kinetic = ke,
+                            potential= pe)
+
+
     end
     un,hn
   end
@@ -182,5 +194,6 @@ degree=4
   solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=true,out_period=10)
 
 @test Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.6984501177784049e-10
+
 
 end # module
