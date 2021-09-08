@@ -43,6 +43,14 @@ function compute_total_mass!(w,L2MM,hh)
   sum(w)
 end
 
+"""Write scalar diagnostics to csv.
+Diagnostics should be added as kwargs: field=values"""
+function write_to_csv(csv_file_path; kwargs...)
+  df = DataFrame(kwargs... )
+  header = names(df)
+  CSV.write(csv_file_path, df, header=header)
+end
+
 """Append line to existing csv file.
 row should be given as kwargs: field=value"""
 function append_to_csv(csv_file_path; kwargs...)
@@ -54,6 +62,13 @@ end
 function initialize_csv(csv_file_path, args...)
   header = [String(_) for _ in args]
   CSV.write(csv_file_path,[], writeheader=true, header=header)
+end
+
+"""Wrapper to get a vector from a csv field. The fieldname argument should be passed as a symbol,
+i.e. :<fieldname>"""
+function get_scalar_field_from_csv(csv_file_path, fieldname)
+  t = CSV.read(csv_file_path, Table)
+  getproperty(t, fieldname)
 end
 
 """
@@ -78,4 +93,3 @@ function compute_diagnostics_shallow_water!(w, model, dΩ, dω, S, L2MM, H1MM, H
     println(step, "\t", mass_i, "\t", vort_i, "\t", kin_i, "\t", pot_i, "\t", kin_i+pot_i, "\t", pow_i)
   end
 end
-

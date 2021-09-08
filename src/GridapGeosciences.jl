@@ -28,5 +28,5 @@ module GridapGeosciences
   export compute_diagnostics_shallow_water!
   export shallow_water_explicit_time_step!
   export shallow_water_time_stepper
-  export append_to_csv, initialize_csv
+  export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
 end # module
