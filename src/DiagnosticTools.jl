@@ -88,7 +88,7 @@ function compute_diagnostics_shallow_water!(w, model, dΩ, dω, S, L2MM, H1MM, H
 
   # save to file
   append_to_csv(joinpath(out_dir,"swe_diagnostics.csv");
-                         time = step*dt, mass = mass_i, vorticity = vort_i, kinetic = kin_i, potential = pot_i, power = pow)
+                         time = step*dt, mass = mass_i, vorticity = vort_i, kinetic = kin_i, potential = pot_i, power = pow_i)
   if to_std
     println(step, "\t", mass_i, "\t", vort_i, "\t", kin_i, "\t", pot_i, "\t", kin_i+pot_i, "\t", pow_i)
   end

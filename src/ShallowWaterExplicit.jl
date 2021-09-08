@@ -33,7 +33,7 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   # 1.3: the potential vorticity
   a₁(r,s) = ∫(s*h₁*r)dΩ
   c₁(s)   = ∫(perp(n,∇(s))⋅(u₁) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(H1h, get_free_dof_values(q₁), a₁, c₁, R, S)
+  Gridap.FESpaces.assemble_matrix_and_vector!(a₁, c₁, H1h, get_free_dof_values(q₁), R, S)
   lu!(H1hchol, H1h)
   ldiv!(H1hchol, get_free_dof_values(q₁))
   # 1.4: solve for the provisional velocity
@@ -56,7 +56,7 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   # 2.3: the potential vorticity
   a₂(r,s) = ∫(s*hₚ*r)dΩ
   c₂(s)   = ∫(perp(n,∇(s))⋅(uₚ) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(H1h, get_free_dof_values(q₂), a₂, c₂, R, S)
+  Gridap.FESpaces.assemble_matrix_and_vector!(a₂, c₂, H1h, get_free_dof_values(q₂), R, S)
   lu!(H1hchol, H1h)
   ldiv!(H1hchol, get_free_dof_values(q₂))
   # 2.4: solve for the final velocity
