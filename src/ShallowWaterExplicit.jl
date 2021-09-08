@@ -147,7 +147,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, d
       compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, istep, dt, true, out_dir)
     end
     if mod(istep, dump_freq) == 0
-      writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
+      writevtk(Ω,"$(out_dir)/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
     end
   end
 
