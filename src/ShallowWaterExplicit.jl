@@ -139,10 +139,8 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, d
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
   for istep in 2:nstep
-    get_free_dof_values(hm2) .= get_free_dof_values(hm1)
-    get_free_dof_values(um2) .= get_free_dof_values(um1)
-    get_free_dof_values(hm1) .= get_free_dof_values(hn)
-    get_free_dof_values(um1) .= get_free_dof_values(un)
+    hm2,hm1,hn = hm1,hn,hm2
+    um2,um1,un = um1,un,um2
 
     shallow_water_explicit_time_step!(hn, un, ϕ, F, q1, q2, model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, H1h, H1hchol, dt, true, τ, Q, V, R, S)
     if mod(istep, diag_freq) == 0
