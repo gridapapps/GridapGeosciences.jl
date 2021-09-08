@@ -24,7 +24,7 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
 
   # 1.1: the mass flux
   b₁(v)  = ∫(v⋅u₁*h₁)dΩ
-  Gridap.FESpaces.assemble_vector!b₁, (get_free_dof_values(F), V)
+  Gridap.FESpaces.assemble_vector!(b₁, (get_free_dof_values(F), V)
   ldiv!(RTMMchol, get_free_dof_values(F))
   # 1.2: the bernoulli function
   b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
