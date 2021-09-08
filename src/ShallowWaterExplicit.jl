@@ -1,4 +1,46 @@
-function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model, dΩ, dω, f, g, h₁, u₁, hₘ, uₘ, hₚ, uₚ, RTMMchol, L2MMchol, H1h, H1hchol, dt, leap_frog, τ, Q, V, R, S)
+function compute_potential_vorticity!(q,H1h,H1hchol,dΩ,R,S,h,u,f,n)
+  a(r,s) = ∫(s*h*r)dΩ
+  c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
+  Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), R, S)
+  lu!(H1hchol, H1h)
+  ldiv!(H1hchol, get_free_dof_values(q))
+end
+
+function compute_velocity!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,F,ϕ,n,dt1,dt2)
+  b(v) = ∫(v⋅u2 - dt1*(qAPVM)*(v⋅⟂(F,n)))dΩ + ∫(dt2*DIV(v)*ϕ)dω
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(u1), V)
+  ldiv!(RTMMchol, get_free_dof_values(u1))
+end
+
+function compute_mass_flux!(F,dΩ,V,RTMMchol,u)
+  b(v) = ∫(v⋅u)dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(F), V)
+  ldiv!(RTMMchol, get_free_dof_values(F))
+end
+
+function compute_depth!(h1,dΩ,dω,Q,L2MMchol,h2,F,dt)
+  b(q)  = ∫(q*h2)dΩ - ∫(dt*q*DIV(F))dω
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(h1), Q)
+  ldiv!(L2MMchol, get_free_dof_values(h1))
+end
+
+function compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,uu,h,g)
+  b(q)  = ∫(q*(0.5*uu + g*h))*dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(ϕ), Q)
+  ldiv!(L2MMchol, get_free_dof_values(ϕ))
+end
+
+function compute_diagnostic_vorticity!(w,dΩ,S,H1MMchol,u,n)
+  b(s) = ∫(perp(n,∇(s))⋅(u))dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(w), S)
+  ldiv!(H1MMchol, get_free_dof_values(w))
+end
+
+function shallow_water_explicit_time_step!(
+     h₂, u₂, hₚ, uₚ, ϕ, F, q₁, q₂, H1h, H1hchol,      # in/out args
+     model, dΩ, dω, V, Q, R, S, f, g, h₁, u₁, hₘ, uₘ, # in args
+     RTMMchol, L2MMchol, dt, τ, leap_frog)            # more in args
+
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -23,53 +65,46 @@ function shallow_water_explicit_time_step!(h₂, u₂, ϕ, F, q₁, q₂, model,
   end
 
   # 1.1: the mass flux
-  b₁(v)  = ∫(v⋅u₁*h₁)dΩ
-  Gridap.FESpaces.assemble_vector!(b₁, get_free_dof_values(F), V)
-  ldiv!(RTMMchol, get_free_dof_values(F))
+  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
-  b₂(q)  = ∫(q*(0.5*u₁⋅u₁ + g*h₁))*dΩ
-  Gridap.FESpaces.assemble_vector!(b₂, get_free_dof_values(ϕ), Q)
-  ldiv!(L2MMchol, get_free_dof_values(ϕ))
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
-  a₁(r,s) = ∫(s*h₁*r)dΩ
-  c₁(s)   = ∫(perp(n,∇(s))⋅(u₁) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(a₁, c₁, H1h, get_free_dof_values(q₁), R, S)
-  lu!(H1hchol, H1h)
-  ldiv!(H1hchol, get_free_dof_values(q₁))
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
   # 1.4: solve for the provisional velocity
-  b₃(v)  = ∫(v⋅uₘ - dt1*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(dt1*DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(b₃, get_free_dof_values(uₚ), V)
-  ldiv!(RTMMchol, get_free_dof_values(uₚ))
+  compute_velocity!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),F,ϕ,n,dt1,dt1)
   # 1.5: solve for the provisional depth
-  b₄(q)  = ∫(q*hₘ)dΩ - ∫(dt1*q*DIV(F))dω
-  Gridap.FESpaces.assemble_vector!(b₄, get_free_dof_values(hₚ), Q)
-  ldiv!(L2MMchol, get_free_dof_values(hₚ))
+  compute_depth!(hₚ,dΩ,dω,Q,L2MMchol,hₘ,F,dt1)
 
   # 2.1: the mass flux
-  b₅(v)  = ∫(v⋅u₁*(2.0*h₁ + hₚ)/6.0 + v⋅uₚ*(h₁ + 2.0*hₚ)/6.0)dΩ
-  Gridap.FESpaces.assemble_vector!(b₅, get_free_dof_values(F), V)
-  ldiv!(RTMMchol, get_free_dof_values(F))
+  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + hₚ)/6.0+uₚ*(h₁ + 2.0*hₚ)/6.0)
   # 2.2: the bernoulli function
-  b₆(q)  = ∫(q*((u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/6.0 + 0.5*g*(h₁ + hₚ)))dΩ
-  Gridap.FESpaces.assemble_vector!(b₆, get_free_dof_values(ϕ), Q)
-  ldiv!(L2MMchol, get_free_dof_values(ϕ))
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + hₚ),g)
   # 2.3: the potential vorticity
-  a₂(r,s) = ∫(s*hₚ*r)dΩ
-  c₂(s)   = ∫(perp(n,∇(s))⋅(uₚ) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(a₂, c₂, H1h, get_free_dof_values(q₂), R, S)
-  lu!(H1hchol, H1h)
-  ldiv!(H1hchol, get_free_dof_values(q₂))
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
   # 2.4: solve for the final velocity
-  b₇(v)  = ∫(v⋅u₁ - 0.5*dt*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(dt*DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(b₇, get_free_dof_values(u₂), V)
-  ldiv!(RTMMchol, get_free_dof_values(u₂))
+  compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),F,ϕ,n,0.5*dt,dt)
   # 2.5: solve for the final depth
-  b₈(q)  = ∫(q*h₁)dΩ - ∫(dt*q*DIV(F))dω
-  Gridap.FESpaces.assemble_vector!(b₈, get_free_dof_values(h₂), Q)
-  ldiv!(L2MMchol, get_free_dof_values(h₂))
+  compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
 end
 
-function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, dt, τ, nstep, out_dir, diag_freq=1, dump_freq=100)
+function new_vtk_step(Ω,file,hn,un,wn)
+  createvtk(Ω,
+            file,
+            cellfields=["hn"=>hn, "un"=>un, "wn"=>wn],
+            nsubcells=4)
+end
+
+
+function shallow_water_time_stepper(model, order, degree,
+                        h₀, u₀, f₀, g,
+                        dt, τ, N;
+                        write_diagnostics=true,
+                        write_diagnostics_freq=1,
+                        dump_diagnostics_on_screen=true,
+                        write_solution=false,
+                        write_solution_freq=N/10,
+                        output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_explicit")
+
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)
@@ -119,37 +154,76 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, d
   H1h      = assemble_matrix(bmm, R, S)
   H1hchol  = lu(H1h)
 
-  hm1    = FEFunction(Q, copy(get_free_dof_values(hn)))
-  um1    = FEFunction(V, copy(get_free_dof_values(un)))
-  hm2    = FEFunction(Q, copy(get_free_dof_values(hn)))
-  um2    = FEFunction(V, copy(get_free_dof_values(un)))
-  hp     = FEFunction(Q, copy(get_free_dof_values(hn)))
-  up     = FEFunction(V, copy(get_free_dof_values(un)))
-  ϕ      = FEFunction(Q, copy(get_free_dof_values(hn)))
-  F      = FEFunction(V, copy(get_free_dof_values(un)))
-  wn     = FEFunction(S, copy(get_free_dof_values(f)))
-  q1     = FEFunction(S, copy(get_free_dof_values(f)))
-  q2     = FEFunction(S, copy(get_free_dof_values(f)))
-  # first step, no leap frog integration
-  shallow_water_explicit_time_step!(hn, un, ϕ, F, q1, q2, model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, H1h, H1hchol, dt, false, τ, Q, V, R, S)
-  initialize_csv(joinpath(out_dir,"swe_diagnostics.csv"), "time", "mass", "vorticity", "kinetic", "potential", "power")
-  if mod(1, diag_freq) == 0
-    compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, 1, dt, true, out_dir)
-  end
-  
-  # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
-  for istep in 2:nstep
-    hm2,hm1,hn = hm1,hn,hm2
-    um2,um1,un = um1,un,um2
+  function run_simulation(pvd=nothing)
+    diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
 
-    shallow_water_explicit_time_step!(hn, un, ϕ, F, q1, q2, model, dΩ, dω, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, H1h, H1hchol, dt, true, τ, Q, V, R, S)
-    if mod(istep, diag_freq) == 0
-      compute_diagnostics_shallow_water!(wn, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, istep, dt, true, out_dir)
-    end
-    if mod(istep, dump_freq) == 0
-      writevtk(Ω,"$(out_dir)/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
-    end
-  end
+    clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
 
-  hn, un
+    hm1    = clone_fe_function(Q,hn)
+    hm2    = clone_fe_function(Q,hn)
+    hp     = clone_fe_function(Q,hn)
+    ϕ      = clone_fe_function(Q,hn)
+
+    um1    = clone_fe_function(V,un)
+    um2    = clone_fe_function(V,un)
+    up     = clone_fe_function(V,un)
+    F      = clone_fe_function(V,un)
+
+    wn     = clone_fe_function(S,f)
+    q1     = clone_fe_function(S,f)
+    q2     = clone_fe_function(S,f)
+
+    # first step, no leap frog integration
+    shallow_water_explicit_time_step!(hn, un, hp, up, ϕ, F, q1, q2, H1h, H1hchol,
+                                      model, dΩ, dω, V, Q, R, S, f, g, hm1, um1, hm2, um2,
+                                      RTMMchol, L2MMchol, dt, τ, false)
+
+    if (write_diagnostics)
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
+    end
+
+    if (write_diagnostics && write_diagnostics_freq==1)
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+      dump_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                      model, dΩ, dω, S, L2MM, H1MM,
+                                      hn, un, wn, ϕ, F, g, 1, dt,
+                                      diagnostics_file,
+                                      dump_diagnostics_on_screen)
+    end
+
+    # subsequent steps, do leap frog integration
+    # (now that we have the state at two previous time levels)
+    for istep in 2:N
+      hm2,hm1,hn = hm1,hn,hm2
+      um2,um1,un = um1,un,um2
+
+      shallow_water_explicit_time_step!(hn, un, hp, up, ϕ, F, q1, q2, H1h, H1hchol,
+                                        model, dΩ, dω, V, Q, R, S, f, g, hm1, um1, hm2, um2,
+                                        RTMMchol, L2MMchol, dt, τ, true)
+
+      if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        dump_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                        model, dΩ, dω, S, L2MM, H1MM,
+                                        hn, un, wn, ϕ, F, g, istep, dt,
+                                        diagnostics_file,
+                                        dump_diagnostics_on_screen)
+      end
+      if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        pvd[Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),hn,un,wn)
+      end
+    end
+    hn, un
+  end
+  if (write_diagnostics || write_solution)
+    rm(output_dir,force=true,recursive=true)
+    mkdir(output_dir)
+  end
+  if (write_solution)
+    pvdfile=joinpath(output_dir,"nswe_eq_ncells_$(num_cells(model))_order_$(order)_explicit")
+    paraview_collection(run_simulation,pvdfile)
+  else
+    run_simulation()
+  end
 end

@@ -45,7 +45,7 @@ end
 l2_err_u = [0.009872849324844961, 0.002843859325502431,  0.0007415233680146857 ]
 l2_err_h = [0.0056104896146685,   0.0014553891676895856, 0.00036813020391681306]
 
-order  = 1 
+order  = 1
 degree = 4
 
 for i in 1:3
@@ -57,8 +57,14 @@ for i in 1:3
   println("timestep: ", dt)   # gravity wave time step
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
-
-  hf, uf = shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, dt, 0.0*dt, nstep, "sw_exp", 1, 20)
+  hf, uf = shallow_water_time_stepper(model, order, degree,
+                                      h₀, u₀, f₀, g,
+                                      dt, 0.0, nstep;
+                                      write_solution=false,
+                                      write_solution_freq=5,
+                                      write_diagnostics=true,
+                                      write_diagnostics_freq=1,
+                                      dump_diagnostics_on_screen=true)
 
   Ω     = Triangulation(model)
   dΩ    = Measure(Ω, degree)

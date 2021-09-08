@@ -74,22 +74,28 @@ end
 """
   Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
 """
-function compute_diagnostics_shallow_water!(w, model, dΩ, dω, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, step, dt, to_std, out_dir)
+
+function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                         model, dΩ, dω, S, L2MM, H1MM,
+                                         h, u, w, ϕ, F, g, step, dt,
+                                         output_file, dump_on_screen)
+
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
-  # diagnose the vorticity
-  n    = get_normal_vector(model)
-  a(s) = ∫(perp(n,∇(s))⋅(u))dΩ
-  Gridap.FESpaces.assemble_vector!(a, get_free_dof_values(w), S)
-  ldiv!(H1MMchol, get_free_dof_values(w))
   vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
   kin_i  = Eₖ(u,h,dΩ)
   pot_i  = Eₚ(h,g,dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
-  # save to file
-  append_to_csv(joinpath(out_dir,"swe_diagnostics.csv");
-                         time = step*dt, mass = mass_i, vorticity = vort_i, kinetic = kin_i, potential = pot_i, power = pow_i)
-  if to_std
-    println(step, "\t", mass_i, "\t", vort_i, "\t", kin_i, "\t", pot_i, "\t", kin_i+pot_i, "\t", pow_i)
+  append_to_csv(output_file;
+                time       = step*dt,
+                mass       = mass_i,
+                vorticity  = vort_i,
+                kinetic    = kin_i,
+                potential  = pot_i,
+                power      = pow_i)
+
+  if dump_on_screen
+    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
+             step, mass_i, vort_i, kin_i, pot_i, kin_i+pot_i, pow_i)
   end
 end
