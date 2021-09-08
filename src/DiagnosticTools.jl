@@ -1,8 +1,8 @@
 """
   Kinetic energy
 """
-function Eₖ(uh,H,dΩ)
-  0.5*H*sum(∫(uh⋅uh)dΩ)
+function Eₖ(uh,h,dΩ)
+  0.5*sum(∫(uh⋅uh*h)dΩ)
 end
 
 """
@@ -82,8 +82,8 @@ function compute_diagnostics_shallow_water!(w, model, dΩ, dω, S, L2MM, H1MM, H
   Gridap.FESpaces.assemble_vector!(a, get_free_dof_values(w), S)
   ldiv!(H1MMchol, get_free_dof_values(w))
   vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
-  kin_i  = 0.5*sum(∫(h*(u⋅u))dΩ)
-  pot_i  = 0.5*g*sum(∫(h*h)dΩ)
+  kin_i  = Eₖ(u,h,dΩ)
+  pot_i  = Eₚ(h,g,dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
   # save to file
