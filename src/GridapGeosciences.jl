@@ -13,6 +13,7 @@ module GridapGeosciences
   include("CoordinateTransformations.jl")
   include("DiagnosticTools.jl")
   include("ShallowWaterExplicit.jl")
+  include("ShallowWaterRosenbrock.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
@@ -28,7 +29,10 @@ module GridapGeosciences
   export Eₖ, Eₚ, Eₜ
   export compute_kin_to_pot!, compute_pot_to_kin!, compute_total_mass!
   export dump_diagnostics_shallow_water!
+  export compute_mass_flux!, compute_bernoulli_potential!, compute_potential_vorticity!
   export shallow_water_explicit_time_step!
   export shallow_water_time_stepper
+  export shallow_water_rosenbrock_time_step!
+  export shallow_water_rosenbrock_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
 end # module
