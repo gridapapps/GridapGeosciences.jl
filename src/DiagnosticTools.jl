@@ -1,8 +1,8 @@
 """
   Kinetic energy
 """
-function Eₖ(uh,H,dΩ)
-  0.5*H*sum(∫(uh⋅uh)dΩ)
+function Eₖ(uh,h,dΩ)
+  0.5*sum(∫(uh⋅uh*h)dΩ)
 end
 
 """
@@ -43,7 +43,6 @@ function compute_total_mass!(w,L2MM,hh)
   sum(w)
 end
 
-
 """Write scalar diagnostics to csv.
 Diagnostics should be added as kwargs: field=values"""
 function write_to_csv(csv_file_path; kwargs...)
@@ -70,4 +69,33 @@ i.e. :<fieldname>"""
 function get_scalar_field_from_csv(csv_file_path, fieldname)
   t = CSV.read(csv_file_path, Table)
   getproperty(t, fieldname)
+end
+
+"""
+  Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
+"""
+
+function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                         model, dΩ, dω, S, L2MM, H1MM,
+                                         h, u, w, ϕ, F, g, step, dt,
+                                         output_file, dump_on_screen)
+
+  mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
+  vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
+  kin_i  = Eₖ(u,h,dΩ)
+  pot_i  = Eₚ(h,g,dΩ)
+  pow_i  = sum(∫(ϕ*DIV(F))dω)
+
+  append_to_csv(output_file;
+                time       = step*dt,
+                mass       = mass_i,
+                vorticity  = vort_i,
+                kinetic    = kin_i,
+                potential  = pot_i,
+                power      = pow_i)
+
+  if dump_on_screen
+    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
+             step, mass_i, vort_i, kin_i, pot_i, kin_i+pot_i, pow_i)
+  end
 end
