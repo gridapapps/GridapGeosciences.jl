@@ -67,6 +67,13 @@ dt     = 30.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
-hf, uf = shallow_water_time_stepper(model, order, degree, h₀, u₀, f, g, dt, 0.5*dt, nstep, "sw_galewsky_exp", 1, 1)
+hf, uf = shallow_water_time_stepper(model, order, degree,
+                                    h₀, u₀, f, g,
+                                    dt, 0.5*dt, nstep;
+                                    write_solution=true,
+                                    write_solution_freq=240,
+                                    write_diagnostics=true,
+                                    write_diagnostics_freq=1,
+                                    dump_diagnostics_on_screen=true)
 
 end
