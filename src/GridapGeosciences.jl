@@ -2,6 +2,7 @@ module GridapGeosciences
   using Gridap
   using FillArrays
   using LinearAlgebra
+  using CSV
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
@@ -9,7 +10,7 @@ module GridapGeosciences
   include("CoordinateTransformations.jl")
   include("DiagnosticTools.jl")
   include("Weak2DCurlOperators.jl")
-  include("ShallowWaterIntegrators.jl")
+  include("ShallowWaterExplicit.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
