@@ -6,8 +6,7 @@ using GridapGeosciences
 using Plots
 using LinearAlgebra
 using WriteVTK
-using DataFrames
-using CSV
+using JLD
 
 # Initial depth
 function h₀(xyz)
@@ -44,7 +43,6 @@ function generate_energy_plots(outdir,N,ke,pe,kin_to_pot,pot_to_kin)
        xlabel="Step",ylabel="Kinetic to potential energy balance",legend = :outertopleft)
   savefig(joinpath(outdir,"kinetic_to_potential_energy_balance.png"))
 end
-
 
 """
   Solves the wave equation using a 2nd order
@@ -103,15 +101,10 @@ function solve_wave_equation_ssrk2(
       kin_to_pot = Vector{Float64}(undef,N)
       pot_to_kin = Vector{Float64}(undef,N)
       mass = Vector{Float64}(undef,N)
-      initialize_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv"),
-                  "time", "hn_dot_div_un", "un_dot_grad_hn",
-                  "mass", "kinetic", "potential")
     end
     dt  = T/N
     dtg = dt*g
     dtH = dt*H
-
-
     for step=1:N
        # 1st step
        # inv(L2MM)*(L2MM*hnv - dt*Hqdivu*unv)
@@ -139,21 +132,18 @@ function solve_wave_equation_ssrk2(
            println(step)
            pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
          end
-         # save global scalar snapshots
-         append_to_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv");
-                        time = step*dt,
-                        hn_dot_div_un = kin_to_pot[step],
-                        un_dot_grad_hn = pot_to_kin[step],
-                        mass = mass[step],
-                        kinetic = ke[step],
-                        potential= pe[step])
        end
     end
     if (write_results)
       pvd[Float64(N)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(N)"),hn,un)
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
-
+      # save global scalar snapshots
+      save(joinpath(out_dir,"wave_eq_geosciences_data.jld"), "hn_dot_div_un", kin_to_pot,
+                                                "un_dot_grad_hn", pot_to_kin,
+                                                "mass", mass,
+                                                "kinetic", ke,
+                                                "potential", pe)
     end
     un,hn
   end
@@ -177,8 +167,6 @@ degree=4
 @time un,hn =
   solve_wave_equation_ssrk2(model,order,degree,g,H,T,N;write_results=false,out_period=10)
 
-
 @test Eₖ(un,H,Measure(Triangulation(model),degree)) ≈ 1.6984501177784049e-10
-
 
 end # module

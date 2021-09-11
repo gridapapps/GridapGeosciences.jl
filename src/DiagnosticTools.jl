@@ -1,8 +1,8 @@
 """
   Kinetic energy
 """
-function Eₖ(uh,h,dΩ)
-  0.5*sum(∫(uh⋅uh*h)dΩ)
+function Eₖ(uh,H,dΩ)
+  0.5*H*sum(∫(uh⋅uh)dΩ)
 end
 
 """
@@ -74,16 +74,12 @@ end
 """
   Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
 """
-
-function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
-                                         model, dΩ, dω, S, L2MM, H1MM,
-                                         h, u, w, ϕ, F, g, step, dt,
-                                         output_file, dump_on_screen)
-
+function compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, h, u, ϕ, F, dt, step, do_print, output_file, w)
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
+  diagnose_vorticity!(model, order, Ω, qₖ, wₖ, R, S, U, V, H1MMchol, u, w)
   vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
-  kin_i  = Eₖ(u,h,dΩ)
-  pot_i  = Eₚ(h,g,dΩ)
+  kin_i  = 0.5*sum(∫(h*(u⋅u))dΩ)
+  pot_i  = 0.5*g*sum(∫(h*h)dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
 
   append_to_csv(output_file;
@@ -94,8 +90,14 @@ function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                 potential  = pot_i,
                 power      = pow_i)
 
-  if dump_on_screen
-    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
-             step, mass_i, vort_i, kin_i, pot_i, kin_i+pot_i, pow_i)
+  if do_print
+    # normalised conservation errors
+    mass_norm = (mass_i-mass[1])/mass[1]
+    vort_norm = vort_i-vort[1]
+    en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
+    println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
   end
+
+  w
 end
+
