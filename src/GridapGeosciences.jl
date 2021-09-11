@@ -3,6 +3,9 @@ module GridapGeosciences
   using FillArrays
   using LinearAlgebra
   using CSV
+  using DataFrames
+  using WriteVTK
+  using Printf
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")

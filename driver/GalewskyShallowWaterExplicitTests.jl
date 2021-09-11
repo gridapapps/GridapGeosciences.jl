@@ -62,18 +62,13 @@ order  = 1
 degree = 4
 
 n      = 48
-nstep  = 20*24*60*2 # 20 days
-dt     = 30.0
+nstep  = 20*24*60 # 20 days
+dt     = 60.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
-hf, uf = shallow_water_time_stepper(model, order, degree,
-                                    h₀, u₀, f, g,
-                                    dt, 0.5*dt, nstep;
-                                    write_solution=true,
-                                    write_solution_freq=240,
-                                    write_diagnostics=true,
-                                    write_diagnostics_freq=1,
-                                    dump_diagnostics_on_screen=true)
+hf, uf = shallow_water_time_stepper(model, order, degree, 
+				    h₀, u₀, f, g, 
+				    nstep, 1, 120, dt, 0.5*dt)
 
 end
