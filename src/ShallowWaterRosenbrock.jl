@@ -38,7 +38,7 @@ function shallow_water_rosenbrock_time_step!(
 
   yₚ  = clone_fe_function(Y,y₁)
   uₚ,hₚ = yₚ
-  println("Time step:", dt)
+
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
@@ -79,6 +79,7 @@ function shallow_water_rosenbrock_time_step!(
   # add A*[du₁,dh₁] to the [du₂,dh₂] vector
   bₕᵤ₂((v,q)) = bᵤ₁(v) + bₕ₂(q)
   Gridap.FESpaces.assemble_vector!(bₕᵤ₂, get_free_dof_values(duh₂), Y)
+  println(typeof(Amat))
   get_free_dof_values(duh₂) .= Amat*get_free_dof_values(duh₂) .+ get_free_dof_values(duh₁)
 
   # solve for du₂, dh₂
@@ -218,7 +219,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1,
-                                          RTMMchol, L2MMchol, Amat, Bchol, dt, τ)
+                                          RTMMchol, L2MMchol, A, Bchol, dt, τ)
 
       # shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol,
       #                                     model, dΩ, dω, Y, R, S, f, g, ym1,
