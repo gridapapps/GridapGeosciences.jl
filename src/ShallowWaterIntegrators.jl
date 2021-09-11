@@ -70,7 +70,7 @@ function shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f
   ldiv!(L2MMchol, get_free_dof_values(h₂))
 end
 
-function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ, method)
+function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, nstep, diag_freq, dump_freq, dt, τ)
   # Forward integration of the shallow water equations using a supplied method
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)
@@ -116,12 +116,9 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
   f       = FEFunction(S, copy(rhs3))
   ldiv!(H1MMchol, get_free_dof_values(f))
 
-  # initialise the diagnostics arrays
-  mass = Vector{Float64}(undef, nstep)
-  vort = Vector{Float64}(undef, nstep)
-  kin  = Vector{Float64}(undef, nstep)
-  pot  = Vector{Float64}(undef, nstep)
-  pow  = Vector{Float64}(undef, nstep)
+  output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_explicit"
+  diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
+  initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
 
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
@@ -139,7 +136,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
   # first step, no leap frog integration
   shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, false, τ, P, Q, U, V, R, S, hn, un, ϕ, F)
   if mod(1, diag_freq) == 0
-    compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, 1, true, wn)
+    compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, dt, 1, true, diagnostics_file, wn)
   end
   
   # subsequent steps, do leap frog integration (now that we have the state at two previous time levels)
@@ -151,7 +148,7 @@ function shallow_water_time_stepper(model, order, degree, h₀, u₀, f₀, g, n
 
     shallow_water_explicit_time_step!(model, order, dΩ, dω, qₖ, wₖ, f, g, hm1, um1, hm2, um2, hp, up, RTMMchol, L2MMchol, dt, true, τ, P, Q, U, V, R, S, hn, un, ϕ, F)
     if mod(istep, diag_freq) == 0
-      compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, mass, vort, kin, pot, pow, istep, true, wn)
+      compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, wₖ, U, V, R, S, L2MM, H1MM, H1MMchol, h_tmp, w_tmp, g, hn, un, ϕ, F, dt, istep, true, diagnostics_file, wn)
     end
     if mod(istep, dump_freq) == 0
       writevtk(Ω,"local/shallow_water_exp_n=$(istep)",cellfields=["hn"=>hn, "un"=>un, "wn"=>wn])
