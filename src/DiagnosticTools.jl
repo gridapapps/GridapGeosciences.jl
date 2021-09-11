@@ -91,11 +91,7 @@ function compute_diagnostics_shallow_water!(model, order, Ω, dΩ, dω, qₖ, w�
                 power      = pow_i)
 
   if do_print
-    # normalised conservation errors
-    mass_norm = (mass_i-mass[1])/mass[1]
-    vort_norm = vort_i-vort[1]
-    en_norm   = (kin_i+pot_i-kin[1]-pot[1])/(kin[1]+pot[1])
-    println(step, "\t", mass_norm, "\t", vort_norm, "\t", kin_i, "\t", pot_i, "\t", en_norm, "\t", pow_i)
+    println(step, "\t", mass_i, "\t", vort_i, "\t", kin_i, "\t", pot_i, "\t", pow_i)
   end
 
   w
