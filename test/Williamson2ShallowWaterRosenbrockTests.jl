@@ -48,7 +48,7 @@ l2_err_h = [0.00561048961466849,  0.0014553891676895917, 0.0003681302039168149]
 order  = 1
 degree = 4
 
-λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+λ = 0 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
 
 for i in 1:3
   n      = 2*2^i

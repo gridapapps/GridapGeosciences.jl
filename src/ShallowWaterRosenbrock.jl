@@ -177,7 +177,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(model)
   H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
-  λ = 0# magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+
   Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
   Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
