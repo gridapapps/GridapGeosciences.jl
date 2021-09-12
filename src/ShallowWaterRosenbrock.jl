@@ -36,8 +36,8 @@ function shallow_water_rosenbrock_time_step!(
   du₁,dh₁ = duh₁
   du₂,dh₂ = duh₂
 
-  yₚ  = clone_fe_function(Y,y₁)
-  uₚ,hₚ = yₚ
+  # yₚ  = clone_fe_function(Y,y₁)
+  # uₚ,hₚ = yₚ
 
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
@@ -60,17 +60,17 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Bchol, get_free_dof_values(duh₁))
 
   # update
-  get_free_dof_values(uₚ) .= get_free_dof_values(u₁) .+ dt .* get_free_dof_values(du₁)
-  get_free_dof_values(hₚ) .= get_free_dof_values(h₁) .+ dt .* get_free_dof_values(dh₁)
+  get_free_dof_values(u₂) .= get_free_dof_values(u₁) .+ dt .* get_free_dof_values(du₁)
+  get_free_dof_values(h₂) .= get_free_dof_values(h₁) .+ dt .* get_free_dof_values(dh₁)
 
   # 2.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
   # 2.3: the potential vorticity
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n)
   # 2.4: assemble the velocity residual
-  bᵤ₂(v) = ∫(-0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*uₚ⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
+  bᵤ₂(v) = ∫(-0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
   Gridap.FESpaces.assemble_vector!(bᵤ₂, get_free_dof_values(du₂), V)
   # 2.5: assemble the depth residual
   bₕ₂(q) = ∫(-q*DIV(F))dω
@@ -80,7 +80,7 @@ function shallow_water_rosenbrock_time_step!(
   bₕᵤ₂((v,q)) = bᵤ₁(v) + bₕ₂(q)
   Gridap.FESpaces.assemble_vector!(bₕᵤ₂, get_free_dof_values(duh₂), Y)
   println(typeof(Amat))
-  get_free_dof_values(duh₂) .= Amat*get_free_dof_values(duh₂) .+ get_free_dof_values(duh₁)
+  get_free_dof_values(duh₂) .= Amat*get_free_dof_values(duh₁) .+ get_free_dof_values(duh₂)
 
   # solve for du₂, dh₂
   ldiv!(Bchol, get_free_dof_values(duh₂))
@@ -157,9 +157,10 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   n = get_normal_vector(model)
   λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
   Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
-  Bmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
+  Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
-  B = assemble_matrix(Bmat, X,Y)
+  M = assemble_matrix(Mmat, X,Y)
+  B = M-dt*λ*A
   Bchol = lu(B)
 
   # multifield initial condtions
