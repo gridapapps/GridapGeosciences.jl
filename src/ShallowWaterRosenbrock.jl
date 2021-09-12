@@ -177,20 +177,22 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(model)
   H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
-  λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+  λ = 0# magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
   Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
   Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
   M = assemble_matrix(Mmat, X,Y)
   B = M-dt*λ*A
   Bchol = lu(B)
+  Mchol = lu(M)
 
 
   # multifield initial condtions
   b₄((v,q)) = b₁(q) + b₂(v)
   rhs4    = assemble_vector(b₄, Y)
   yn      = FEFunction(Y, copy(rhs4))
-  ldiv!(Bchol, get_free_dof_values(yn))
+  ldiv!(Mchol, get_free_dof_values(yn))
+
 
 
   function run_simulation(pvd=nothing)
@@ -198,15 +200,15 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
     clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
 
-    hm1    = clone_fe_function(Q,hn)
+    # hm1    = clone_fe_function(Q,hn)
     ϕ      = clone_fe_function(Q,hn)
-    dh1    = clone_fe_function(Q,hn)
-    dh2    = clone_fe_function(Q,hn)
+    # dh1    = clone_fe_function(Q,hn)
+    # dh2    = clone_fe_function(Q,hn)
 
-    um1    = clone_fe_function(V,un)
+    # um1    = clone_fe_function(V,un)
     F      = clone_fe_function(V,un)
-    du1    = clone_fe_function(V,un)
-    du2    = clone_fe_function(V,un)
+    # du1    = clone_fe_function(V,un)
+    # du2    = clone_fe_function(V,un)
 
     wn     = clone_fe_function(S,f)
     q1     = clone_fe_function(S,f)
