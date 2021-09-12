@@ -10,9 +10,9 @@ end
 clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
 
 function shallow_water_rosenbrock_time_step!(
-     y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol,  # in/out args
-     model, dΩ, dω, Y, V, Q, R, S, f, g, y₁,                 # in args
-     RTMMchol, L2MMchol, Amat, Bchol, dt, τ, λ)                  # more in args
+     y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
+     model, dΩ, dω, Y, V, Q, R, S, f, g, y₁,             # in args
+     RTMMchol, L2MMchol, Amat, Bchol, dt, τ, λ)          # more in args
 
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
@@ -78,12 +78,11 @@ function shallow_water_rosenbrock_time_step!(
   Gridap.FESpaces.assemble_vector!(bₕ₂, get_free_dof_values(dh₂), Q)
 
   # add A*[du₁,dh₁] to the [du₂,dh₂] vector
-  bₕᵤ₂((v,q)) = bᵤ₁(v) + bₕ₂(q)
+  bₕᵤ₂((v,q)) = bᵤ₂(v) + bₕ₂(q)
   Gridap.FESpaces.assemble_vector!(bₕᵤ₂, get_free_dof_values(duh₂), Y)
 
-  uh_tmp = copy(get_free_dof_values(duh₁))
-  mul!(uh_tmp, Amat, get_free_dof_values(duh₁))
-  get_free_dof_values(duh₂) .= -dt.*λ.*uh_tmp .+ get_free_dof_values(duh₂)
+  mul!(y_wrk, Amat, get_free_dof_values(duh₁))
+  get_free_dof_values(duh₂) .= -dt.*λ.*y_wrk .+ get_free_dof_values(duh₂)
 
   # solve for du₂, dh₂
   ldiv!(Bchol, get_free_dof_values(duh₂))
@@ -109,6 +108,7 @@ function compute_mean_depth!(wrk, L2MM, h)
   tmp   = L2MM*wrk # create a new vector, only doing this once during initialisation
   a_int = sum(tmp)
   h_avg = h_int/a_int
+  println("mean depth: ", h_avg)
   h_avg
 end
 
@@ -216,6 +216,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     ym1     = clone_fe_function(Y,yn)
     duh1    = clone_fe_function(Y,yn)
     duh2    = clone_fe_function(Y,yn)
+    y_wrk   = copy(get_free_dof_values(yn))
 
     um1, hm1 = ym1
     dh1, du1 = duh1
@@ -232,7 +233,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
       ym1 = yn
 
-      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol,
+      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1,
                                           RTMMchol, L2MMchol, A, Bchol, dt, τ, λ)
 
