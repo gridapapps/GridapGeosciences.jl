@@ -59,7 +59,7 @@ for i in 1:3
   model = CubedSphereDiscreteModel(n; radius=rₑ)
   hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                 h₀, u₀, f₀, g,
-                                                dt, 0.0, nstep, H₀;
+                                                dt, 0.0, nstep;
                                                 write_solution=false,
                                                 write_solution_freq=5,
                                                 write_diagnostics=true,

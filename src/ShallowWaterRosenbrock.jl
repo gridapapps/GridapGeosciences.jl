@@ -1,3 +1,4 @@
+
 function compute_velocity_depth_residual!(duh₁,dΩ,dω,Y,Bchol,u2,q,F,ϕ,n)
   bᵤ₁(v) = ∫(-1.0*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
   bₕ₂(q) = ∫(-q*DIV(F))dω
@@ -103,7 +104,7 @@ function compute_mean_depth!(wrk, L2MM, h)
   mul!(wrk, L2MM, get_free_dof_values(h))
   h_int = sum(wrk)
   wrk  .= 1.0
-  tmp   = mul(L2MM, wrk) # create a new vector, only doing this once during initialisation
+  tmp   = L2MM*wrk # create a new vector, only doing this once during initialisation
   a_int = sum(tmp)
   h_avg = h_int/a_int
   h_avg
@@ -111,7 +112,7 @@ end
 
 function shallow_water_rosenbrock_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
-                        dt, τ, N, H₀;
+                        dt, τ, N;
                         write_diagnostics=true,
                         write_diagnostics_freq=1,
                         dump_diagnostics_on_screen=true,
@@ -163,24 +164,6 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   f       = FEFunction(S, copy(rhs3))
   ldiv!(H1MMchol, get_free_dof_values(f))
 
-  # TODO assemble the approximate MultiFieldFESpace Jacobian
-  n = get_normal_vector(model)
-  λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
-  Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
-  Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
-  A = assemble_matrix(Amat, X,Y)
-  M = assemble_matrix(Mmat, X,Y)
-  B = M-dt*λ*A
-  Bchol = lu(B)
-
-  # multifield initial condtions
-
-  b₄((v,q)) = b₁(q) + b₂(v)
-  rhs4    = assemble_vector(b₄, Y)
-  yn      = FEFunction(Y, copy(rhs4))
-  ldiv!(Bchol, get_free_dof_values(yn))
-
-
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
   w_tmp = copy(get_free_dof_values(f))
@@ -189,12 +172,24 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   H1h      = assemble_matrix(bmm, R, S)
   H1hchol  = lu(H1h)
 
-  # TODO assemble the approximate MultiFieldFESpace Jacobian
-  λ  = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+  # assemble the approximate MultiFieldFESpace Jacobian
+  n = get_normal_vector(model)
   H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
-  Amat =  # this one does NOT contain the mass matrices in the diagonal blocks
-  Bmat =  # ...and this one does
+  λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+  Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
+  Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
+  A = assemble_matrix(Amat, X,Y)
+  M = assemble_matrix(Mmat, X,Y)
+  B = M-dt*λ*A
   Bchol = lu(B)
+
+
+  # multifield initial condtions
+  b₄((v,q)) = b₁(q) + b₂(v)
+  rhs4    = assemble_vector(b₄, Y)
+  yn      = FEFunction(Y, copy(rhs4))
+  ldiv!(Bchol, get_free_dof_values(yn))
+
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
