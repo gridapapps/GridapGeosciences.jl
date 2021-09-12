@@ -185,13 +185,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   B = M-dt*λ*A
   Bchol = lu(B)
 
-
-  # multifield initial condtions
-  b₄((v,q)) = b₁(q) + b₂(v)
-  rhs4    = assemble_vector(b₄, Y)
-  yn      = FEFunction(Y, copy(rhs4))
-  ldiv!(Bchol, get_free_dof_values(yn))
-
+  yn = un,hn
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
