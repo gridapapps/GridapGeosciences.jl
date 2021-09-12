@@ -98,6 +98,16 @@ function new_vtk_step(Ω,file,hn,un,wn)
             nsubcells=4)
 end
 
+function compute_mean_depth!(wrk, L2MM, h)
+  # compute the mean depth over the sphere, for use in the approximate Jacobian
+  mul!(wrk, L2MM, get_free_dof_values(h))
+  h_int = sum(wrk)
+  wrk  .= 1.0
+  tmp   = mul(L2MM, wrk) # create a new vector, only doing this once during initialisation
+  a_int = sum(tmp)
+  h_avg = h_int/a_int
+  h_avg
+end
 
 function shallow_water_rosenbrock_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
@@ -178,6 +188,13 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
   H1hchol  = lu(H1h)
+
+  # TODO assemble the approximate MultiFieldFESpace Jacobian
+  λ  = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+  H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
+  Amat =  # this one does NOT contain the mass matrices in the diagonal blocks
+  Bmat =  # ...and this one does
+  Bchol = lu(B)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
