@@ -61,6 +61,8 @@ end
 order  = 1 
 degree = 4
 
+λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+
 n      = 48
 nstep  = 20*24*60*2 # 20 days
 dt     = 30.0
@@ -69,7 +71,7 @@ model = CubedSphereDiscreteModel(n; radius=rₑ)
 
 hf, uf = shallow_water_time_stepper(model, order, degree,
                                     h₀, u₀, f, g,
-                                    dt, 0.5*dt, nstep;
+                                    λ, dt, 0.5*dt, nstep;
                                     write_solution=true,
                                     write_solution_freq=240,
                                     write_diagnostics=true,
