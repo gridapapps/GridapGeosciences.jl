@@ -114,7 +114,7 @@ end
 
 function shallow_water_rosenbrock_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
-                        dt, τ, N;
+                        λ, dt, τ, N;
                         write_diagnostics=true,
                         write_diagnostics_freq=1,
                         dump_diagnostics_on_screen=true,
@@ -238,10 +238,6 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1,
                                           RTMMchol, L2MMchol, A, Bchol, dt, τ, λ)
-
-      # shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol,
-      #                                     model, dΩ, dω, Y, R, S, f, g, ym1,
-      #                                     RTMMchol, L2MMchol, Amat, Bchol, dt, τ)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
