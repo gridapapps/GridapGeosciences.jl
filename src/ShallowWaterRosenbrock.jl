@@ -48,10 +48,10 @@ function shallow_water_rosenbrock_time_step!(
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
   # 1.4: assemble the velocity residual
   bᵤ₁(v) = ∫(-1.0*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(bᵤ₁, get_free_dof_values(du₁), V)
+  #Gridap.FESpaces.assemble_vector!(bᵤ₁, get_free_dof_values(du₁), V)
   # 1.5: assemble the depth residual
   bₕ₁(q) = ∫(-q*DIV(F))dω
-  Gridap.FESpaces.assemble_vector!(bₕ₁, get_free_dof_values(dh₁), Q)
+  #Gridap.FESpaces.assemble_vector!(bₕ₁, get_free_dof_values(dh₁), Q)
 
   bₕᵤ₁((v,q)) = bᵤ₁(v) + bₕ₁(q)
   Gridap.FESpaces.assemble_vector!(bₕᵤ₁, get_free_dof_values(duh₁), Y)
@@ -72,10 +72,10 @@ function shallow_water_rosenbrock_time_step!(
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n)
   # 2.4: assemble the velocity residual
   bᵤ₂(v) = ∫(-0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
-  Gridap.FESpaces.assemble_vector!(bᵤ₂, get_free_dof_values(du₂), V)
+  #Gridap.FESpaces.assemble_vector!(bᵤ₂, get_free_dof_values(du₂), V)
   # 2.5: assemble the depth residual
   bₕ₂(q) = ∫(-q*DIV(F))dω
-  Gridap.FESpaces.assemble_vector!(bₕ₂, get_free_dof_values(dh₂), Q)
+  #Gridap.FESpaces.assemble_vector!(bₕ₂, get_free_dof_values(dh₂), Q)
 
   # add A*[du₁,dh₁] to the [du₂,dh₂] vector
   bₕᵤ₂((v,q)) = bᵤ₂(v) + bₕ₂(q)
@@ -178,7 +178,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   n = get_normal_vector(model)
   H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
 
-  Amat((u,p),(v,q)) =  ∫(f₀*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
+  Amat((u,p),(v,q)) =  ∫(f*(v⋅⟂(u,n)))dΩ - ∫(g*(DIV(v)*p))dω + ∫(H₀*(q*DIV(u)))dω # this one does NOT contain the mass matrices in the diagonal blocks
   Mmat((u,p),(v,q)) =  ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
   M = assemble_matrix(Mmat, X,Y)
