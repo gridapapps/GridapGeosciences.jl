@@ -8,5 +8,6 @@ using Test
   @time @testset "LaplaceBeltramiCubedSphereTests" begin include("LaplaceBeltramiCubedSphereTests.jl") end
   @time @testset "WaveEquationCubedSphereTests" begin include("WaveEquationCubedSphereTests.jl") end
   @time @testset "Williamson2ShallowWaterExplicitTests" begin include("Williamson2ShallowWaterExplicitTests.jl") end
+  @time @testset "Williamson2ShallowWaterRosenbrockTests" begin include("Williamson2ShallowWaterRosenbrockTests.jl") end
   
 end
