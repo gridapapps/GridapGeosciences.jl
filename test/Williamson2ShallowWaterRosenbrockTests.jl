@@ -48,7 +48,7 @@ l2_err_h = [0.00561048961466849,  0.0014553891676895917, 0.0003681302039168149]
 order  = 1
 degree = 4
 
-λ = 0 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+λ = 0.0 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
 
 for i in 1:3
   n      = 2*2^i
@@ -59,9 +59,10 @@ for i in 1:3
   println("timestep: ", dt)   # gravity wave time step
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
-  hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
+  hf, uf = _shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                 h₀, u₀, f₀, g,
                                                 λ, dt, 0.0, nstep;
+                                                leap_frog=true,
                                                 write_solution=false,
                                                 write_solution_freq=5,
                                                 write_diagnostics=true,
