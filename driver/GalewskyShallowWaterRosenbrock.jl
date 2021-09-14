@@ -61,9 +61,9 @@ end
 order  = 1 
 degree = 4
 
-λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
+λ = 0.0 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
 
-n      = 24
+n      = 48
 nstep  = 20*24*60*2 # 20 days
 dt     = 60.0
 
@@ -72,8 +72,9 @@ model = CubedSphereDiscreteModel(n; radius=rₑ)
 hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                h₀, u₀, f, g,
                                                λ, dt, 0.5*dt, nstep;
+                                               leap_frog=false,
                                                write_solution=true,
-                                               write_solution_freq=5,
+                                               write_solution_freq=240,
                                                write_diagnostics=true,
                                                write_diagnostics_freq=1,
                                                dump_diagnostics_on_screen=true)
