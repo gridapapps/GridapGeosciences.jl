@@ -164,7 +164,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   n = get_normal_vector(model)
   H₀ = compute_mean_depth!(h_tmp, L2MM, hn)
 
-  Amat((u,p),(v,q)) = ∫(dt*λ*f*(v⋅⟂(u,n)))dΩ - ∫(dt*λ*g*(DIV(v)*p))dω + ∫(dt*λ*H₀*(q*DIV(u)))dω
+  Amat((u,p),(v,q)) = ∫(-dt*λ*f*(v⋅⟂(u,n)))dΩ + ∫(dt*λ*g*(DIV(v)*p))dω - ∫(dt*λ*H₀*(q*DIV(u)))dω
   Mmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
   M = assemble_matrix(Mmat, X,Y)
