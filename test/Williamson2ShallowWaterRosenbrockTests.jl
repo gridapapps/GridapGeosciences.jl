@@ -42,8 +42,8 @@ function h₀(xyz)
   H₀ - (rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*h*h/g
 end
 
-l2_err_u = [0.009872849324844975, 0.002843859325502451,  0.0007415233680147055]
-l2_err_h = [0.00561048961466849,  0.0014553891676895917, 0.0003681302039168149]
+l2_err_u = [0.00907487944711252,   0.0026382699969271428, 0.0006936915264726168 ]
+l2_err_h = [0.0055751846474170474, 0.0014494983476056997, 0.00036681271634370126]
 
 order  = 1
 degree = 4
@@ -55,7 +55,7 @@ for i in 1:3
   nstep  = 5*n
   Uc     = sqrt(g*H₀)
   dx     = 2.0*π*rₑ/(4*n)
-  dt     = 0.05*dx/Uc
+  dt     = 0.25*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
@@ -79,8 +79,8 @@ for i in 1:3
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
 
-#  @test abs(err_u - l2_err_u[i]) < 10.0^-12
-#  @test abs(err_h - l2_err_h[i]) < 10.0^-12
+  @test abs(err_u - l2_err_u[i]) < 10.0^-12
+  @test abs(err_h - l2_err_h[i]) < 10.0^-12
 end
 
 end
