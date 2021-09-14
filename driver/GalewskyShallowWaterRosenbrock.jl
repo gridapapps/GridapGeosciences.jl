@@ -9,6 +9,8 @@ using GridapGeosciences
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
 
+H₀ = 10000.0
+
 function uθ(θϕr)
   θ,ϕ,r = θϕr
   ϵ     = 1.0e-8
@@ -35,7 +37,7 @@ function h₀(xyz)
   θϕr   = xyz2θϕr(xyz)
   x,y,z = xyz
   θ,ϕ,r = θϕr
-  h     = 10000.0
+  h     = H₀
   hh    = 120.0
   α     = 1.0/3.0
   β     = 1.0/15.0
@@ -65,14 +67,14 @@ degree = 4
 
 n      = 48
 nstep  = 20*24*10 # 20 days
-dt     = 360.0
+dt     = 450.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
 hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
-                                               h₀, u₀, f, g,
+                                               h₀, u₀, f, g, H₀,
                                                λ, dt, 0.5*dt, nstep;
-                                               leap_frog=false,
+                                               leap_frog=true,
                                                write_solution=true,
                                                write_solution_freq=40,
                                                write_diagnostics=true,
