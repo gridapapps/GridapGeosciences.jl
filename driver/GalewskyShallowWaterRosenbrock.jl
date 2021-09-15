@@ -1,4 +1,4 @@
-module GalewskyShallowWaterExplicitTests
+module GalewskyShallowWaterRosenbrock
 
 using Gridap
 using GridapGeosciences
@@ -66,8 +66,8 @@ degree = 4
 λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
 
 n      = 48
-nstep  = 20*24*10 # 20 days
-dt     = 450.0
+nstep  = 20*24*20 # 20 days
+dt     = 300.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 

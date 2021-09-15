@@ -227,7 +227,8 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     end
     # time step iteration loop
     for istep in 2:N
-      ym2,ym1,yn = ym1,yn,ym2
+      get_free_dof_values(ym2) .= get_free_dof_values(ym1)
+      get_free_dof_values(ym1) .= get_free_dof_values(yn)
 
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
