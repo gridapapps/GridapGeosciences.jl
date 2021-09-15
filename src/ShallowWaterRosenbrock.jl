@@ -205,6 +205,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     um1, hm1 = ym1
     dh1, du1 = duh1
     dh2, du2 = duh2
+    un,hn = yn
 
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
