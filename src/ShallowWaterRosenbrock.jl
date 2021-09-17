@@ -138,27 +138,11 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
-  rhs1    = assemble_vector(b₁, Q)
-  hn      = FEFunction(Q, copy(rhs1))
-  ldiv!(L2MMchol, get_free_dof_values(hn))
-
   b₂(v)   = ∫(v⋅u₀)dΩ
-  rhs2    = assemble_vector(b₂, V)
-  un      = FEFunction(V, copy(rhs2))
-  ldiv!(RTMMchol, get_free_dof_values(un))
-
   b₃(s)   = ∫(s*f₀)*dΩ
-  rhs3    = assemble_vector(b₃, S)
-  f       = FEFunction(S, copy(rhs3))
+  rhs1    = assemble_vector(b₃, S)
+  f       = FEFunction(S, copy(rhs1))
   ldiv!(H1MMchol, get_free_dof_values(f))
-
-  # work arrays
-  h_tmp = copy(get_free_dof_values(hn))
-  w_tmp = copy(get_free_dof_values(f))
-  # build the potential vorticity lhs operator once just to initialise
-  bmm(a,b) = ∫(a*hn*b)dΩ
-  H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = lu(H1h)
 
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(model)
@@ -180,9 +164,20 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
   # multifield initial condtions
   b₄((v,q)) = b₁(q) + b₂(v)
-  rhs4    = assemble_vector(b₄, Y)
-  yn      = FEFunction(Y, copy(rhs4))
+  rhs2    = assemble_vector(b₄, Y)
+  yn      = FEFunction(Y, copy(rhs2))
   ldiv!(Mchol, get_free_dof_values(yn))
+
+  un, hn = yn
+
+  # work arrays
+  h_tmp = copy(get_free_dof_values(hn))
+  w_tmp = copy(get_free_dof_values(f))
+
+  # build the potential vorticity lhs operator once just to initialise
+  bmm(a,b) = ∫(a*hn*b)dΩ
+  H1h      = assemble_matrix(bmm, R, S)
+  H1hchol  = lu(H1h)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
@@ -201,11 +196,6 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     duh1    = clone_fe_function(Y,yn)
     duh2    = clone_fe_function(Y,yn)
     y_wrk   = copy(get_free_dof_values(yn))
-
-    um1, hm1 = ym1
-    dh1, du1 = duh1
-    dh2, du2 = duh2
-    un,hn = yn
 
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
