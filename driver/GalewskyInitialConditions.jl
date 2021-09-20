@@ -1,5 +1,3 @@
-module GalewskyInitialConditions
-
 using Gridap
 using GridapGeosciences
 
@@ -8,6 +6,8 @@ using GridapGeosciences
 # jet triggered by an initial gravity wave.
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
+
+const H₀ = 10000.0
 
 function uθ(θϕr)
   θ,ϕ,r = θϕr
@@ -35,7 +35,7 @@ function h₀(xyz)
   θϕr   = xyz2θϕr(xyz)
   x,y,z = xyz
   θ,ϕ,r = θϕr
-  h     = 10000.0
+  h     = H₀
   hh    = 120.0
   α     = 1.0/3.0
   β     = 1.0/15.0
@@ -56,6 +56,4 @@ function h₀(xyz)
   end
   h = h + hh*cos(ϕ)*exp(-1.0*(θ/α)*(θ/α))*exp(-1.0*((ϕ₂ - ϕ)/β)*((ϕ₂ - ϕ)/β))
   h
-end
-
 end
