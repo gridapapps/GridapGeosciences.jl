@@ -157,9 +157,10 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
 
   # multifield initial condtions
   b₄((v,q)) = b₁(q) + b₂(v)
-  rhs2    = assemble_vector(b₄, Y)
-  yn      = FEFunction(Y, copy(rhs2))
-  ldiv!(Mchol, get_free_dof_values(yn))
+  rhs2  = assemble_vector(b₄, Y)
+  ldiv!(Mchol, rhs2)
+  yn  = FEFunction(Y, rhs2)
+
 
   un, hn = yn
 
