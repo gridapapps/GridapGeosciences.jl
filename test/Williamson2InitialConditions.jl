@@ -1,6 +1,5 @@
 module Williamson2InitialConditions
 
-using FillArrays
 using Gridap
 using GridapGeosciences
 
