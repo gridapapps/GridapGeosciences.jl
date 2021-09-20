@@ -87,14 +87,6 @@ function shallow_water_explicit_time_step!(
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
 end
 
-function new_vtk_step(Ω,file,hn,un,wn)
-  createvtk(Ω,
-            file,
-            cellfields=["hn"=>hn, "un"=>un, "wn"=>wn],
-            nsubcells=4)
-end
-
-
 function shallow_water_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
                         dt, τ, N;

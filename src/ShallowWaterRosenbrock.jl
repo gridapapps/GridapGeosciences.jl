@@ -72,22 +72,12 @@ function shallow_water_rosenbrock_time_step!(
   get_free_dof_values(y₂) .= get_free_dof_values(y₁) .+ dt .* get_free_dof_values(duh₂)
 end
 
-function new_vtk_step(Ω,file,hn,un,wn)
-  createvtk(Ω,
-            file,
-            cellfields=["hn"=>hn, "un"=>un, "wn"=>wn],
-            nsubcells=4)
-end
-
 function compute_mean_depth!(wrk, L2MM, h)
   # compute the mean depth over the sphere, for use in the approximate Jacobian
   mul!(wrk, L2MM, get_free_dof_values(h))
   h_int = sum(wrk)
-  wrk  .= 1.0
-  tmp   = L2MM*wrk # create a new vector, only doing this once during initialisation
-  a_int = sum(tmp)
+  a_int = sum(L2MM,dims=[1,2])
   h_avg = h_int/a_int
-  println("mean depth: ", h_avg)
   h_avg
 end
 
