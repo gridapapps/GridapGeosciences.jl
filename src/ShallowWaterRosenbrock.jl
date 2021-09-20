@@ -25,11 +25,6 @@ function shallow_water_rosenbrock_time_step!(
 
   # multifield terms
   u₁, h₁ = y₁
-  u₂, h₂ = y₂
-  uₘ, hₘ = yₘ
-
-  du₁,dh₁ = duh₁
-  du₂,dh₂ = duh₂
 
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
@@ -49,9 +44,9 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Blfchol, get_free_dof_values(duh₁))
 
   # update
-  get_free_dof_values(u₂) .= get_free_dof_values(uₘ) .+ dt₁ .* get_free_dof_values(du₁)
-  get_free_dof_values(h₂) .= get_free_dof_values(hₘ) .+ dt₁ .* get_free_dof_values(dh₁)
+  get_free_dof_values(y₂) .= get_free_dof_values(yₘ) .+ dt₁ .* get_free_dof_values(duh₁)
 
+  u₂, h₂ = y₂
   # 2.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
   # 2.2: the bernoulli function
@@ -63,10 +58,10 @@ function shallow_water_rosenbrock_time_step!(
   # 2.5: assemble the depth residual
   bₕ₂(q) = ∫(-q*DIV(F))dω
 
-  # add A*[du₁,dh₁] to the [du₂,dh₂] vector
   bₕᵤ₂((v,q)) = bᵤ₂(v) + bₕ₂(q)
   Gridap.FESpaces.assemble_vector!(bₕᵤ₂, get_free_dof_values(duh₂), Y)
 
+  # subtract A*[du₁,dh₁] from [du₂,dh₂] vector
   mul!(y_wrk, Amat, get_free_dof_values(duh₁))
   get_free_dof_values(duh₂) .= get_free_dof_values(duh₂) .- y_wrk
 
@@ -74,9 +69,7 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Bchol, get_free_dof_values(duh₂))
 
   # update yⁿ⁺¹
-  du₂, dh₂ = duh₂
-  get_free_dof_values(u₂) .= get_free_dof_values(u₁) .+ dt .* get_free_dof_values(du₂)
-  get_free_dof_values(h₂) .= get_free_dof_values(h₁) .+ dt .* get_free_dof_values(dh₂)
+  get_free_dof_values(y₂) .= get_free_dof_values(y₁) .+ dt .* get_free_dof_values(duh₂)
 end
 
 function new_vtk_step(Ω,file,hn,un,wn)
