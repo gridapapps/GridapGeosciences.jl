@@ -1,3 +1,10 @@
+function assemble_residuals!(dhu, dΩ, dω, Y, qAPVM, ϕ, F, n)
+  bᵤ(v) = ∫(-1.0*qAPVM*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
+  bₕ(q) = ∫(-q*DIV(F))dω
+  bₕᵤ((v,q)) = bᵤ(v) + bₕ(q)
+  Gridap.FESpaces.assemble_vector!(bₕᵤ, duh, Y)
+end
+
 function shallow_water_rosenbrock_time_step!(
      y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
      model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, yₘ,         # in args
@@ -32,19 +39,14 @@ function shallow_water_rosenbrock_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
-  # 1.4: assemble the velocity residual
-  bᵤ₁(v) = ∫(-1.0*(q₁ - τ*u₁⋅∇(q₁))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
-  # 1.5: assemble the depth residual
-  bₕ₁(q) = ∫(-q*DIV(F))dω
-
-  bₕᵤ₁((v,q)) = bᵤ₁(v) + bₕ₁(q)
-  Gridap.FESpaces.assemble_vector!(bₕᵤ₁, get_free_dof_values(duh₁), Y)
+  # 1.4: assemble the momentum and continuity equation residuals
+  assemble_residuals!(duh₁, dΩ, dω, Y, q₁ - τ*u₁⋅∇(q₁), ϕ, F, n)
 
   # Solve for du₁, dh₁ over a MultiFieldFESpace
-  ldiv!(Blfchol, get_free_dof_values(duh₁))
+  ldiv!(Blfchol, duh₁)
 
   # update
-  get_free_dof_values(y₂) .= get_free_dof_values(yₘ) .+ dt₁ .* get_free_dof_values(duh₁)
+  get_free_dof_values(y₂) .= get_free_dof_values(yₘ) .+ dt₁ .* duh₁
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
@@ -53,23 +55,18 @@ function shallow_water_rosenbrock_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
   # 2.3: the potential vorticity
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n)
-  # 2.4: assemble the velocity residual
-  bᵤ₂(v) = ∫(-0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂))*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
-  # 2.5: assemble the depth residual
-  bₕ₂(q) = ∫(-q*DIV(F))dω
-
-  bₕᵤ₂((v,q)) = bᵤ₂(v) + bₕ₂(q)
-  Gridap.FESpaces.assemble_vector!(bₕᵤ₂, get_free_dof_values(duh₂), Y)
+  # 2.4: assemble the momentum and continuity equation residuals
+  assemble_residuals!(duh₂, dΩ, dω, Y, 0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂)), ϕ, F, n)
 
   # subtract A*[du₁,dh₁] from [du₂,dh₂] vector
-  mul!(y_wrk, Amat, get_free_dof_values(duh₁))
-  get_free_dof_values(duh₂) .= get_free_dof_values(duh₂) .- y_wrk
+  mul!(y_wrk, Amat, duh₁)
+  duh₂ .= duh₂ .- y_wrk
 
   # solve for du₂, dh₂
-  ldiv!(Bchol, get_free_dof_values(duh₂))
+  ldiv!(Bchol, duh₂)
 
   # update yⁿ⁺¹
-  get_free_dof_values(y₂) .= get_free_dof_values(y₁) .+ dt .* get_free_dof_values(duh₂)
+  get_free_dof_values(y₂) .= get_free_dof_values(y₁) .+ dt .* duh₂
 end
 
 function compute_mean_depth!(wrk, L2MM, h)
@@ -175,8 +172,8 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     # mulifield fe functions
     ym1     = clone_fe_function(Y,yn)
     ym2     = clone_fe_function(Y,yn)
-    duh1    = clone_fe_function(Y,yn)
-    duh2    = clone_fe_function(Y,yn)
+    duh1    = copy(get_free_dof_values(yn))
+    duh2    = copy(get_free_dof_values(yn))
     y_wrk   = copy(get_free_dof_values(yn))
 
     if (write_diagnostics)
