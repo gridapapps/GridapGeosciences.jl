@@ -1,4 +1,4 @@
-module GalewskyShallowWaterExplicitTests
+module GalewskyShallowWaterExplicit
 
 using Gridap
 using GridapGeosciences
