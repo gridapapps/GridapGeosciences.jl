@@ -157,7 +157,7 @@ function shallow_water_time_stepper(model, order, degree,
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
 
-    clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
+
 
     hm1    = clone_fe_function(Q,hn)
     hm2    = clone_fe_function(Q,hn)

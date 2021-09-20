@@ -175,8 +175,6 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
 
-    clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
-
     ϕ      = clone_fe_function(Q,hn)
     F      = clone_fe_function(V,un)
     wn     = clone_fe_function(S,f)

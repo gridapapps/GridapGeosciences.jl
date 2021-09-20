@@ -14,6 +14,7 @@ module GridapGeosciences
   include("DiagnosticTools.jl")
   include("ShallowWaterExplicit.jl")
   include("ShallowWaterRosenbrock.jl")
+  include("Helpers.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
@@ -35,4 +36,5 @@ module GridapGeosciences
   export shallow_water_rosenbrock_time_step!
   export shallow_water_rosenbrock_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
+  export clone_fe_function
 end # module
