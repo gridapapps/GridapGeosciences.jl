@@ -87,15 +87,7 @@ function shallow_water_explicit_time_step!(
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
 end
 
-function new_vtk_step(Ω,file,hn,un,wn)
-  createvtk(Ω,
-            file,
-            cellfields=["hn"=>hn, "un"=>un, "wn"=>wn],
-            nsubcells=4)
-end
-
-
-function shallow_water_time_stepper(model, order, degree,
+function shallow_water_explicit_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
                         dt, τ, N;
                         write_diagnostics=true,
@@ -111,24 +103,10 @@ function shallow_water_time_stepper(model, order, degree,
   dω = Measure(Ω, degree, ReferenceDomain())
 
   # Setup the trial and test spaces
-  reffe_rt  = ReferenceFE(raviart_thomas, Float64, order)
-  V = FESpace(model, reffe_rt ; conformity=:HDiv)
-  U = TrialFESpace(V)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order)
-  Q = FESpace(model, reffe_lgn; conformity=:L2)
-  P = TrialFESpace(Q)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order+1)
-  S = FESpace(model, reffe_lgn; conformity=:H1)
-  R = TrialFESpace(S)
+  R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
   # assemble the mass matrices
-  amm(a,b) = ∫(a⋅b)dΩ
-  H1MM = assemble_matrix(amm, R, S)
-  RTMM = assemble_matrix(amm, U, V)
-  L2MM = assemble_matrix(amm, P, Q)
-  H1MMchol = lu(H1MM)
-  RTMMchol = lu(RTMM)
-  L2MMchol = lu(L2MM)
+  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -157,7 +135,7 @@ function shallow_water_time_stepper(model, order, degree,
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
 
-    clone_fe_function(space,f)=FEFunction(space,copy(get_free_dof_values(f)))
+
 
     hm1    = clone_fe_function(Q,hn)
     hm2    = clone_fe_function(Q,hn)
@@ -194,8 +172,14 @@ function shallow_water_time_stepper(model, order, degree,
     # subsequent steps, do leap frog integration
     # (now that we have the state at two previous time levels)
     for istep in 2:N
-      hm2,hm1,hn = hm1,hn,hm2
-      um2,um1,un = um1,un,um2
+      h_aux = hm2
+      hm2   = hm1
+      hm1   = hn
+      hn    = h_aux
+      u_aux = um2
+      um2   = um1
+      um1   = un
+      un    = u_aux
 
       shallow_water_explicit_time_step!(hn, un, hp, up, ϕ, F, q1, q2, H1h, H1hchol,
                                         model, dΩ, dω, V, Q, R, S, f, g, hm1, um1, hm2, um2,

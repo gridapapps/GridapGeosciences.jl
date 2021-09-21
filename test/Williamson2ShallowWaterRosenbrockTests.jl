@@ -1,4 +1,4 @@
-module Williamson2ShallowWaterExplicitTests
+module Williamson2ShallowWaterRosenbrockTests
 
 using FillArrays
 using Test
@@ -15,29 +15,32 @@ include("Williamson2InitialConditions.jl")
 # D. L. Williamson, J. B. Drake, J. J.HackRüdiger Jakob, P. N.Swarztrauber, (1992)
 # J Comp. Phys. 102 211-224
 
-l2_err_u = [0.009872849324844975, 0.002843859325502451,  0.0007415233680147055]
-l2_err_h = [0.00561048961466849,  0.0014553891676895917, 0.0003681302039168149]
+l2_err_u = [0.012427571457879082, 0.0029686291912212367, 0.0007555653294017498]
+l2_err_h = [0.005643644188108772, 0.0014535790630939244, 0.0003672222114589216]
 
 order  = 1
 degree = 4
+
+λ = 0.5 # magnitude of the descent direction of the implicit solve (neutrally stable for 0.5)
 
 for i in 1:3
   n      = 2*2^i
   nstep  = 5*n
   Uc     = sqrt(g*H₀)
   dx     = 2.0*π*rₑ/(4*n)
-  dt     = 0.05*dx/Uc
+  dt     = 0.25*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
-  hf, uf = shallow_water_explicit_time_stepper(model, order, degree,
-                                      h₀, u₀, f₀, g,
-                                      dt, 0.0, nstep;
-                                      write_solution=false,
-                                      write_solution_freq=5,
-                                      write_diagnostics=true,
-                                      write_diagnostics_freq=1,
-                                      dump_diagnostics_on_screen=true)
+  hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
+                                                h₀, u₀, f₀, g, H₀,
+                                                λ, dt, 0.0, nstep;
+                                                leap_frog=true,
+                                                write_solution=false,
+                                                write_solution_freq=5,
+                                                write_diagnostics=true,
+                                                write_diagnostics_freq=1,
+                                                dump_diagnostics_on_screen=true)
 
   Ω     = Triangulation(model)
   dΩ    = Measure(Ω, degree)

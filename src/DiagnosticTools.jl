@@ -67,7 +67,7 @@ end
 """Wrapper to get a vector from a csv field. The fieldname argument should be passed as a symbol,
 i.e. :<fieldname>"""
 function get_scalar_field_from_csv(csv_file_path, fieldname)
-  t = CSV.read(csv_file_path, Table)
+  t = CSV.read(csv_file_path, DataFrame)
   getproperty(t, fieldname)
 end
 
