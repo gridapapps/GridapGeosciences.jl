@@ -106,7 +106,7 @@ function shallow_water_explicit_time_stepper(model, order, degree,
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
   # assemble the mass matrices
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_mass_matrices(dΩ, R, S, U, V, P, Q)
+  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -172,8 +172,14 @@ function shallow_water_explicit_time_stepper(model, order, degree,
     # subsequent steps, do leap frog integration
     # (now that we have the state at two previous time levels)
     for istep in 2:N
-      hm2,hm1,hn = hm1,hn,hm2
-      um2,um1,un = um1,un,um2
+      h_aux = hm2
+      hm2   = hm1
+      hm1   = hn
+      hn    = h_aux
+      u_aux = um2
+      um2   = um1
+      um1   = un
+      un    = u_aux
 
       shallow_water_explicit_time_step!(hn, un, hp, up, ϕ, F, q1, q2, H1h, H1hchol,
                                         model, dΩ, dω, V, Q, R, S, f, g, hm1, um1, hm2, um2,

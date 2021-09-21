@@ -15,7 +15,7 @@ function setup_mixed_spaces(model, order)
   R, S, U, V, P, Q
 end
 
-function setup_mass_matrices(dΩ, R, S, U, V, P, Q)
+function setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
   amm(a,b) = ∫(a⋅b)dΩ
   H1MM = assemble_matrix(amm, R, S)
   RTMM = assemble_matrix(amm, U, V)
