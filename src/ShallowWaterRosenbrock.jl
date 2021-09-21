@@ -185,7 +185,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
       aux=ym2
       ym2=ym1
       ym1=yn
-      yn=ym2
+      yn=aux
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
                                           RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog)
