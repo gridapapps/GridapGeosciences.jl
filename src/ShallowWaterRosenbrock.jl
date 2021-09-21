@@ -1,4 +1,4 @@
-function assemble_residuals!(dhu, dΩ, dω, Y, qAPVM, ϕ, F, n)
+function assemble_residuals!(duh, dΩ, dω, Y, qAPVM, ϕ, F, n)
   bᵤ(v) = ∫(-1.0*qAPVM*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
   bₕ(q) = ∫(-q*DIV(F))dω
   bₕᵤ((v,q)) = bᵤ(v) + bₕ(q)
