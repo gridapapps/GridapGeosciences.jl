@@ -30,7 +30,7 @@ for i in 1:3
   println("timestep: ", dt)   # gravity wave time step
 
   model = CubedSphereDiscreteModel(n; radius=rₑ)
-  hf, uf = shallow_water_time_stepper(model, order, degree,
+  hf, uf = shallow_water_explicit_time_stepper(model, order, degree,
                                       h₀, u₀, f₀, g,
                                       dt, 0.0, nstep;
                                       write_solution=false,
