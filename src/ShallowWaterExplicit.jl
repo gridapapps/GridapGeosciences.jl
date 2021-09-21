@@ -87,7 +87,7 @@ function shallow_water_explicit_time_step!(
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
 end
 
-function shallow_water_time_stepper(model, order, degree,
+function shallow_water_explicit_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
                         dt, τ, N;
                         write_diagnostics=true,
