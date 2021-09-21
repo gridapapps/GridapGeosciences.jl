@@ -1,6 +1,3 @@
-using Gridap
-using GridapGeosciences
-
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
 # the potential gradient term to achieve a steady state

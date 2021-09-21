@@ -1,8 +1,5 @@
-using Gridap
-using GridapGeosciences
-
 # Solves the Galewsky test case for the shallow water equations on a sphere
-# of physical radius 6371220m. Involves a shear flow instability of a zonal 
+# of physical radius 6371220m. Involves a shear flow instability of a zonal
 # jet triggered by an initial gravity wave.
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
