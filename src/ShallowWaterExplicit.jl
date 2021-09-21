@@ -103,24 +103,10 @@ function shallow_water_time_stepper(model, order, degree,
   dω = Measure(Ω, degree, ReferenceDomain())
 
   # Setup the trial and test spaces
-  reffe_rt  = ReferenceFE(raviart_thomas, Float64, order)
-  V = FESpace(model, reffe_rt ; conformity=:HDiv)
-  U = TrialFESpace(V)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order)
-  Q = FESpace(model, reffe_lgn; conformity=:L2)
-  P = TrialFESpace(Q)
-  reffe_lgn = ReferenceFE(lagrangian, Float64, order+1)
-  S = FESpace(model, reffe_lgn; conformity=:H1)
-  R = TrialFESpace(S)
+  R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
   # assemble the mass matrices
-  amm(a,b) = ∫(a⋅b)dΩ
-  H1MM = assemble_matrix(amm, R, S)
-  RTMM = assemble_matrix(amm, U, V)
-  L2MM = assemble_matrix(amm, P, Q)
-  H1MMchol = lu(H1MM)
-  RTMMchol = lu(RTMM)
-  L2MMchol = lu(L2MM)
+  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
