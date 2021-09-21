@@ -196,13 +196,18 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     end
     # time step iteration loop
     for istep in 2:N
-      get_free_dof_values(ym2) .= get_free_dof_values(ym1)
-      get_free_dof_values(ym1) .= get_free_dof_values(yn)
-
+      aux=ym2
+      ym2=ym1
+      ym1=yn
+      yn=ym2
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
                                           RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog)
 
+      # IMPORTANT NOTE: We need to extract un, hn out of yn at each iteration because
+      #                 the association of yn with its object instance changes at the beginning of
+      #                 each iteration
+      un, hn = yn
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
