@@ -7,7 +7,7 @@ end
 
 function shallow_water_rosenbrock_time_step!(
      y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
-     model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, yₘ,         # in args
+     model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,         # in args
      RTMMchol, L2MMchol, Amat, Bchol, Blfchol,           # more in args
      dt, τ, leap_frog)                                   # ...yet more in args
   # energetically balanced second order rosenbrock shallow water solver
@@ -46,7 +46,7 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Blfchol, duh₁)
 
   # update
-  get_free_dof_values(y₂) .= get_free_dof_values(yₘ) .+ dt₁ .* duh₁
+  get_free_dof_values(y₂) .= get_free_dof_values(y₀) .+ dt₁ .* duh₁
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
