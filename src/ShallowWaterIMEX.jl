@@ -41,7 +41,7 @@ function shallow_water_imex_time_step!(
   compute_mass_flux!(F,dΩ,V,RTMMchol,h₁*(2.0*u₁ + uₚ)/6.0)
   # 2.2: mass flux component using the current depth (implicit)
   adv(p,v) = ∫(v⋅((u₁ + 2.0*uₚ)/6.0)*p)dΩ
-  assemble_matrix!(adv, A_wrk, P, V)
+  Gridap.FESpaces.assemble_matrix!(adv, A_wrk, P, V)
   # TODO: there must be a way to do these two operations in place using preallocated matrices!...
   A        = A_wrk*L2MMinvD
   B        = RTMM + dt*A
