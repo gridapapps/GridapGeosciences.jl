@@ -42,6 +42,7 @@ function shallow_water_imex_time_step!(
   # 2.2: mass flux component using the current depth (implicit)
   adv(p,v) = ∫(v⋅((u₁ + 2.0*uₚ)/6.0)*p)dΩ
   assemble_matrix!(adv, A_wrk, P, V)
+  # TODO: there must be a way to do these two operations in place using preallocated matrices!...
   A        = A_wrk*L2MMinvD
   B        = RTMM + dt*A
   mul!(h_wrk, L2MMinvD, get_free_dof_values(F))
@@ -134,7 +135,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
   # assemble in order to preallocate the work matrix and factors
   a₂(p,v)       = ∫(v⋅un*p)dΩ
   A_wrk         = assemble_matrix(a₂, P, V)
-  B             = RTMM + dt*A_wrk
+  B             = RTMM + dt*A_wrk*L2MMinvD
   Bchol         = lu(B)
 
   function run_simulation(pvd=nothing)
