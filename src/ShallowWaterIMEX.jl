@@ -27,6 +27,8 @@ function shallow_water_imex_time_step!(
     dt1 = 2.0*dt
   end
 
+  Fv,h₁v,h₂v = get_free_dof_values(F,h₁,h₂)
+
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
@@ -45,17 +47,17 @@ function shallow_water_imex_time_step!(
   # TODO: there must be a way to do these two operations in place using preallocated matrices!...
   A        = A_wrk*L2MMinvD
   B        = RTMM + dt*A
-  mul!(h_wrk, L2MMinvD, get_free_dof_values(F))
-  h_wrk   .= get_free_dof_values(h₁) .- dt .* h_wrk
+  mul!(h_wrk, L2MMinvD, Fv)
+  h_wrk   .= h₁v .- dt .* h_wrk
   mul!(u_wrk, A_wrk, h_wrk)
   lu!(Bchol, B)
   ldiv!(Bchol, u_wrk)
   # 2.3: combine the two mass flux components
-  get_free_dof_values(F) .= get_free_dof_values(F) .+ u_wrk
+  Fv .= Fv .+ u_wrk
   # 2.4: compute the divergence of the total mass flux
-  mul!(h_wrk, L2MMinvD, get_free_dof_values(F))
+  mul!(h_wrk, L2MMinvD, Fv)
   # 2.5: depth field at new time level
-  get_free_dof_values(h₂) .= get_free_dof_values(h₁) .- dt .* h_wrk
+  h₂v .= h₁v .- dt .* h_wrk
 
   # 3.1: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + h₂),g)
@@ -154,7 +156,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
     q2     = clone_fe_function(S,f)
 
     # first step, no leap frog integration
-    shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2, 
+    shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
 				  H1h, H1hchol, h_tmp, u_tmp, A_wrk, Bchol,
                                   model, dΩ, dω, V, P, Q, R, S, f, g, hm1, um1, um2,
                                   RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, false)
@@ -183,7 +185,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
       um1   = un
       un    = u_aux
 
-      shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2, 
+      shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
 				    H1h, H1hchol, h_tmp, u_tmp, A_wrk, Bchol,
                                     model, dΩ, dω, V, P, Q, R, S, f, g, hm1, um1, um2,
                                     RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, true)
