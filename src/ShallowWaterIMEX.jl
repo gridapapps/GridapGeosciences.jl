@@ -7,18 +7,6 @@ function shallow_water_imex_time_step!(
   # energetically balanced implicit-explicit second order shallow water solver
   # reference: eqns (31-33) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
-  #
-  # f          : coriolis force (field)
-  # g          : gravity (constant)
-  # h₁         : fluid depth at current time level
-  # u₁         : fluid velocity at current time level
-  # hₘ         : fluid depth at previous time level (for leap-frogging the first step)
-  # uₘ         : fluid velocity at previous time level (for leap-frogging the first step)
-  # RTMM       : H(div) mass matrix, ∫β⋅βdΩ, ∀β∈ H(div,Ω)
-  # L2MM       : L² mass matrix, ∫γγdΩ, ∀γ∈ L²(Ω)
-  # dt         : time step
-  # leap_frog  : do leap frog time integration for the first step (boolean)
-  # dΩ         : measure of the elements
 
   n = get_normal_vector(model)
   # explicit step for provisional velocity, uₚ
