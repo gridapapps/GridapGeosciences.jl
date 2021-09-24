@@ -1,7 +1,88 @@
+function setup_subassembled_RTMM(U,V,dΩ)
+  a(a,b) = ∫(a⋅b)dΩ
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
+  dc=a(u,v)
+  collect(dc[dΩ.quad.trian])
+end
+
+function setup_subassembled_invL2MM(P,Q,dΩ)
+  a(a,b) = ∫(a⋅b)dΩ
+  q = get_fe_basis(Q)
+  p = get_trial_fe_basis(P)
+  dc=a(p,q)
+  lazy_map(inv,dc[dΩ.quad.trian])
+end
+
+function setup_subassembled_D(U,Q,dω)
+  a(u,q) = ∫(q*DIV(u))*dω
+  q = get_fe_basis(Q)
+  u = get_trial_fe_basis(U)
+  dc=a(u,q)
+  dc[dω.quad.trian]
+end
+
+function setup_subassembled_invL2MMD(U,P,Q,dΩ,dω)
+  invL2MM=setup_subassembled_invL2MM(P,Q,dΩ)
+  D=setup_subassembled_D(U,Q,dω)
+  collect(lazy_map(*,invL2MM,D))
+end
+
+function build_subassembled_A_dc(P,V,u,dΩ)
+  a(p,v) = ∫(v⋅(u*p))dΩ
+  p=get_trial_fe_basis(P)
+  v=get_fe_basis(V)
+  a(p,v)
+end
+
+function setup_subassembled_A(P,V,u,dΩ)
+  dc=build_subassembled_A_dc(P,V,u,dΩ)
+  collect(dc[dΩ.quad.trian])
+end
+
+function setup_subassembled_A!(A,P,V,u,dΩ)
+  dc=build_subassembled_A_dc(P,V,u,dΩ)
+  subassembled_A=dc[dΩ.quad.trian]
+  c=array_cache(subassembled_A)
+  for cell=1:length(A)
+     A[cell] .= getindex!(c,subassembled_A,cell)
+  end
+end
+
+
+function build_implicit_compound_operator_dc(P,V,dt,dΩ,A,RTMM,invL2MMD)
+  dtA=lazy_map(Gridap.Fields.BroadcastingFieldOpMap(*), Fill(dt,length(RTMM)), A)
+  dtAL2MMinvD=lazy_map(*,dtA,invL2MMD)
+  RTMM_plus_dtAL2MMinvD=lazy_map(Gridap.Fields.BroadcastingFieldOpMap(+),RTMM,dtAL2MMinvD)
+  dc = Gridap.CellData.DomainContribution()
+  Gridap.CellData.add_contribution!(dc, dΩ.quad.trian, RTMM_plus_dtAL2MMinvD)
+end
+
+function assemble_implicit_compound_operator(P,U,V,dt,dΩ,A,RTMM,invL2MMD)
+  dc=build_implicit_compound_operator_dc(P,V,dt,dΩ,A,RTMM,invL2MMD)
+  a=SparseMatrixAssembler(U,V)
+  assemble_matrix(a,Gridap.FESpaces.collect_cell_matrix(U,V,dc))
+end
+
+function assemble_implicit_compound_operator!(B,P,U,V,dt,dΩ,A,RTMM,invL2MMD)
+  dc=build_implicit_compound_operator_dc(P,V,dt,dΩ,A,RTMM,invL2MMD)
+  a=SparseMatrixAssembler(U,V)
+  Gridap.FESpaces.assemble_matrix!(B,a,Gridap.FESpaces.collect_cell_matrix(U,V,dc))
+end
+
+function assemble_Asub_mul_u!(p, U, P, dΩ, A, u)
+  ucell=Gridap.FESpaces.scatter_free_and_dirichlet_values(U,u,Float64[])
+  A_mul_u=lazy_map(*, A, ucell)
+  dc = Gridap.CellData.DomainContribution()
+  Gridap.CellData.add_contribution!(dc, dΩ.quad.trian, A_mul_u)
+  a = SparseMatrixAssembler(P,P)
+  Gridap.FESpaces.assemble_vector!(p,a,Gridap.FESpaces.collect_cell_vector(P,dc))
+end
+
 function shallow_water_imex_time_step!(
      h₂, u₂, uₚ, ϕ, F, q₁, q₂,                               # in/out args
-     H1h, H1hchol, h_wrk, u_wrk, A_wrk, Bchol,               # more in/out args
-     model, dΩ, dω, V, P, Q, R, S, f, g, h₁, u₁, u₀,         # in args
+     H1h, H1hchol, h_wrk, u_wrk, A, B, Bchol,                # more in/out args
+     model, dΩ, dω, U, V, P, Q, R, S, f, g, h₁, u₁, u₀,         # in args
      RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, leap_frog)   # more in args
 
   # energetically balanced implicit-explicit second order shallow water solver
@@ -42,20 +123,17 @@ function shallow_water_imex_time_step!(
   # 2.1: mass flux component using the previous depth (explicit)
   compute_mass_flux!(F,dΩ,V,RTMMchol,h₁*(2.0*u₁ + uₚ)/6.0)
   # 2.2: mass flux component using the current depth (implicit)
-  adv(p,v) = ∫(v⋅((u₁ + 2.0*uₚ)/6.0)*p)dΩ
-  Gridap.FESpaces.assemble_matrix!(adv, A_wrk, P, V)
-  # TODO: there must be a way to do these two operations in place using preallocated matrices!...
-  A        = A_wrk*L2MMinvD
-  B        = RTMM + dt*A
-  mul!(h_wrk, L2MMinvD, Fv)
-  h_wrk   .= h₁v .- dt .* h_wrk
-  mul!(u_wrk, A_wrk, h_wrk)
+  setup_subassembled_A!(A,P,V,(u₁ + 2.0*uₚ)/6.0,dΩ)
+  assemble_implicit_compound_operator!(B,P,U,V,dt,dΩ,A,RTMM,L2MMinvD) # B = RTMM + dt*A*L2MMinv*D
+  assemble_Asub_mul_u!(h_wrk,U,P,dΩ,L2MMinvD,Fv)                  # h_wrk = L2MMinvD * Fv
+  h_wrk .= h₁v .- dt .* h_wrk
+  assemble_Asub_mul_u!(u_wrk, P, U, dΩ, A, h_wrk)                        # u_wrk = A * h_wrk
   lu!(Bchol, B)
   ldiv!(Bchol, u_wrk)
   # 2.3: combine the two mass flux components
   Fv .= Fv .+ u_wrk
   # 2.4: compute the divergence of the total mass flux
-  mul!(h_wrk, L2MMinvD, Fv)
+  assemble_Asub_mul_u!(h_wrk,U,P,dΩ,L2MMinvD,Fv)                  # h_wrk = L2MMinvD * Fv
   # 2.5: depth field at new time level
   h₂v .= h₁v .- dt .* h_wrk
 
@@ -67,22 +145,7 @@ function shallow_water_imex_time_step!(
   compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),F,ϕ,n,0.5*dt,dt)
 end
 
-function assemble_L2MM_invL2MM(U,V,dΩ)
-  a(a,b) = ∫(a⋅b)dΩ
-  v = get_fe_basis(V)
-  u = get_trial_fe_basis(U)
-  assemblytuple    = Gridap.FESpaces.collect_cell_matrix(U,V,a(u,v))
-  cell_matrix_MM   = collect(assemblytuple[1][1]) # This result is no longer a LazyArray
-  newassemblytuple = ([cell_matrix_MM],assemblytuple[2],assemblytuple[3])
-  a=SparseMatrixAssembler(U,V)
-  L2MM=assemble_matrix(a,newassemblytuple)
-  for i in eachindex(cell_matrix_MM)
-     cell_matrix_MM[i]=inv(cell_matrix_MM[i])
-  end
-  invL2MM=similar(L2MM)
-  Gridap.FESpaces.assemble_matrix!(invL2MM, a, newassemblytuple)
-  L2MM, invL2MM
-end
+
 
 function shallow_water_imex_time_stepper(model, order, degree,
                         h₀, u₀, f₀, g,
@@ -102,8 +165,9 @@ function shallow_water_imex_time_stepper(model, order, degree,
   # Setup the trial and test spaces
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
-  # assemble the mass matrices
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+  # assemble the mass matrices (RTMM not actually needed in assembled form)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
+      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -125,20 +189,18 @@ function shallow_water_imex_time_stepper(model, order, degree,
   u_tmp = copy(get_free_dof_values(un))
   h_tmp = copy(get_free_dof_values(hn))
   w_tmp = copy(get_free_dof_values(f))
+
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
   H1hchol  = lu(H1h)
-  # doubling up on the assembly of L2MM, garbage collect the old one...
-  L2MM, L2MMinv = assemble_L2MM_invL2MM(P, Q, dΩ)
-  a₁(u,q)       = ∫(q*DIV(u))*dω
-  D             = assemble_matrix(a₁, U, Q)
-  L2MMinvD      = L2MMinv*D
-  # assemble in order to preallocate the work matrix and factors
-  a₂(p,v)       = ∫(v⋅un*p)dΩ
-  A_wrk         = assemble_matrix(a₂, P, V)
-  B             = RTMM + dt*A_wrk*L2MMinvD
-  Bchol         = lu(B)
+
+  A        = setup_subassembled_A(P,V,un,dΩ)
+  RTMM     = setup_subassembled_RTMM(U,V,dΩ)
+  invL2MMD = setup_subassembled_invL2MMD(U,P,Q,dΩ,dω)
+
+  B        = assemble_implicit_compound_operator(P,U,V,dt,dΩ,A,RTMM,invL2MMD)
+  Bchol    = lu(B)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
@@ -156,10 +218,10 @@ function shallow_water_imex_time_stepper(model, order, degree,
     q2     = clone_fe_function(S,f)
 
     # first step, no leap frog integration
-    shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
-				  H1h, H1hchol, h_tmp, u_tmp, A_wrk, Bchol,
-                                  model, dΩ, dω, V, P, Q, R, S, f, g, hm1, um1, um2,
-                                  RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, false)
+    @time shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
+				                          H1h, H1hchol, h_tmp, u_tmp, A, B, Bchol,
+                                  model, dΩ, dω, U, V, P, Q, R, S, f, g, hm1, um1, um2,
+                                  RTMMchol, L2MMchol, RTMM, invL2MMD, dt, τ, false)
 
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
@@ -185,10 +247,10 @@ function shallow_water_imex_time_stepper(model, order, degree,
       um1   = un
       un    = u_aux
 
-      shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
-				    H1h, H1hchol, h_tmp, u_tmp, A_wrk, Bchol,
-                                    model, dΩ, dω, V, P, Q, R, S, f, g, hm1, um1, um2,
-                                    RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, true)
+      @time shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
+				                            H1h, H1hchol, h_tmp, u_tmp, A, B, Bchol,
+                                    model, dΩ, dω, U, V, P, Q, R, S, f, g, hm1, um1, um2,
+                                    RTMMchol, L2MMchol, RTMM, invL2MMD, dt, τ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
