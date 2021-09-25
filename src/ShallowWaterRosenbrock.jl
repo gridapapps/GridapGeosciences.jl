@@ -89,8 +89,8 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   Y = MultiFieldFESpace([V, Q])
   X = MultiFieldFESpace([U, P])
 
-  # assemble the mass matrices
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+  # assemble the mass matrices (RTMM mass matrix not needed)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
