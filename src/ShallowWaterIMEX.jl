@@ -157,26 +157,30 @@ function shallow_water_imex_time_stepper(model, order, degree,
   H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
       setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
+
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
   rhs1    = assemble_vector(b₁, Q)
   hn      = FEFunction(Q, copy(rhs1))
-  ldiv!(L2MMchol, get_free_dof_values(hn))
 
   b₂(v)   = ∫(v⋅u₀)dΩ
   rhs2    = assemble_vector(b₂, V)
   un      = FEFunction(V, copy(rhs2))
-  ldiv!(RTMMchol, get_free_dof_values(un))
 
   b₃(s)   = ∫(s*f₀)*dΩ
   rhs3    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs3))
-  ldiv!(H1MMchol, get_free_dof_values(f))
+
+  hnv,unv,fv=get_free_dof_values(hn,un,f)
+  ldiv!(L2MMchol, hnv)
+  ldiv!(RTMMchol, unv)
+  ldiv!(H1MMchol, fv)
+
 
   # work arrays
-  u_tmp = copy(get_free_dof_values(un))
-  h_tmp = copy(get_free_dof_values(hn))
-  w_tmp = copy(get_free_dof_values(f))
+  u_tmp = copy(unv)
+  h_tmp = copy(hnv)
+  w_tmp = copy(fv)
 
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
@@ -206,7 +210,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
     q2     = clone_fe_function(S,f)
 
     # first step, no leap frog integration
-    @time shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
+    shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
 				                          H1h, H1hchol, h_tmp, u_tmp, A, B, Bchol,
                                   model, dΩ, dω, U, V, P, Q, R, S, f, g, hm1, um1, um2,
                                   RTMMchol, L2MMchol, RTMM, invL2MMD, dt, τ, false)
@@ -235,7 +239,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
       um1   = un
       un    = u_aux
 
-      @time shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
+      shallow_water_imex_time_step!(hn, un, up, ϕ, F, q1, q2,
 				                            H1h, H1hchol, h_tmp, u_tmp, A, B, Bchol,
                                     model, dΩ, dω, U, V, P, Q, R, S, f, g, hm1, um1, um2,
                                     RTMMchol, L2MMchol, RTMM, invL2MMD, dt, τ, true)

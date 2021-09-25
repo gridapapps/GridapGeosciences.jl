@@ -100,21 +100,23 @@ function shallow_water_explicit_time_stepper(model, order, degree,
   b₁(q)   = ∫(q*h₀)dΩ
   rhs1    = assemble_vector(b₁, Q)
   hn      = FEFunction(Q, copy(rhs1))
-  ldiv!(L2MMchol, get_free_dof_values(hn))
 
   b₂(v)   = ∫(v⋅u₀)dΩ
   rhs2    = assemble_vector(b₂, V)
   un      = FEFunction(V, copy(rhs2))
-  ldiv!(RTMMchol, get_free_dof_values(un))
 
   b₃(s)   = ∫(s*f₀)*dΩ
   rhs3    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs3))
-  ldiv!(H1MMchol, get_free_dof_values(f))
+
+  hnv,unv,fv=get_free_dof_values(hn,un,f)
+  ldiv!(L2MMchol, hnv)
+  ldiv!(RTMMchol, unv)
+  ldiv!(H1MMchol, fv)
 
   # work arrays
-  h_tmp = copy(get_free_dof_values(hn))
-  w_tmp = copy(get_free_dof_values(f))
+  h_tmp = copy(hnv)
+  w_tmp = copy(fv)
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
