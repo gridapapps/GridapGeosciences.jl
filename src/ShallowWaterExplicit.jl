@@ -44,18 +44,6 @@ function shallow_water_explicit_time_step!(
   # energetically balanced explicit second order shallow water solver
   # reference: eqns (21-24) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
-  #
-  # f          : coriolis force (field)
-  # g          : gravity (constant)
-  # h₁         : fluid depth at current time level
-  # u₁         : fluid velocity at current time level
-  # hₘ         : fluid depth at previous time level (for leap-frogging the first step)
-  # uₘ         : fluid velocity at previous time level (for leap-frogging the first step)
-  # RTMM       : H(div) mass matrix, ∫β⋅βdΩ, ∀β∈ H(div,Ω)
-  # L2MM       : L² mass matrix, ∫γγdΩ, ∀γ∈ L²(Ω)
-  # dt         : time step
-  # leap_frog  : do leap frog time integration for the first step (boolean)
-  # dΩ         : measure of the elements
 
   n = get_normal_vector(model)
   # explicit step for provisional velocity, uₚ
@@ -112,21 +100,23 @@ function shallow_water_explicit_time_stepper(model, order, degree,
   b₁(q)   = ∫(q*h₀)dΩ
   rhs1    = assemble_vector(b₁, Q)
   hn      = FEFunction(Q, copy(rhs1))
-  ldiv!(L2MMchol, get_free_dof_values(hn))
 
   b₂(v)   = ∫(v⋅u₀)dΩ
   rhs2    = assemble_vector(b₂, V)
   un      = FEFunction(V, copy(rhs2))
-  ldiv!(RTMMchol, get_free_dof_values(un))
 
   b₃(s)   = ∫(s*f₀)*dΩ
   rhs3    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs3))
-  ldiv!(H1MMchol, get_free_dof_values(f))
+
+  hnv,unv,fv=get_free_dof_values(hn,un,f)
+  ldiv!(L2MMchol, hnv)
+  ldiv!(RTMMchol, unv)
+  ldiv!(H1MMchol, fv)
 
   # work arrays
-  h_tmp = copy(get_free_dof_values(hn))
-  w_tmp = copy(get_free_dof_values(f))
+  h_tmp = copy(hnv)
+  w_tmp = copy(fv)
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)

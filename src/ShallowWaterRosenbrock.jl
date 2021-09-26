@@ -13,22 +13,14 @@ function shallow_water_rosenbrock_time_step!(
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
-  #
-  # f          : coriolis force (field)
-  # g          : gravity (constant)
-  # h₁         : fluid depth at current time level
-  # u₁         : fluid velocity at current time level
-  # RTMM       : H(div) mass matrix, ∫β⋅βdΩ, ∀β∈ H(div,Ω)
-  # L2MM       : L² mass matrix, ∫γγdΩ, ∀γ∈ L²(Ω)
-  # dt         : time step
-  # τ          : potential vorticity upwinding parameter
-  # dΩ         : measure of the elements
 
   n = get_normal_vector(model)
   dt₁ = dt
   if leap_frog
     dt₁ = 2.0*dt
   end
+
+  y₀v, y₁v, y₂v = get_free_dof_values(y₀,y₁,y₂)
 
   # multifield terms
   u₁, h₁ = y₁
@@ -46,7 +38,7 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Blfchol, duh₁)
 
   # update
-  get_free_dof_values(y₂) .= get_free_dof_values(y₀) .+ dt₁ .* duh₁
+  y₂v .=  y₀v .+ dt₁ .* duh₁
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
@@ -66,7 +58,7 @@ function shallow_water_rosenbrock_time_step!(
   ldiv!(Bchol, duh₂)
 
   # update yⁿ⁺¹
-  get_free_dof_values(y₂) .= get_free_dof_values(y₁) .+ dt .* duh₂
+  y₂v .= y₁v .+ dt .* duh₂
 end
 
 function compute_mean_depth!(wrk, L2MM, h)
@@ -99,8 +91,8 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   Y = MultiFieldFESpace([V, Q])
   X = MultiFieldFESpace([U, P])
 
-  # assemble the mass matrices
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+  # assemble the mass matrices (RTMM mass matrix not needed)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -134,12 +126,13 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   ldiv!(Mchol, rhs2)
   yn  = FEFunction(Y, rhs2)
 
-
   un, hn = yn
 
+  hnv, fv, ynv = get_free_dof_values(hn,f,yn)
+
   # work arrays
-  h_tmp = copy(get_free_dof_values(hn))
-  w_tmp = copy(get_free_dof_values(f))
+  h_tmp = copy(hnv)
+  w_tmp = copy(fv)
 
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
@@ -158,9 +151,9 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     # mulifield fe functions
     ym1     = clone_fe_function(Y,yn)
     ym2     = clone_fe_function(Y,yn)
-    duh1    = copy(get_free_dof_values(yn))
-    duh2    = copy(get_free_dof_values(yn))
-    y_wrk   = copy(get_free_dof_values(yn))
+    duh1    = copy(ynv)
+    duh2    = copy(ynv)
+    y_wrk   = copy(ynv)
 
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
