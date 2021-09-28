@@ -103,16 +103,6 @@ function shallow_water_theta_method_full_newton_time_stepper(
       initialize_csv(diagnostics_file, "time", "mass", "vorticity", "kinetic", "potential", "power")
     end
 
-    if (write_diagnostics && write_diagnostics_freq==1)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
-      compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,un⋅un,hn,g)
-      dump_diagnostics_shallow_water!(h_tmp, w_tmp,
-                                      model, dΩ, dω, S, L2MM, H1MM,
-                                      hn, un, wn, ϕ, F, g, 1, dt,
-                                      diagnostics_file,
-                                      dump_diagnostics_on_screen)
-    end
-
     for step=1:N
        # Williamsom2
        e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))

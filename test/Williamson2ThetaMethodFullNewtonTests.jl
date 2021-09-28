@@ -13,8 +13,8 @@ using GridapGeosciences
 
 include("Williamson2InitialConditions.jl")
 
-l2_err_u = [0.009811450338635052 , 0.002816423646355988 ]
-l2_err_h = [0.0056028810298183185, 0.001452135103736861 ]
+l2_err_u = [0.011370921987771046 , 0.0029356344096698353 ]
+l2_err_h = [0.005606685579166809, 0.001451999866505571 ]
 
 order=1
 degree=4
@@ -24,7 +24,7 @@ for i in 1:2
   nstep  = 5*n
   Uc     = sqrt(g*H₀)
   dx     = 2.0*π*rₑ/(4*n)
-  dt     = 0.05*dx/Uc
+  dt     = 0.25*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
   T      = dt*nstep
   model = CubedSphereDiscreteModel(n; radius=rₑ)
