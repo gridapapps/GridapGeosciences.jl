@@ -104,12 +104,12 @@ function shallow_water_theta_method_full_newton_time_stepper(
     end
 
     for step=1:N
-       # Williamsom2
-       e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
-       e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
+      #  # Williamsom2
+      #  e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
+      #  e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
 
-       println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
-               " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
+      #  println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
+      #          " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
 
        function residual((u,h,qvort,F),(v,q,s,v2))
          uiΔu  = u
