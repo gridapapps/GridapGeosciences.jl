@@ -76,7 +76,7 @@ function thermal_shallow_water_explicit_time_step!(
   # 2.5: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.6: solve for the buoyancy weighted mass flux
-  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,e₁-τ*u₁⋅∇(e₁)+e₂-τ*uₚ⋅∇(e₂),F)
+  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,0.5*(e₁-τ*u₁⋅∇(e₁)+e₂-τ*uₚ⋅∇(e₂)),F)
   compute_depth!(E₂,dΩ,dω,Q,L2MMchol,E₁,dT,dt)
 end
 
