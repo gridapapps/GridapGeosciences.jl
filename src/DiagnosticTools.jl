@@ -117,7 +117,7 @@ function dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
   kin_i     = Eₖ(u,h,dΩ)
   int_i     = Eᵢ(h,E,dΩ)
   pow_k2p_i = sum(∫(ϕ*DIV(F))dω)
-  pow_k2i_i = 0.5*sum(∫h*DIV(eF)dω)
+  pow_k2i_i = 0.5*sum(∫(h*DIV(eF))dω)
 
   append_to_csv(output_file;
                 time       = step*dt/24/60/60,

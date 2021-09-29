@@ -50,10 +50,10 @@ function thermal_shallow_water_explicit_time_step!(
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,S₁,0.5)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,E₁,0.5)
   # 1.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
-  compute_buoyancy!(e₁,dΩ,S,H1chol,E₁)
+  compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
   compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁-τ*u₁⋅∇(e₁),F,ϕ,dT,n,dt1,dt1)
@@ -66,10 +66,10 @@ function thermal_shallow_water_explicit_time_step!(
   # 2.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + hₚ)/6.0+uₚ*(h₁ + 2.0*hₚ)/6.0)
   # 2.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(S₁ + Sₚ),0.5)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(E₁ + Eₚ),0.5)
   # 2.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
-  compute_buoyancy!(e₂,dΩ,S,H1chol,Eₚ)
+  compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
   compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),e₁-τ*u₁⋅∇(e₁)+e₂-τ*uₚ⋅∇(e₂),F,ϕ,dT,n,0.5*dt,dt)
@@ -139,6 +139,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
     ϕ      = clone_fe_function(Q,hn)
     Em1    = clone_fe_function(Q,hn)
     Em2    = clone_fe_function(Q,hn)
+    Ep     = clone_fe_function(Q,hn)
 
     um1    = clone_fe_function(V,un)
     um2    = clone_fe_function(V,un)
