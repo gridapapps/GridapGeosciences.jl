@@ -144,7 +144,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
     um2    = clone_fe_function(V,un)
     up     = clone_fe_function(V,un)
     F      = clone_fe_function(V,un)
-    dT     = clone_fe_function(V,un)
+    eF     = clone_fe_function(V,un)
 
     wn     = clone_fe_function(S,f)
     q1     = clone_fe_function(S,f)
@@ -153,19 +153,19 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
     e2     = clone_fe_function(S,f)
 
     # first step, no leap frog integration
-    thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, dT,
+    thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
                                               model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2,
                                               RTMMchol, L2MMchol, dt, τ, false)
 
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "internal", "power-k2p","power-k2i")
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)
       compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
       dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
                                               model, dΩ, dω, S, L2MM, H1MM,
-                                              hn, un, wn, En, ϕ, F, 1, dt,
+                                              hn, un, En, wn, ϕ, F, eF, 1, dt,
                                               diagnostics_file,
                                               dump_diagnostics_on_screen)
     end
@@ -186,7 +186,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
       Em1   = En
       En    = E_aux
 
-      thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, dT,
+      thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
                                                 model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2,
                                                 RTMMchol, L2MMchol, dt, τ, true)
 
@@ -194,7 +194,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
         dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
                                                 model, dΩ, dω, S, L2MM, H1MM,
-                                                hn, un, wn, En, ϕ, F, istep, dt,
+                                                hn, un, En, wn, ϕ, F, eF, istep, dt,
                                                 diagnostics_file,
                                                 dump_diagnostics_on_screen)
       end
