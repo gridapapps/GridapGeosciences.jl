@@ -37,5 +37,5 @@ module GridapGeosciences
   export shallow_water_imex_time_stepper
   export thermal_shallow_water_explicit_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
-  export clone_fe_function, setup_mixed_spaces, setup_and_factorize_mass_matrices, new_vtk_step
+  export clone_fe_function, setup_mixed_spaces, setup_and_factorize_mass_matrices, new_vtk_step, new_vtk_step_tswe
 end # module

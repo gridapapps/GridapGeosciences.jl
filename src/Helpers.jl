@@ -42,7 +42,7 @@ function new_vtk_step(Ω,file,hn,un,wn)
             nsubcells=4)
 end
 
-function new_vtk_step_twse(Ω,file,hn,un,wn,en)
+function new_vtk_step_tswe(Ω,file,hn,un,wn,en)
   createvtk(Ω,
             file,
             cellfields=["hn"=>hn, "un"=>un, "wn"=>wn, "en"=>en],
