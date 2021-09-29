@@ -16,6 +16,7 @@ function H1MM_downwind_trial_funcs(model, order, qₖ, wₖ, h, u, τ)
   α            = Gridap.ReferenceFEs.get_shapefuns(lgn[1])
   αₖ           = Fill(α, num_cells(model))
 
+  # TODO: we want the velocity vector in LOCAL coordinates! not Piola mapped...
   uq = lazy_map(evaluate, Gridap.CellData.get_data(u), qₖ)
   hq = lazy_map(evaluate, Gridap.CellData.get_data(h), qₖ)
 
@@ -31,6 +32,43 @@ function H1MM_downwind_trial_funcs(model, order, qₖ, wₖ, h, u, τ)
   intq    = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(*), αq_up_h, αq_up_T)
   iwqc    = lazy_map(Gridap.Fields.IntegrationMap(), intq, wₖ, Jq)
   iwqc, αq_up_T
+end
+
+function diagnose_pv_downwind_trial_funcs(model, order, dΩ, qₖ, wₖ, f, h, u, τ, R, S)
+  # solve the system:
+  #
+  # ∫αhqdΩ = -∫∇⟂α⋅udΩ + ∫αfdΩ, ∀α∈ H₁(Ω)
+  # where:
+  #
+  # q : potential vorticity; q = (∇×u + f)/h
+  # f : coriolis force (∈ H₁(Ω)
+  # h : fluid depth
+  # u : velocity
+  #
+  # order      : polynomial order
+  # dΩ         : measure of the elements
+  # qₖ         : quadrature points
+  # wₖ         : quadrature weights
+
+  # the linear form right hand side
+  grad_perp = grad_perp_ref_domain(model, order, u, qₖ, wₖ)
+  b(s)  = ∫(s*f)*dΩ
+  rhsdc = b(s)
+  # subtract the weak form curl as evaluated using the low level API
+  Gridap.CellData.add_contribution!(rhsdc, get_triangulation(dΩ.quad), grad_perp)
+  # assemble the right hand side
+  data  = Gridap.FESpaces.collect_cell_vector(S, rhsdc)
+  assem = SparseMatrixAssembler(R, S)
+  rhs   = assemble_vector(assem, data)
+  # assemble the left hand side
+  data, α_up = H1MM_downwind_trial_funcs(model, order, qₖ, wₖ, h, u, τ)
+  assem = SparseMatrixAssembler(R, S)
+  lhs   = assemble_matrix(assem, data)
+
+  op = AffineFEOperator(R, S, lhs, rhs)
+  q  = solve(op)
+
+  q, α_up
 end
 
 function RotMat_downwind_trial_funcs(model, order, qₖ, wₖ, q, F, α_up)
