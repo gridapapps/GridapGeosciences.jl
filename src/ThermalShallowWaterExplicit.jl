@@ -158,7 +158,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
                                               RTMMchol, L2MMchol, dt, τ, false)
 
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "internal", "power-k2p","power-k2i")
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "internal", "power_k2p","power_k2i")
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)
