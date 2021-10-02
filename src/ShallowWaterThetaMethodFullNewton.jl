@@ -104,65 +104,30 @@ function shallow_water_theta_method_full_newton_time_stepper(
     end
 
     for step=1:N
-      #  # Williamsom2
-      #  e = hn-h₀;err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
-      #  e = un-u₀;err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
-
-      #  println("step=", step, ",\terr_u: ", err_u, ",\terr_h: ", err_h,
-      #          " ", norm(get_free_dof_values(Δu)), " ", norm(get_free_dof_values(Δh)))
-
-       function residual((u,h,qvort,F),(v,q,s,v2))
-         uiΔu  = u
-         hiΔh  = h
-         hbiΔh = h
-         ∫((1.0/dt)*v⋅(u-un))dΩ-∫((DIV(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu))dω+
-         ∫((qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n)) +   # eq1
-          (1.0/dt)*q*(h-hn))dΩ + ∫(q*(DIV(F)))dω +  # eq2
+      function residual((Δu,Δh,qvort,F),(v,q,s,v2))
+         one_m_θ = (1-θ)
+         uiΔu    = un     + one_m_θ*Δu
+         hiΔh    = hn     + one_m_θ*Δh
+         hbiΔh   = hn + b + one_m_θ*Δh
+         ∫((1.0/dt)*v⋅(Δu)-(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
+             (qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n)) +   # eq1
+           (1.0/dt)*q*(Δh))dΩ + ∫(q*(DIV(F)))dω +  # eq2
          ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
-           v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
+             v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
        end
-
-       function jacobian((u,h,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
-          uiΔu  = u
-          uidu  = du
-          hiΔh  = h
-          hidh  = dh
-          hbidh = dh
-          ∫((1.0/dt)*v⋅du +  (dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
-                          +  (qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n)))dΩ -
-                          ∫((DIV(v))*(g*hbidh +uiΔu⋅uidu))dω  + # eq1
-          ∫((1.0/dt)*q*dh)dΩ + ∫(q*(DIV(dF)))dω           +  # eq2
-          ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu       +  # eq3
-                    v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ           # eq4
-        end
-
-      #  # Not working (Newton diverges)
-      #  function residual((Δu,Δh,qvort,F),(v,q,s,v2))
-      #    one_m_θ = (1-θ)
-      #    uiΔu    = un     + one_m_θ*Δu
-      #    hiΔh    = hn     + one_m_θ*Δh
-      #    hbiΔh   = hn + b + one_m_θ*Δh
-      #    ∫((1.0/dt)*v⋅(Δu)-(∇⋅(v))*(g*hbiΔh + 0.5*uiΔu⋅uiΔu)+
-      #        (qvort-τ*(uiΔu⋅∇(qvort)))*(v⋅⟂(F,n)) +   # eq1
-      #      (1.0/dt)*q*(Δh))dΩ + ∫(q*(DIV(F)))dω +  # eq2
-      #    ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
-      #        v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
-      #  end
-      #  # Not working (Newton diverges)
-      #  function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
-      #    one_m_θ = (1-θ)
-      #    uiΔu  = un     + one_m_θ*Δu
-      #    uidu  = un     + one_m_θ*du
-      #    hiΔh  = hn     + one_m_θ*Δh
-      #    hidh  = hn     + one_m_θ*dh
-      #    hbidh = hn + b + one_m_θ*dh
-      #    ∫((1.0/dt)*v⋅du +  (dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
-      #                    +  (qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
-      #                    -  (∇⋅(v))*(g*hbidh +uiΔu⋅uidu)   +  # eq1
-      #      (1.0/dt)*q*dh)dΩ + ∫(q*(DIV(dF)))dω             +  # eq2
-      #      ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu       +  # eq3
-      #        v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ                   # eq4
-      #  end
+       function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
+         one_m_θ = (1-θ)
+         uiΔu  = un + one_m_θ*Δu
+         hiΔh  = hn + one_m_θ*Δh
+         uidu  = one_m_θ*du
+         hidh  = one_m_θ*dh
+         ∫((1.0/dt)*v⋅du +  (dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
+                         +  (qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
+                         -  (∇⋅(v))*(g*hidh +uiΔu⋅uidu)   +  # eq1
+           (1.0/dt)*q*dh)dΩ + ∫(q*(DIV(dF)))dω             +  # eq2
+           ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu       +  # eq3
+             v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ                   # eq4
+       end
 
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
@@ -170,7 +135,6 @@ function shallow_water_theta_method_full_newton_time_stepper(
 
        # Adjust absolute tolerance ftol s.t. it actually becomes relative
        dY = get_fe_basis(Y)
-       dX = get_trial_fe_basis(X)
        residualΔuΔhqF=residual(ΔuΔhqF,dY)
        r=assemble_vector(residualΔuΔhqF,Y)
        op=FEOperator(residual,jacobian,X,Y)
@@ -180,10 +144,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
        solve!(ΔuΔhqF,solver,op)
 
        # Update current solution
-       unv .= get_free_dof_values(Δu)
-       hnv .= get_free_dof_values(Δh)
-       #unv .= unv .+ get_free_dof_values(Δu)
-       #hnv .= unv .+ get_free_dof_values(Δh)
+       unv .= unv .+ get_free_dof_values(Δu)
+       hnv .= hnv .+ get_free_dof_values(Δh)
 
        if (write_diagnostics && write_diagnostics_freq>0 && mod(step, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
