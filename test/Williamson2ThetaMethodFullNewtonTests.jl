@@ -26,9 +26,10 @@ for i in 1:2
   dt     = 0.25*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
   T      = dt*nstep
+  τ      = dt/2
   model = CubedSphereDiscreteModel(n; radius=rₑ)
   hf, uf = shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
-                                                               h₀, u₀, f₀, g, θ, T, nstep;
+                                                               h₀, u₀, f₀, g, θ, T, nstep, τ;
                                                                write_solution=false,
                                                                write_solution_freq=5,
                                                                write_diagnostics=true,

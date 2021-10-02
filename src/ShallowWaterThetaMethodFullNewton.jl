@@ -3,21 +3,21 @@ function topography(xyz)
   0.0
 end
 
-# Compute initial volume flux (williamsom2)
+# Compute initial volume flux
 function F₀(u₀,h₀,U,V,dΩ)
   a(u,v) = ∫(v⋅u)dΩ
   b(v)   = ∫((v⋅(h₀*u₀)))dΩ
   solve(AffineFEOperator(a,b,U,V))
 end
 
-# Compute initial potential vorticity (williamsom2)
+# Compute initial potential vorticity
 function q₀(u₀,h₀,f,R,S,n,dΩ)
   a(r,s) = ∫( s*(r*h₀) )dΩ
   b(s)   = ∫( s*f - ⟂(∇(s),n)⋅u₀ )dΩ
   solve(AffineFEOperator(a,b,R,S))
 end
 
-# Generate initial monolothic solution (williamsom2)
+# Generate initial monolothic solution
 function uhqF₀(u₀,h₀,q₀,F₀,X,Y,dΩ)
   a((u,p,r,u2),(v,q,s,v2))=∫(v⋅u+q*p+s*r+v2⋅u2)dΩ
   b((v,q,s,v2))=∫( v⋅u₀+ q*h₀ + s*q₀ + v2⋅F₀ )dΩ
@@ -29,9 +29,10 @@ end
   T : [0,T] simulation interval
   N : number of time subintervals
   θ : Theta-method parameter [0,1)
+  τ : APVM method stabilization parameter (dt/2 is typically a reasonable value)
 """
 function shallow_water_theta_method_full_newton_time_stepper(
-      model, order, degree, h₀, u₀, f₀, g, θ, T, N;
+      model, order, degree, h₀, u₀, f₀, g, θ, T, N, τ;
       nlrtol=1.0e-08, # Newton solver relative residual tolerance
       write_diagnostics=true,
       write_diagnostics_freq=1,
