@@ -3,13 +3,6 @@ function topography(xyz)
   0.0
 end
 
-# Compute initial volume flux
-function F₀(u₀,h₀,U,V,dΩ)
-  a(u,v) = ∫(v⋅u)dΩ
-  b(v)   = ∫((v⋅(h₀*u₀)))dΩ
-  solve(AffineFEOperator(a,b,U,V))
-end
-
 # Compute initial potential vorticity
 function q₀(u₀,h₀,f,R,S,n,dΩ)
   a(r,s) = ∫( s*(r*h₀) )dΩ
@@ -51,7 +44,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
 
   if (write_diagnostics)
     # assemble the mass matrices
-    H1MM, _, L2MM, H1MMchol, _, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+    H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
   end
 
 
@@ -78,7 +71,9 @@ function shallow_water_theta_method_full_newton_time_stepper(
   #     - Initial potential vorticity (q₀)
   #     - Initial volume flux (F₀)
   #     - Initial full solution
-  ΔuΔhqF=uhqF₀(un,hn,q₀(un,hn,fn,R,S,n,dΩ),F₀(un,hn,U,V,dΩ),X,Y,dΩ)
+  F₀=clone_fe_function(V,un)
+  compute_mass_flux!(F₀,dΩ,V,RTMMchol,un*hn)
+  ΔuΔhqF=uhqF₀(un,hn,q₀(un,hn,fn,R,S,n,dΩ),F₀,X,Y,dΩ)
   Δu,Δh,q,F = ΔuΔhqF
 
   h_tmp = copy(hnv)
