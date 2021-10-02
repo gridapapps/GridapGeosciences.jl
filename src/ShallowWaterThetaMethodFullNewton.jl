@@ -30,12 +30,6 @@ end
   N : number of time subintervals
   θ : Theta-method parameter [0,1)
 """
-# **IMPORTANT NOTE**: At present, this function ONLY implements
-# Backward Euler (i.e.  θ=0) no matter the value of the θ parameter value.
-# Below there is an approach (commented out) for a general implementation
-# of residual and jacobian for arbitrary values of θ. However, I
-# was not able to get it working (Newton-Raphson diverges). There should
-# be some BUG, in the definition of the Jacobian, I guess.
 function shallow_water_theta_method_full_newton_time_stepper(
       model, order, degree, h₀, u₀, f₀, g, θ, T, N;
       nlrtol=1.0e-08, # Newton solver relative residual tolerance
