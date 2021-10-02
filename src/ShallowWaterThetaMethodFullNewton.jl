@@ -137,7 +137,9 @@ function shallow_water_theta_method_full_newton_time_stepper(
                                         dump_diagnostics_on_screen)
       end
       if (write_solution && write_solution_freq>0 && mod(step, write_solution_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
+        if (!write_diagnostics || write_diagnostics_freq != write_solution_freq)
+          compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
+        end
         pvd[Float64(step)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(step)"),hn,un,wn)
       end
     end
