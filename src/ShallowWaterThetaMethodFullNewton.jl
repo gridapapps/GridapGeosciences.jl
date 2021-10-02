@@ -1,8 +1,3 @@
-# Topography
-function topography(xyz)
-  0.0
-end
-
 # Compute initial potential vorticity
 function q₀(u₀,h₀,f,R,S,n,dΩ)
   a(r,s) = ∫( s*(r*h₀) )dΩ
@@ -25,7 +20,7 @@ end
   τ : APVM method stabilization parameter (dt/2 is typically a reasonable value)
 """
 function shallow_water_theta_method_full_newton_time_stepper(
-      model, order, degree, h₀, u₀, f₀, g, θ, T, N, τ;
+      model, order, degree, h₀, u₀, f₀, topography, g, θ, T, N, τ;
       nlrtol=1.0e-08, # Newton solver relative residual tolerance
       write_diagnostics=true,
       write_diagnostics_freq=1,

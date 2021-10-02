@@ -31,7 +31,7 @@ function compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,uu,h,g)
 end
 
 function compute_diagnostic_vorticity!(w,dΩ,S,H1MMchol,u,n)
-  b(s) = ∫(perp(n,∇(s))⋅(u))dΩ
+  b(s) = ∫(⟂(n,∇(s))⋅(u))dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(w), S)
   ldiv!(H1MMchol, get_free_dof_values(w))
 end

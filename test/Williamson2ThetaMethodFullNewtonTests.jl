@@ -29,7 +29,7 @@ for i in 1:2
   τ      = dt/2
   model = CubedSphereDiscreteModel(n; radius=rₑ)
   hf, uf = shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
-                                                               h₀, u₀, f₀, g, θ, T, nstep, τ;
+                                                               h₀, u₀, f₀, topography, g, θ, T, nstep, τ;
                                                                write_solution=false,
                                                                write_solution_freq=5,
                                                                write_diagnostics=true,
