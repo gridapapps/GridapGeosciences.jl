@@ -1,10 +1,3 @@
-# Compute initial potential vorticity
-function q₀(u₀,h₀,f,R,S,n,dΩ)
-  a(r,s) = ∫( s*(r*h₀) )dΩ
-  b(s)   = ∫( s*f - ⟂(∇(s),n)⋅u₀ )dΩ
-  solve(AffineFEOperator(a,b,R,S))
-end
-
 # Generate initial monolothic solution
 function uhqF₀(u₀,h₀,q₀,F₀,X,Y,dΩ)
   a((u,p,r,u2),(v,q,s,v2))=∫(v⋅u+q*p+s*r+v2⋅u2)dΩ
@@ -66,9 +59,11 @@ function shallow_water_theta_method_full_newton_time_stepper(
   #     - Initial potential vorticity (q₀)
   #     - Initial volume flux (F₀)
   #     - Initial full solution
+  q₀=clone_fe_function(R,fn)
+  compute_potential_vorticity!(q₀,H1MM,H1MMchol,dΩ,R,S,hn,un,fn,n)
   F₀=clone_fe_function(V,un)
   compute_mass_flux!(F₀,dΩ,V,RTMMchol,un*hn)
-  ΔuΔhqF=uhqF₀(un,hn,q₀(un,hn,fn,R,S,n,dΩ),F₀,X,Y,dΩ)
+  ΔuΔhqF=uhqF₀(un,hn,q₀,F₀,X,Y,dΩ)
   Δu,Δh,q,F = ΔuΔhqF
 
   h_tmp = copy(hnv)
