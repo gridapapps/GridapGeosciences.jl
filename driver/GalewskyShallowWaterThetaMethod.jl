@@ -1,4 +1,4 @@
-module GalewskyShallowWaterRosenbrock
+module GalewskyShallowWaterThetaMethod
 
 using Gridap
 using GridapGeosciences
