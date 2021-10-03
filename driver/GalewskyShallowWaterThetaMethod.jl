@@ -2,6 +2,7 @@ module GalewskyShallowWaterThetaMethod
 
 using Gridap
 using GridapGeosciences
+using GridapPardiso
 
 include("GalewskyInitialConditions.jl")
 
@@ -22,8 +23,14 @@ T      = dt*nstep
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
+linear_solver=PardisoSolver(GridapPardiso.MTYPE_REAL_NON_SYMMETRIC,
+                            GridapPardiso.new_iparm(),
+                            GridapPardiso.MSGLVL_VERBOSE,
+                            GridapPardiso.new_pardiso_handle())
+
 shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
                                                h₀, u₀, f, topography, g, θ, T, nstep, dt/2;
+                                               linear_solver=linear_solver(),
                                                write_solution=true,
                                                write_solution_freq=45,
                                                write_diagnostics=true,
