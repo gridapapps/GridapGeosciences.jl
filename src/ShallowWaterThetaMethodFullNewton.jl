@@ -15,7 +15,8 @@ end
 function shallow_water_theta_method_full_newton_time_stepper(
       model, order, degree, h₀, u₀, f₀, topography, g, θ, T, N, τ;
       nlrtol=1.0e-08, # Newton solver relative residual tolerance
-      linear_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.LinearSolver(),
+      linear_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+      sparse_matrix_type::Type{<:AbstractSparseMatrix}=SparseMatrixCSC{Float64,Int},
       write_diagnostics=true,
       write_diagnostics_freq=1,
       dump_diagnostics_on_screen=true,
@@ -118,7 +119,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
        dY = get_fe_basis(Y)
        residualΔuΔhqF=residual(ΔuΔhqF,dY)
        r=assemble_vector(residualΔuΔhqF,Y)
-       op=FEOperator(residual,jacobian,X,Y)
+       assem = SparseMatrixAssembler(sparse_matrix_type,Vector{Float64},X,Y)
+       op=FEOperator(residual,jacobian,X,Y,assem)
        nls=NLSolver(linear_solver;
            show_trace=true,
            method=:newton,
