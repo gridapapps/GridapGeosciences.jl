@@ -3,6 +3,8 @@ module GalewskyShallowWaterThetaMethod
 using Gridap
 using GridapGeosciences
 using GridapPardiso
+using SparseMatricesCSR
+
 
 include("GalewskyInitialConditions.jl")
 

@@ -1,6 +1,7 @@
 module GridapGeosciences
   using Gridap
   using FillArrays
+  using SparseArrays
   using LinearAlgebra
   using CSV
   using DataFrames
