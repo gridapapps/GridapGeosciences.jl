@@ -28,17 +28,10 @@ function thermal_shallow_water_explicit_time_step!(
      model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ,            # in args
      RTMMchol, L2MMchol, dt, τ, leap_frog)                            # more in args
 
-  # energetically balanced explicit second order thermal shallow water solver
-  #
-  # f          : coriolis force (field)
-  # h₁         : fluid depth at current time level
-  # u₁         : fluid velocity at current time level
-  # E₁         : fluid buoyancy at current time level
-  # RTMM       : H(div) mass matrix, ∫β⋅βdΩ, ∀β∈ H(div,Ω)
-  # L2MM       : L² mass matrix, ∫γγdΩ, ∀γ∈ L²(Ω)
-  # dt         : time step
-  # leap_frog  : do leap frog time integration for the first step (boolean)
-  # dΩ         : measure of the elements
+  # energetically balanced explicit second order thermal shallow water solver.
+  # extends the explicit shallow water solver with the an additional buoyancy 
+  # modulated forcing term, and flux form equation for the density weighted 
+  # buoyancy
 
   n = get_normal_vector(model)
   # explicit step for provisional velocity, uₚ
@@ -99,23 +92,11 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
   # assemble the mass matrices
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
-  b₁(q)   = ∫(q*h₀)dΩ
-  rhs1    = assemble_vector(b₁, Q)
-  hn      = FEFunction(Q, copy(rhs1))
-  ldiv!(L2MMchol, get_free_dof_values(hn))
-
-  b₂(v)   = ∫(v⋅u₀)dΩ
-  rhs2    = assemble_vector(b₂, V)
-  un      = FEFunction(V, copy(rhs2))
-  ldiv!(RTMMchol, get_free_dof_values(un))
-
-  b₃(s)   = ∫(s*f₀)*dΩ
-  rhs3    = assemble_vector(b₃, S)
-  f       = FEFunction(S, copy(rhs3))
-  ldiv!(H1MMchol, get_free_dof_values(f))
+  hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S, 
+                               L2MMchol, RTMMchol, H1MMchol, h₀, u₀, f₀)
 
   b₄(q)   = ∫(q*E₀)dΩ
   rhs4    = assemble_vector(b₄, Q)
@@ -159,7 +140,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
                                               RTMMchol, L2MMchol, dt, τ, false)
 
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "internal", "power_k2p", "power_k2i")
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "buoyancy", "kinetic", "internal", "power_k2p", "power_k2i")
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)
@@ -201,7 +182,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-        pvd[Float64(istep)] = new_vtk_step_tswe(Ω,joinpath(output_dir,"n=$(istep)"),hn,un,wn,e2)
+	pvd[Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn,"en"=>e2])
       end
     end
     hn, un, En

@@ -131,7 +131,7 @@ function solve_wave_equation_ssrk2(
 
        if (write_results)
          ke[step]=Eₖ(un,H,dΩ)
-         pe[step]=Eₚ(hn,g,dΩ)
+         pe[step]=Eₚ(hn,hn,0.5*g,dΩ)
          kin_to_pot[step]=compute_kin_to_pot!(u1v,unv,divvh,hnv)
          pot_to_kin[step]=compute_pot_to_kin!(h1v,hnv,qdivu,unv)
          mass[step] = compute_total_mass!(h1v,L2MM,hnv)

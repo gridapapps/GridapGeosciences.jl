@@ -157,25 +157,9 @@ function shallow_water_imex_time_stepper(model, order, degree,
   H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
       setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
-
   # Project the initial conditions onto the trial spaces
-  b₁(q)   = ∫(q*h₀)dΩ
-  rhs1    = assemble_vector(b₁, Q)
-  hn      = FEFunction(Q, copy(rhs1))
-
-  b₂(v)   = ∫(v⋅u₀)dΩ
-  rhs2    = assemble_vector(b₂, V)
-  un      = FEFunction(V, copy(rhs2))
-
-  b₃(s)   = ∫(s*f₀)*dΩ
-  rhs3    = assemble_vector(b₃, S)
-  f       = FEFunction(S, copy(rhs3))
-
-  hnv,unv,fv=get_free_dof_values(hn,un,f)
-  ldiv!(L2MMchol, hnv)
-  ldiv!(RTMMchol, unv)
-  ldiv!(H1MMchol, fv)
-
+  hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S, 
+                               L2MMchol, RTMMchol, H1MMchol, h₀, u₀, f₀)
 
   # work arrays
   u_tmp = copy(unv)
@@ -254,7 +238,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-        pvd[Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),hn,un,wn)
+	pvd[Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
       end
     end
     hn, un

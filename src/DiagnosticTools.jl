@@ -8,22 +8,15 @@ end
 """
   Potential energy
 """
-function Eₚ(hh,g,dΩ)
-  0.5*g*sum(∫(hh*hh)dΩ)
-end
-
-"""
-  Internal energy (thermal shallow water)
-"""
-function Eᵢ(hh,Eh,dΩ)
-  0.5*sum(∫(hh*Eh)dΩ)
+function Eₚ(a,b,c,dΩ)
+  c*sum(∫(a*b)dΩ)
 end
 
 """
   Total energy
 """
 function Eₜ(uh,H,hh,g,dΩ)
-  Eₖ(uh,H,dΩ)+Eₚ(hh,g,dΩ)
+  Eₖ(uh,H,dΩ)+Eₚ(hh,hh,0.5*g,dΩ)
 end
 
 """
@@ -82,19 +75,30 @@ end
   Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
 """
 
+function compute_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                         model, dΩ, dω, S, L2MM, H1MM,
+					 h, u, w, ϕ, F, h2, c)
+  mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
+  vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
+  kin_i  = Eₖ(u,h,dΩ)
+  pot_i  = Eₚ(h,h2,c,dΩ)
+  pow_i  = sum(∫(ϕ*DIV(F))dω)
+
+  mass_i, vort_i, kin_i, pot_i, pow_i
+end
+
 function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
                                          h, u, w, ϕ, F, g, step, dt,
                                          output_file, dump_on_screen)
 
-  mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
-  vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
-  kin_i  = Eₖ(u,h,dΩ)
-  pot_i  = Eₚ(h,g,dΩ)
-  pow_i  = sum(∫(ϕ*DIV(F))dω)
+  mass_i, vort_i, kin_i, pot_i, pow_i = compute_diagnostics_shallow_water!(
+                                          h_tmp, w_tmp,
+                                          model, dΩ, dω, S, L2MM, H1MM,
+                                          h, u, w, ϕ, F, h, 0.5*g)
 
   append_to_csv(output_file;
-                time       = step*dt,
+                time       = step*dt/24/60/60,
                 mass       = mass_i,
                 vorticity  = vort_i,
                 kinetic    = kin_i,
@@ -112,24 +116,26 @@ function dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
                                          h, u, E, w, ϕ, F, eF, step, dt,
                                          output_file, dump_on_screen)
 
-  mass_i    = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
-  vort_i    = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
-  kin_i     = Eₖ(u,h,dΩ)
-  int_i     = Eᵢ(h,E,dΩ)
-  pow_k2p_i = sum(∫(ϕ*DIV(F))dω)
+  mass_i, vort_i, kin_i, pot_i, pow_k2p_i = compute_diagnostics_shallow_water!(
+                                              h_tmp, w_tmp,
+                                              model, dΩ, dω, S, L2MM, H1MM,
+                                              h, u, w, ϕ, F, E, 0.5)
+
+  buoy_i    = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(E))
   pow_k2i_i = 0.5*sum(∫(h*DIV(eF))dω)
 
   append_to_csv(output_file;
                 time       = step*dt/24/60/60,
                 mass       = mass_i,
                 vorticity  = vort_i,
+                buoyancy   = buoy_i,
                 kinetic    = kin_i,
                 internal   = int_i,
                 power_k2p  = pow_k2p_i,
                 power_k2i  = pow_k2i_i)
 
   if dump_on_screen
-    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
-             step, mass_i, vort_i, kin_i, int_i, kin_i+int_i, pow_k2p_i, pow_k2i_i)
+    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
+             step, mass_i, vort_i, buoy_i, kin_i, int_i, kin_i+int_i, pow_k2p_i, pow_k2i_i)
   end
 end
