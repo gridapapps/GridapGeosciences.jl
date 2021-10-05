@@ -4,6 +4,11 @@ using Test
 using Gridap
 using GridapGeosciences
 using GridapPardiso
+using SparseMatricesCSR
+
+function Base.copy(a::SparseMatrixCSR{Bi}) where Bi
+  SparseMatrixCSR{Bi}(a.m,a.n,copy(a.rowptr),copy(a.colval),copy(a.nzval))
+end
 
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
@@ -31,11 +36,12 @@ for i in 1:2
   model = CubedSphereDiscreteModel(n; radius=rₑ)
   linear_solver=PardisoSolver(GridapPardiso.MTYPE_REAL_NON_SYMMETRIC,
                               GridapPardiso.new_iparm(),
-                              GridapPardiso.MSGLVL_VERBOSE,
+                              GridapPardiso.MSGLVL_QUIET,
                               GridapPardiso.new_pardiso_handle())
   hf, uf = shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
                                                                h₀, u₀, f₀, topography, g, θ, T, nstep, τ;
                                                                linear_solver=linear_solver,
+                                                               sparse_matrix_type=SparseMatrixCSR{1,Float64,Int},
                                                                write_solution=false,
                                                                write_solution_freq=5,
                                                                write_diagnostics=true,

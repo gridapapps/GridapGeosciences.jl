@@ -14,6 +14,10 @@ include("GalewskyInitialConditions.jl")
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
 
+function Base.copy(a::SparseMatrixCSR{Bi}) where Bi
+  SparseMatrixCSR{Bi}(a.m,a.n,copy(a.rowptr),copy(a.colval),copy(a.nzval))
+end
+
 order  = 1
 degree = 4
 
@@ -21,7 +25,7 @@ n      = 48
 dt     = 480.0
 nstep  = Int(24*60^2*20/dt) # 20 days
 T      = dt*nstep
-θ      = 0.0
+θ      = 0.5
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
@@ -33,6 +37,7 @@ linear_solver=PardisoSolver(GridapPardiso.MTYPE_REAL_NON_SYMMETRIC,
 shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
                                                h₀, u₀, f, topography, g, θ, T, nstep, dt/2;
                                                linear_solver=linear_solver,
+                                               sparse_matrix_type=SparseMatricesCSR{1,Int64,Float64},
                                                write_solution=true,
                                                write_solution_freq=45,
                                                write_diagnostics=true,
