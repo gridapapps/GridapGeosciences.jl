@@ -37,7 +37,7 @@ linear_solver=PardisoSolver(GridapPardiso.MTYPE_REAL_NON_SYMMETRIC,
 shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
                                                h₀, u₀, f, topography, g, θ, T, nstep, dt/2;
                                                linear_solver=linear_solver,
-                                               sparse_matrix_type=SparseMatrixCSR{1,Int64,Float64},
+                                               sparse_matrix_type=SparseMatrixCSR{1,Float64,Int},
                                                write_solution=true,
                                                write_solution_freq=45,
                                                write_diagnostics=true,
