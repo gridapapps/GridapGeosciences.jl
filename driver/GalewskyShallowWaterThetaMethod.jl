@@ -18,8 +18,8 @@ order  = 1
 degree = 4
 
 n      = 48
-nstep  = 20*180 # 20 days
 dt     = 480.0
+nstep  = Int(24*60^2*20/dt) # 20 days
 T      = dt*nstep
 θ      = 0.0
 

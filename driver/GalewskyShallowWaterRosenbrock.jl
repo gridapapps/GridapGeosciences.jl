@@ -6,21 +6,21 @@ using GridapGeosciences
 include("GalewskyInitialConditions.jl")
 
 # Solves the Galewsky test case for the shallow water equations on a sphere
-# of physical radius 6371220m. Involves a shear flow instability of a zonal 
+# of physical radius 6371220m. Involves a shear flow instability of a zonal
 # jet triggered by an initial gravity wave.
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
 
-order  = 1 
+order  = 1
 degree = 4
 
-# magnitude of the descent direction of the implicit solve; 
+# magnitude of the descent direction of the implicit solve;
 # neutrally stable for 0.5, L-stable for 1+sqrt(2)/2
-λ = 1.0 + 0.5*sqrt(2.0) 
+λ = 1.0 + 0.5*sqrt(2.0)
 
 n      = 48
-nstep  = 20*180 # 20 days
 dt     = 480.0
+nstep  = Int(24*60^2*20/dt) # 20 days
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
