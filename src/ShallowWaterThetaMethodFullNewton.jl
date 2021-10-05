@@ -119,13 +119,22 @@ function shallow_water_theta_method_full_newton_time_stepper(
        dY = get_fe_basis(Y)
        residualΔuΔhqF=residual(ΔuΔhqF,dY)
        r=assemble_vector(residualΔuΔhqF,Y)
-       assem = SparseMatrixAssembler(sparse_matrix_type,Vector{Float64},X,Y)
-       op=FEOperator(residual,jacobian,X,Y,assem)
-       nls=NLSolver(linear_solver;
-           show_trace=true,
-           method=:newton,
-           ftol=nlrtol*norm(r,Inf),
-           xtol=1.0e-02)
+       if (step!=1)
+         assem = SparseMatrixAssembler(sparse_matrix_type,Vector{Float64},X,Y)
+         op=FEOperator(residual,jacobian,X,Y,assem)
+         nls=NLSolver(linear_solver;
+                      show_trace=true,
+                      method=:newton,
+                      ftol=nlrtol*norm(r,Inf),
+                      xtol=1.0e-02)
+       else
+         # Using UMFPACK for first time step for increased robustness
+         op=FEOperator(residual,jacobian,X,Y)
+         nls=NLSolver(show_trace=true,
+                      method=:newton,
+                      ftol=nlrtol*norm(r,Inf),
+                      xtol=1.0e-02)
+       end
        solver=FESolver(nls)
 
        solve!(ΔuΔhqF,solver,op)
