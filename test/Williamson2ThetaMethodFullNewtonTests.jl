@@ -6,10 +6,6 @@ using GridapGeosciences
 using GridapPardiso
 using SparseMatricesCSR
 
-function Base.copy(a::SparseMatrixCSR{Bi}) where Bi
-  SparseMatrixCSR{Bi}(a.m,a.n,copy(a.rowptr),copy(a.colval),copy(a.nzval))
-end
-
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
 # the potential gradient term to achieve a steady state

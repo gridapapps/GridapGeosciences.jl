@@ -14,10 +14,6 @@ include("GalewskyInitialConditions.jl")
 # reference:
 #   Galewsky, Scott and Polvani (2004) Tellus, 56A 429-440
 
-function Base.copy(a::SparseMatrixCSR{Bi}) where Bi
-  SparseMatrixCSR{Bi}(a.m,a.n,copy(a.rowptr),copy(a.colval),copy(a.nzval))
-end
-
 order  = 1
 degree = 4
 
