@@ -137,7 +137,7 @@ function solve_wave_equation_ssrk2(
          mass[step] = compute_total_mass!(h1v,L2MM,hnv)
          if mod(step, out_period) == 0
            println(step)
-           pvd[Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
+           pvd[dt*Float64(step)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(step)"),hn,un)
          end
          # save global scalar snapshots
          append_to_csv(joinpath(out_dir,"wave_eq_geosciences_data.csv");
@@ -150,10 +150,9 @@ function solve_wave_equation_ssrk2(
        end
     end
     if (write_results)
-      pvd[Float64(N)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(N)"),hn,un)
+      pvd[dt*Float64(N)] = new_vtk_step(Ω,joinpath(out_dir,"n=$(N)"),hn,un)
       vtk_save(pvd)
       generate_energy_plots(out_dir,N,ke,pe,kin_to_pot,pot_to_kin)
-
     end
     un,hn
   end
