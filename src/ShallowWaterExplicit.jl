@@ -64,9 +64,9 @@ function shallow_water_explicit_time_step!(
   compute_depth!(hₚ,dΩ,dω,Q,L2MMchol,hₘ,F,dt1)
 
   # 2.1: the mass flux
-  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + hₚ)/6.0+uₚ*(h₁ + 2.0*hₚ)/6.0)
+  compute_mass_flux!(F,dΩ,V,RTMMchol,(u₁*h₁ + uₚ*hₚ)/2.0)
   # 2.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + hₚ),g)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + uₚ⋅uₚ)/2.0,0.5*(h₁ + hₚ),g)
   # 2.3: the potential vorticity
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
   # 2.4: solve for the final velocity

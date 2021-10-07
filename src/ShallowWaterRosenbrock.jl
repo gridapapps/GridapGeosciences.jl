@@ -42,9 +42,9 @@ function shallow_water_rosenbrock_time_step!(
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
-  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
+  compute_mass_flux!(F,dΩ,V,RTMMchol,(u₁*h₁ + u₂*h₂)/2.0)
   # 2.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₂⋅u₂)/2.0,0.5*(h₁ + h₂),g)
   # 2.3: the potential vorticity
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n)
   # 2.4: assemble the momentum and continuity equation residuals

@@ -109,9 +109,9 @@ function shallow_water_imex_time_step!(
 
   # solve for the second order, semi-implicit mass flux
   # 2.1: mass flux component using the previous depth (explicit)
-  compute_mass_flux!(F,dΩ,V,RTMMchol,h₁*(2.0*u₁ + uₚ)/6.0)
+  compute_mass_flux!(F,dΩ,V,RTMMchol,h₁*u₁/2.0)
   # 2.2: mass flux component using the current depth (implicit)
-  setup_subassembled_A!(A,P,V,(u₁ + 2.0*uₚ)/6.0,dΩ)
+  setup_subassembled_A!(A,P,V,uₚ/2.0,dΩ)
   assemble_implicit_compound_operator!(B,P,U,V,dt,dΩ,A,RTMM,L2MMinvD) # B = RTMM + dt*A*L2MMinv*D
   assemble_Asub_mul_u!(h_wrk,U,P,dΩ,L2MMinvD,Fv)                  # h_wrk = L2MMinvD * Fv
   h_wrk .= h₁v .- dt .* h_wrk
@@ -126,7 +126,7 @@ function shallow_water_imex_time_step!(
   h₂v .= h₁v .- dt .* h_wrk
 
   # 3.1: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + h₂),g)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + uₚ⋅uₚ)/2.0,0.5*(h₁ + h₂),g)
   # 3.2: the potential vorticity
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,uₚ,f,n)
   # 3.3: solve for the final velocity
