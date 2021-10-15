@@ -1,7 +1,10 @@
-module GalewskyShallowWaterRosenbrock
+module GalewskyShallowWaterThetaMethod
 
 using Gridap
 using GridapGeosciences
+using GridapPardiso
+using SparseMatricesCSR
+
 
 include("GalewskyInitialConditions.jl")
 
@@ -14,20 +17,23 @@ include("GalewskyInitialConditions.jl")
 order  = 1
 degree = 4
 
-# magnitude of the descent direction of the implicit solve;
-# neutrally stable for 0.5, L-stable for 1+sqrt(2)/2
-λ = 1.0 + 0.5*sqrt(2.0)
-
 n      = 48
 dt     = 480.0
 nstep  = Int(24*60^2*20/dt) # 20 days
+T      = dt*nstep
+θ      = 0.5
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
-hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
-                                               h₀, u₀, f, g, H₀,
-                                               λ, dt, 60.0, nstep;
-                                               leap_frog=true,
+linear_solver=PardisoSolver(GridapPardiso.MTYPE_REAL_NON_SYMMETRIC,
+                            GridapPardiso.new_iparm(),
+                            GridapPardiso.MSGLVL_VERBOSE,
+                            GridapPardiso.new_pardiso_handle())
+
+shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
+                                               h₀, u₀, f, topography, g, θ, T, nstep, dt/2;
+                                               linear_solver=linear_solver,
+                                               sparse_matrix_type=SparseMatrixCSR{1,Float64,Int},
                                                write_solution=true,
                                                write_solution_freq=45,
                                                write_diagnostics=true,

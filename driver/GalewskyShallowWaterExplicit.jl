@@ -15,8 +15,8 @@ order  = 1
 degree = 4
 
 n      = 48
-nstep  = 20*24*60 # 20 days
 dt     = 60.0
+nstep  = Int(24*60^2*20/dt) # 20 days
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 

@@ -54,3 +54,8 @@ function h₀(xyz)
   h = h + hh*cos(ϕ)*exp(-1.0*(θ/α)*(θ/α))*exp(-1.0*((ϕ₂ - ϕ)/β)*((ϕ₂ - ϕ)/β))
   h
 end
+
+# Topography
+function topography(xyz)
+  0.0
+end
