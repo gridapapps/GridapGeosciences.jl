@@ -33,3 +33,8 @@ function h₀(xyz)
   h  = -cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α)
   H₀ - (rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*h*h/g
 end
+
+# Topography
+function topography(xyz)
+  0.0
+end

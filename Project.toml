@@ -8,15 +8,20 @@ CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+GridapPardiso = "34aa2546-dee6-11e9-014e-739fa02ec06f"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PackageCompiler = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+SparseMatricesCSR = "a0a7dd2c-ebf4-11e9-1f05-cf50bc540ca1"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 julia = "1.5"
+SparseMatricesCSR ="0.6.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
