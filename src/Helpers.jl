@@ -35,9 +35,10 @@ function setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
   H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol
 end
 
-function new_vtk_step(Ω,file,hn,un,wn)
+function new_vtk_step(Ω,file,_cellfields)
+  n = size(_cellfields)[1]
   createvtk(Ω,
             file,
-            cellfields=["hn"=>hn, "un"=>un, "wn"=>wn],
-            nsubcells=4)
+            cellfields=_cellfields,
+            nsubcells=n)
 end
