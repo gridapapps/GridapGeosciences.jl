@@ -130,7 +130,7 @@ function dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
                 vorticity  = vort_i,
                 buoyancy   = buoy_i,
                 kinetic    = kin_i,
-                internal   = int_i,
+                internal   = pot_i,
                 power_k2p  = pow_k2p_i,
                 power_k2i  = pow_k2i_i)
 
