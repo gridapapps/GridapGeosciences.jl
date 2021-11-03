@@ -22,29 +22,30 @@ end
 
 # Initial fluid depth
 function hᵢ(xyz)
-  θϕr   = xyz2θϕr(xyz)
-  θ,ϕ,r = θϕr
-  h     = H₀
-  ni    = 1000
-  ϕₚ    = 0.0
-  dϕ    = abs(ϕ/ni)
-  sgn   = 1.0
-  if ϕ < 0.0
-    sgn = -1.0
-  end
-  for i in 1:ni
-    ϕₚ   = ϕₚ + sgn*dϕ
-    _θϕr = VectorValue(θ,ϕₚ,r)
-    u    = uθ(_θϕr)
-    _f   = 2.0*Ωₑ*sin(ϕₚ)
-    h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
-  end
+  #θϕr   = xyz2θϕr(xyz)
+  #θ,ϕ,r = θϕr
+  #h     = H₀
+  #ni    = 1000
+  #ϕₚ    = 0.0
+  #dϕ    = abs(ϕ/ni)
+  #sgn   = 1.0
+  #if ϕ < 0.0
+  #  sgn = -1.0
+  #end
+  #for i in 1:ni
+  #  ϕₚ   = ϕₚ + sgn*dϕ
+  #  _θϕr = VectorValue(θ,ϕₚ,r)
+  #  u    = uθ(_θϕr)
+  #  _f   = 2.0*Ωₑ*sin(ϕₚ)
+  #  h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
+  #end
+  h = u₀*Ωₑ*x[3]*x[3]/rₑ/g + H₀
   h
 end
 
 function sᵢ(xyz)
   h = hᵢ(xyz)
-  s = g*(1.0 + c₀*c₀*H₀*H₀/h/h)
+  s = g*(1.0 + c₀*H₀*H₀/h/h)
   s
 end
 
