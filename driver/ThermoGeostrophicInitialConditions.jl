@@ -5,7 +5,7 @@
 
 const H₀ = 5960.0
 const U₀ = 20.0
-const C₀ = 0.05
+const C₀ = 0.1
 
 function uθ(θϕr)
   θ,ϕ,r = θϕr
@@ -39,7 +39,7 @@ function h₀(xyz)
   #  _f   = 2.0*Ωₑ*sin(ϕₚ)
   #  h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
   #end
-  h = U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
+  h = -1.0*U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
   h
 end
 
