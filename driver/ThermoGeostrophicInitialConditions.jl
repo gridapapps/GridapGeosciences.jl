@@ -4,24 +4,24 @@
 #     Eldred, Dubos and Kritsikis, JCP 379, 2018
 
 const H₀ = 5960.0
-const u₀ = 20.0
-const c₀ = 0.05
+const U₀ = 20.0
+const C₀ = 0.05
 
 function uθ(θϕr)
   θ,ϕ,r = θϕr
-  u = u₀*cos(ϕ)
+  u = U₀*cos(ϕ)
   u
 end
 
 # Initial velocity
-function uᵢ(xyz)
+function u₀(xyz)
   θϕr = xyz2θϕr(xyz)
   u   = uθ(θϕr)
   spherical_to_cartesian_matrix(θϕr)⋅VectorValue(u,0,0)
 end
 
 # Initial fluid depth
-function hᵢ(xyz)
+function h₀(xyz)
   #θϕr   = xyz2θϕr(xyz)
   #θ,ϕ,r = θϕr
   #h     = H₀
@@ -39,19 +39,19 @@ function hᵢ(xyz)
   #  _f   = 2.0*Ωₑ*sin(ϕₚ)
   #  h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
   #end
-  h = u₀*Ωₑ*x[3]*x[3]/rₑ/g + H₀
+  h = U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
   h
 end
 
-function sᵢ(xyz)
-  h = hᵢ(xyz)
-  s = g*(1.0 + c₀*H₀*H₀/h/h)
+function s₀(xyz)
+  h = h₀(xyz)
+  s = g*(1.0 + C₀*H₀*H₀/h/h)
   s
 end
 
-function Sᵢ(xyz)
-  h = hᵢ(xyz)
-  s = sᵢ(xyz)
+function S₀(xyz)
+  h = h₀(xyz)
+  s = s₀(xyz)
   S = s*h
   S
 end

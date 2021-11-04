@@ -12,13 +12,13 @@ order  = 1
 degree = 4
 
 n      = 24
-nstep  = 20*24*60 # 20 days
+nstep  = 20*24*120 # 20 days
 dt     = 30.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
 hf, uf = thermal_shallow_water_explicit_time_stepper(model, order, degree,
-                                    hᵢ, uᵢ, Sᵢ, f,
+                                    h₀, u₀, S₀, f,
                                     dt, 0.5*dt, nstep;
                                     write_solution=true,
                                     write_solution_freq=240,

@@ -136,6 +136,6 @@ function dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
 
   if dump_on_screen
     @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
-             step, mass_i, vort_i, buoy_i, kin_i, int_i, kin_i+int_i, pow_k2p_i, pow_k2i_i)
+             step, mass_i, vort_i, buoy_i, kin_i, pot_i, kin_i+pot_i, pow_k2p_i, pow_k2i_i)
   end
 end
