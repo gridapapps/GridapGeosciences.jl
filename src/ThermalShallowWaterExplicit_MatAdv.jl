@@ -169,9 +169,9 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
 
     if (write_diagnostics && write_diagnostics_freq==1)
       compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-      dump_diagnostics_thermal_shallow_water_material_advection!(h_tmp, w_tmp,
+      dump_diagnostics_thermal_shallow_water_mat_adv!(h_tmp, w_tmp,
                                               model, dΩ, dω, S, L2MM, H1MM,
-                                              hn, un, en, wn, ϕ, F, eF, 1, dt,
+					      hn, un, en, wn, ϕ, F, 0.5*(de1+de2), 1, dt,
                                               diagnostics_file,
                                               dump_diagnostics_on_screen)
     end
@@ -198,9 +198,9 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-        dump_diagnostics_thermal_shallow_water_material_advection!(h_tmp, w_tmp,
+        dump_diagnostics_thermal_shallow_water_mat_adv!(h_tmp, w_tmp,
                                                 model, dΩ, dω, S, L2MM, H1MM,
-                                                hn, un, en, wn, ϕ, F, eF, istep, dt,
+						hn, un, en, wn, ϕ, F, 0.5*(de1+de2), istep, dt,
                                                 diagnostics_file,
                                                 dump_diagnostics_on_screen)
       end
