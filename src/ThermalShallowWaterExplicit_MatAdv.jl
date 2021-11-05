@@ -131,7 +131,8 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
   bmm(a,b)  = ∫(a*hn*b)dΩ
   H1h       = assemble_matrix(bmm, R, S)
   H1hchol   = lu(H1h)
-  RTMMh     = assemble_matrix(bmm, U, V)
+  cmm(a,b)  = ∫(a⋅b*hn)dΩ
+  RTMMh     = assemble_matrix(cmm, U, V)
   RTMMhchol = lu(RTMM)
 
   function run_simulation(pvd=nothing)
