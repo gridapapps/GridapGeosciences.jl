@@ -27,7 +27,7 @@ end
 
 function thermal_shallow_water_mat_adv_explicit_time_step!(
      h₂, u₂, e₂, hₚ, uₚ, eₚ, ϕ, F, T, q₁, q₂, de₁, de₂, H1h, H1hchol,  # in/out args
-     model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, eₘ,             # in args
+     model, dΩ, dω, V, Q, R, S, f, h₁, u₁, e₁, hₘ, uₘ, eₘ,             # in args
      H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, leap_frog) # more in args
 
   # energetically balanced explicit second order thermal shallow water solver
