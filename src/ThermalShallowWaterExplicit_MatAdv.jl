@@ -205,7 +205,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
 
       thermal_shallow_water_mat_adv_explicit_time_step!(hn, un, en, hp, up, ep, ϕ, F, T, q1, q2, de1, de2, H1h, H1hchol,
                                                 model, dΩ, dω, U, V, Q, R, S, f, hm1, um1, em1, hm2, um2, em2, e1up, e2up,
-                                                RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, true)
+                                                H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
