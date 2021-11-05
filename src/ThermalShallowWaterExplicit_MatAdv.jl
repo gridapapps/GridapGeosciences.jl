@@ -21,7 +21,7 @@ end
 
 function compute_buoyancy!(e1,dΩ,S,H1MMchol,e2,de,F,dt)
   b(s) = ∫(s*e2 - dt*s*de⋅F)dΩ
-  Gridap.FESpaces.assemble_vector!(s, get_free_dof_values(e1), S)
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e1), S)
   ldiv!(H1MMchol, get_free_dof_values(e1))
 end
 
