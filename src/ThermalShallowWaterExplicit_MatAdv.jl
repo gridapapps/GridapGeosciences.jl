@@ -54,7 +54,7 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # 1.2: the bernoulli function, dH/dh
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁*e₁,1.0)
   # 1.3: compute the temperature, dH/ds
-  compute_temperature!(dT,dΩ,S,H1MMchol,0.5*h₁*h₁)
+  compute_temperature!(T,dΩ,S,H1MMchol,0.5*h₁*h₁)
   # 1.4: materially advected quantities (potential vorticity and buoyancy gradient)
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
   compute_buoyancy_gradient!(de₁,dΩ,V,RTMMh,RTMMhchol,e₁-τ*u₁⋅∇(e₁),h₁)
