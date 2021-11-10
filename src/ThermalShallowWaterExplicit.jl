@@ -17,16 +17,16 @@ function compute_buoyancy!(e,dΩ,S,H1chol,E)
   ldiv!(H1chol, get_free_dof_values(e))
 end
 
-function compute_velocity_tswe!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,eAPVM,F,ϕ,dT,n,dt1,dt2)
-  b(v) = ∫(v⋅u2 - dt1*(qAPVM)*(v⋅⟂(F,n)) - dt1*(eAPVM)*v⋅dT)dΩ + ∫(dt2*DIV(v)*ϕ)dω
+function compute_velocity_tswe!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,eAPVM,F,ϕ,dT,n,dt)
+  b(v) = ∫(v⋅u2 - dt*(qAPVM)*(v⋅⟂(F,n)) - dt*(eAPVM)*v⋅dT)dΩ + ∫(dt*DIV(v)*ϕ)dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(u1), V)
   ldiv!(RTMMchol, get_free_dof_values(u1))
 end
 
 function thermal_shallow_water_explicit_time_step!(
-     h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,  # in/out args
-     model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ,            # in args
-     RTMMchol, L2MMchol, dt, τ, leap_frog)                            # more in args
+     h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,   # in/out args
+     model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ, e₁up, e₂up, # in args
+     H1MMchol, RTMMchol, L2MMchol, dt, τ, leap_frog)                   # more in args
 
   # energetically balanced explicit second order thermal shallow water solver.
   # extends the explicit shallow water solver with the an additional buoyancy 
@@ -49,11 +49,12 @@ function thermal_shallow_water_explicit_time_step!(
   compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
-  compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁-τ*u₁⋅∇(e₁),F,ϕ,dT,n,dt1,dt1)
+  upwind_buoyancy!(e₁up,dΩ,S,H1MMchol,e₁,u₁,τ)
+  compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁up,F,ϕ,dT,n,dt1)
   # 1.5: solve for the provisional depth
   compute_depth!(hₚ,dΩ,dω,Q,L2MMchol,hₘ,F,dt1)
   # 1.6: solve for the buoyancy weighted mass flux
-  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,e₁-τ*u₁⋅∇(e₁),F)
+  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,e₁up,F)
   compute_depth!(Eₚ,dΩ,dω,Q,L2MMchol,Eₘ,dT,dt1)
 
   # 2.1: the mass flux
@@ -65,11 +66,12 @@ function thermal_shallow_water_explicit_time_step!(
   compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
-  compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),e₁-τ*u₁⋅∇(e₁)+e₂-τ*uₚ⋅∇(e₂),F,ϕ,dT,n,0.5*dt,dt)
+  upwind_buoyancy!(e₂up,dΩ,S,H1MMchol,e₂,uₚ,τ)
+  compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,0.5*(q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂)),0.5*(e₁up+e₂up),F,ϕ,dT,n,dt)
   # 2.5: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.6: solve for the buoyancy weighted mass flux
-  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,0.5*(e₁-τ*u₁⋅∇(e₁)+e₂-τ*uₚ⋅∇(e₂)),F)
+  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,0.5*(e₁up+e₂up),F)
   compute_depth!(E₂,dΩ,dω,Q,L2MMchol,E₁,dT,dt)
 end
 
@@ -133,11 +135,13 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
     q2     = clone_fe_function(S,f)
     e1     = clone_fe_function(S,f)
     e2     = clone_fe_function(S,f)
+    e1up   = clone_fe_function(S,f)
+    e2up   = clone_fe_function(S,f)
 
     # first step, no leap frog integration
     thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
-                                              model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2,
-                                              RTMMchol, L2MMchol, dt, τ, false)
+                                              model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
+                                              H1MMchol, RTMMchol, L2MMchol, dt, τ, false)
 
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "buoyancy", "kinetic", "internal", "power_k2p", "power_k2i")
@@ -169,8 +173,8 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
       En    = E_aux
 
       thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
-                                                model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2,
-                                                RTMMchol, L2MMchol, dt, τ, true)
+                                                model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
+                                                H1MMchol, RTMMchol, L2MMchol, dt, τ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
