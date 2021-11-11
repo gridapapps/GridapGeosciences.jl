@@ -11,9 +11,15 @@ function compute_buoyancy_flux!(eF,dΩ,V,RTMMchol,e,F)
 end
 
 # assume that H1chol factorization has already been performed
-function compute_buoyancy!(e,dΩ,S,H1chol,E)
-  b(s) = ∫(s*E)dΩ
-  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e), S)
+#function compute_buoyancy!(e,dΩ,S,H1chol,E)
+function compute_buoyancy!(e,dΩ,R,S,H1MM,H1chol,E,h,u,τ)
+  #b(s) = ∫(s*E)dΩ
+  #Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e), S)
+  #ldiv!(H1chol, get_free_dof_values(e))
+  a(s,r) = ∫((s-τ*u⋅∇(s))*t*h)dΩ
+  b(s) = ∫((s-τ*u⋅∇(s))*E)dΩ
+  Gridap.FESpaces.assemble_matrix_and_vector!(a, b, H1MM, get_free_dof_values(e), R, S)
+  lu!(H1MM, H1chol)
   ldiv!(H1chol, get_free_dof_values(e))
 end
 
@@ -46,15 +52,16 @@ function thermal_shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,E₁,0.5)
   # 1.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
-  compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
+  #compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
+  compute_buoyancy!(e₁,dΩ,R,S,H1h,H1hchol,E₁,h₁,u₁,τ)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
-  upwind_buoyancy!(e₁up,dΩ,S,H1MMchol,e₁,u₁,τ)
-  compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁up,F,ϕ,dT,n,dt1)
+  #upwind_buoyancy!(e₁up,dΩ,S,H1MMchol,e₁,u₁,τ)
+  compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁,F,ϕ,dT,n,dt1)
   # 1.5: solve for the provisional depth
   compute_depth!(hₚ,dΩ,dω,Q,L2MMchol,hₘ,F,dt1)
   # 1.6: solve for the buoyancy weighted mass flux
-  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,e₁up,F)
+  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,e₁,F)
   compute_depth!(Eₚ,dΩ,dω,Q,L2MMchol,Eₘ,dT,dt1)
 
   # 2.1: the mass flux
@@ -63,15 +70,16 @@ function thermal_shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(E₁ + Eₚ),0.5)
   # 2.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
-  compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
+  #compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
+  compute_buoyancy!(e₂,dΩ,R,S,H1h,H1hchol,Eₚ,hₚ,uₚ,τ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
-  upwind_buoyancy!(e₂up,dΩ,S,H1MMchol,e₂,uₚ,τ)
-  compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,0.5*(q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂)),0.5*(e₁up+e₂up),F,ϕ,dT,n,dt)
+  #upwind_buoyancy!(e₂up,dΩ,S,H1MMchol,e₂,uₚ,τ)
+  compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,0.5*(q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂)),0.5*(e₁+e₂),F,ϕ,dT,n,dt)
   # 2.5: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.6: solve for the buoyancy weighted mass flux
-  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,0.5*(e₁up+e₂up),F)
+  compute_buoyancy_flux!(dT,dΩ,V,RTMMchol,0.5*(e₁+e₂),F)
   compute_depth!(E₂,dΩ,dω,Q,L2MMchol,E₁,dT,dt)
 end
 
