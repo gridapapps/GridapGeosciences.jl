@@ -20,6 +20,10 @@ function u₀(xyz)
   spherical_to_cartesian_matrix(θϕr)⋅VectorValue(u,0,0)
 end
 
+function havg(xyz)
+  -1.0*U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
+end
+
 # Initial fluid depth
 function h₀(xyz)
   θϕr   = xyz2θϕr(xyz)
@@ -39,20 +43,22 @@ function h₀(xyz)
   #  _f   = 2.0*Ωₑ*sin(ϕₚ)
   #  h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
   #end
-  h = -1.0*U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
+  #h = -1.0*U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
+  h = havg(xyz)
   #Rc = π/9.0
   Rc = π/8.0
   θc = -π/2.0 # mountain top longitude
   ϕc = +π/6.0 # mountain top latitude
   rc = sqrt((θ - θc)*(θ - θc) + (ϕ - ϕc)*(ϕ - ϕc))
   if rc < Rc
-    h = h + 120.0*(1.0 - rc/Rc)
+    h = h + 200.0*(1.0 - rc/Rc)
   end
   h
 end
 
 function s₀(xyz)
-  h = h₀(xyz)
+  #h = h₀(xyz)
+  h = havg(xyz)
   s = g*(1.0 + C₀*H₀*H₀/h/h)
   s
 end

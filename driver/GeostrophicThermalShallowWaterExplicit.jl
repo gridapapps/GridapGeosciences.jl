@@ -21,7 +21,7 @@ hf, uf = thermal_shallow_water_explicit_time_stepper(model, order, degree,
                                     h₀, u₀, S₀, f,
                                     dt, 0.5*dt, nstep;
                                     write_solution=true,
-                                    write_solution_freq=240,
+                                    write_solution_freq=960,
                                     write_diagnostics=true,
                                     write_diagnostics_freq=1,
                                     dump_diagnostics_on_screen=true)
