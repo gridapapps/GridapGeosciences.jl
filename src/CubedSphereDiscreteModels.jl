@@ -64,21 +64,21 @@ function CubedSphereDiscreteModel(n,order; radius=1)
 
   # Restrict model to cube surface
   Γface_to_bgface=generate_Γface_to_bgface(model)
-  cube_surface_model = Gridap.Geometry.BoundaryDiscreteModel(Polytope{2},model,Γface_to_bgface)
+  cube_surface_trian = BoundaryTriangulation(model,Γface_to_bgface)
 
   # Generate high-order FE map and ordering
   vector_reffe=ReferenceFE(lagrangian,VectorValue{3,Float64},order)
-  V = FESpace(cube_surface_model,vector_reffe; conformity=:H1)
+  V = FESpace(cube_surface_trian,vector_reffe; conformity=:H1)
   vh = interpolate(MapCubeToSphere(radius),V)
   scalar_reffe=ReferenceFE(QUAD,lagrangian,Float64,order)
   xref=Gridap.ReferenceFEs.get_node_coordinates(scalar_reffe)
-  xrefₖ=Fill(xref,num_cells(cube_surface_model))
+  xrefₖ=Fill(xref,num_cells(cube_surface_trian))
   vhx=lazy_map(evaluate,Gridap.CellData.get_data(vh),xrefₖ)
-  V = FESpace(cube_surface_model,scalar_reffe; conformity=:H1)
+  V = FESpace(cube_surface_trian,scalar_reffe; conformity=:H1)
   node_coordinates = Vector{Point{3,Float64}}(undef,num_free_dofs(V))
   cell_node_ids    = get_cell_dof_ids(V)
   _cell_vector_to_dof_vector!(node_coordinates,cell_node_ids,vhx)
-  cell_types  = collect(Fill(1,num_cells(cube_surface_model)))
+  cell_types  = collect(Fill(1,num_cells(cube_surface_trian)))
   cell_reffes = [scalar_reffe]
 
   cube_surface_grid = Gridap.Geometry.UnstructuredGrid(node_coordinates,
@@ -86,16 +86,17 @@ function CubedSphereDiscreteModel(n,order; radius=1)
                                                        cell_reffes,
                                                        cell_types,
                                                        Gridap.Geometry.Oriented())
-  topology=Gridap.Geometry.get_grid_topology(cube_surface_model)
-  face_labeling=Gridap.Geometry.get_face_labeling(cube_surface_model)
-  Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,face_labeling)
+
+  cube_surface_model = Gridap.Geometry.compute_active_model(cube_surface_trian)
+  topology            = Gridap.Geometry.get_grid_topology(cube_surface_model)
+  labeling           = Gridap.Geometry.get_face_labeling(cube_surface_model)
+  Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,labeling)
 end
 
 
-struct AnalyticalMapCubedSphereDiscreteModel{T,B,C} <: Gridap.Geometry.DiscreteModel{2,3}
+struct AnalyticalMapCubedSphereDiscreteModel{T,B} <: Gridap.Geometry.DiscreteModel{2,3}
   cell_map::T
-  cubed_sphere_model::B
-  trian::C
+  cubed_sphere_linear_model::B
   function AnalyticalMapCubedSphereDiscreteModel(n;radius=1)
     domain = (-1,1,-1,1,-1,1)
     cells  = (n,n,n)
@@ -103,33 +104,26 @@ struct AnalyticalMapCubedSphereDiscreteModel{T,B,C} <: Gridap.Geometry.DiscreteM
 
     # Restrict model to cube surface
     Γface_to_bgface=generate_Γface_to_bgface(model)
-    cube_surface_model = Gridap.Geometry.BoundaryDiscreteModel(Polytope{2},model,Γface_to_bgface)
+    cube_surface_trian = BoundaryTriangulation(model,Γface_to_bgface)
 
-    m1=Fill(Gridap.Fields.GenericField(MapCubeToSphere(radius)),num_cells(cube_surface_model))
-    m2=get_cell_map(cube_surface_model)
+    m1=Fill(Gridap.Fields.GenericField(MapCubeToSphere(radius)),num_cells(cube_surface_trian))
+    m2=get_cell_map(cube_surface_trian)
     m=lazy_map(∘,m1,m2)
 
-    cubed_mesh_model=CubedSphereDiscreteModel(n,1)
-
-    # Wrap up BoundaryTriangulation
-    btrian=Triangulation(cubed_mesh_model)
-    trian=AnalyticalMapCubedSphereTriangulation(m,btrian)
+    cubed_sphere_linear_model=CubedSphereDiscreteModel(n,1)
 
     # Build output object
     T=typeof(m)
-    B=typeof(cubed_mesh_model)
-    C=typeof(trian)
-    GC.gc()
-    new{T,B,C}(m,cubed_mesh_model,trian)
+    B=typeof(cubed_sphere_linear_model)
+    new{T,B}(m,cubed_sphere_linear_model)
   end
 end
 
 Gridap.Geometry.get_cell_map(model::AnalyticalMapCubedSphereDiscreteModel) = model.cell_map
-Gridap.Geometry.get_grid(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid(model.cubed_sphere_model)
-Gridap.Geometry.get_grid_topology(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.cubed_sphere_model)
-Gridap.Geometry.get_face_labeling(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.cubed_sphere_model)
-Gridap.Geometry.get_triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = a.trian
-Gridap.Geometry.Triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = a.trian
+Gridap.Geometry.get_grid(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid(model.cubed_sphere_linear_model)
+Gridap.Geometry.get_grid_topology(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.cubed_sphere_linear_model)
+Gridap.Geometry.get_face_labeling(model::AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.cubed_sphere_linear_model)
+Gridap.Geometry.Triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = AnalyticalMapCubedSphereTriangulation(a)
 
 function CubedSphereDiscreteModel(n;radius=1)
   AnalyticalMapCubedSphereDiscreteModel(n;radius)
