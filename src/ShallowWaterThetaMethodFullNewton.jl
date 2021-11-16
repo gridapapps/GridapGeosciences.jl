@@ -97,20 +97,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
          ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
              v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
        end
-       function jacobian((Δu,Δh,qvort,F),(du,dh,dq,dF),(v,q,s,v2))
-         one_m_θ = (1-θ)
-         uiΔu  = un + one_m_θ*Δu
-         hiΔh  = hn + one_m_θ*Δh
-         uidu  = one_m_θ*du
-         hidh  = one_m_θ*dh
-         ∫((1.0/dt)*v⋅du +  (dq    - τ*(uiΔu⋅∇(dq)+uidu⋅∇(qvort)))*(v⋅⟂(F ,n))
-                         +  (qvort - τ*(           uiΔu⋅∇(qvort)))*(v⋅⟂(dF,n))
-                         -  (∇⋅(v))*(g*hidh +uiΔu⋅uidu)   +  # eq1
-           (1.0/dt)*q*dh)dΩ + ∫(q*(DIV(dF)))dω             +  # eq2
-           ∫(s*(qvort*hidh+dq*hiΔh) + ⟂(∇(s),n)⋅uidu       +  # eq3
-             v2⋅(dF-hiΔh*uidu-hidh*uiΔu))dΩ                   # eq4
-       end
-
+       
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
@@ -120,7 +107,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
        residualΔuΔhqF=residual(ΔuΔhqF,dY)
        r=assemble_vector(residualΔuΔhqF,Y)
        assem = SparseMatrixAssembler(sparse_matrix_type,Vector{Float64},X,Y)
-       op=FEOperator(residual,jacobian,X,Y,assem)
+       op=FEOperator(residual,X,Y,assem)
        nls=NLSolver(linear_solver;
                     show_trace=true,
                     method=:newton,
