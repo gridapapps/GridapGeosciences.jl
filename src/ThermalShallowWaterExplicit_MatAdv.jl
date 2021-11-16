@@ -75,7 +75,8 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # 2.1: the mass flux, dH/du
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + hₚ)/6.0+uₚ*(h₁ + 2.0*hₚ)/6.0)
   # 2.2: the bernoulli function, dH/dh
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁*e₁ + hₚ*eₚ),1.0)
+  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,
+                               e₁*(2.0*h₁ + hₚ)/6.0+eₚ*(h₁ + 2.0*hₚ)/6.0,1.0)
   # 2.3: compute the temperature, dH/ds
   compute_temperature!(T,dΩ,S,H1MMchol,(h₁*h₁+h₁*hₚ+hₚ*hₚ)/6.0)
   # 2.4: materially advected quantities (potential vorticity and buoyancy gradient)

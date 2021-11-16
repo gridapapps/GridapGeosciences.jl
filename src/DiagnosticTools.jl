@@ -151,7 +151,7 @@ function dump_diagnostics_thermal_shallow_water_mat_adv!(h_tmp, w_tmp,
   kin_i     = Eₖ(u,h,dΩ)
   pot_i     = Eₚ(h*h,e,0.5,dΩ)
   pow_k2p_i = sum(∫(ϕ*DIV(F))dω)
-  pow_k2i_i = 0.5*sum(∫(F⋅de*h*h)dΩ)
+  pow_k2i_i = -0.5*sum(∫(F⋅de*h*h)dΩ)
 
   append_to_csv(output_file;
                 time       = step*dt/24/60/60,
