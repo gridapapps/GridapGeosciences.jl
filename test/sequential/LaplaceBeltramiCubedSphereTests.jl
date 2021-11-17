@@ -17,7 +17,7 @@ module LaplaceBeltramiCubedSphereTests
   using GridapGeosciences
   using Plots
 
-  include("ConvergenceAnalysisTools.jl")
+  include("../ConvergenceAnalysisTools.jl")
 
   function u(x)
     sin(π*x[1])*cos(π*x[2])*exp(x[3])

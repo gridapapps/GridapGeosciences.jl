@@ -10,7 +10,7 @@ using Gridap
 using GridapGeosciences
 using Plots
 
-include("ConvergenceAnalysisTools.jl")
+include("../ConvergenceAnalysisTools.jl")
 
 function solve_darcy(model,order,degree)
   g(x) = sin(0.5*π*x[2]) # x[1]*x[2]*x[3]

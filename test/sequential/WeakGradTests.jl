@@ -5,7 +5,7 @@ module WeakGradTests
    using Plots
    using Test
 
-   include("ConvergenceAnalysisTools.jl")
+   include("../ConvergenceAnalysisTools.jl")
 
    function ω(xyz)
      θϕ = xyz2θϕ(xyz)

@@ -4,7 +4,7 @@ module WeakDivPerpTests
    using Plots
    using Test
 
-   include("ConvergenceAnalysisTools.jl")
+   include("../ConvergenceAnalysisTools.jl")
 
 
    # Nondivergent velocity field tangent to the sphere
