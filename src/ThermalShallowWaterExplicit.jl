@@ -12,7 +12,7 @@ end
 
 # assume that H1chol factorization has already been performed
 function compute_buoyancy!(e,dΩ,R,S,H1MM,H1chol,E,h,u,τ)
-  b(s) = ∫(s*E + τ*∇⋅(s*u)*E)dΩ
+  b(s) = ∫(s*E + τ*E*(∇⋅(s⋅u)))dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e), S)
   ldiv!(H1chol, get_free_dof_values(e))
 end
