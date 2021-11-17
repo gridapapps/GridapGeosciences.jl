@@ -59,10 +59,10 @@ jobs:
         id: cache-petsc
         uses: actions/cache@v2
         with:
-         path: ${{env.JULIA_PETSC_RealDouble_DIR}}
-         key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_RealDouble_DIR }}-
+         path: ${{env.JULIA_PETSC_LIBRARY}}
+         key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
          restore-keys: |
-           ${{ runner.os }}-build-${{ env.JULIA_PETSC_RealDouble_DIR }}-
+           ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
            ${{ runner.os }}-build-
            ${{ runner.os }}-       
       - uses: julia-actions/setup-julia@v1
