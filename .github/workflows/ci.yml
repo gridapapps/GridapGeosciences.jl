@@ -43,6 +43,7 @@ jobs:
     env:
       JULIA_MPI_BINARY: "system"
       P4EST_ROOT_DIR: "/opt/p4est/2.2/"
+      JULIA_PETSC_LIBRARY: "/opt/petsc/3.15.4/lib/libpetsc"
     strategy:
       fail-fast: false
       matrix:
@@ -64,6 +65,16 @@ jobs:
            ${{ runner.os }}-build-${{ env.P4EST_ROOT_DIR }}-
            ${{ runner.os }}-build-
            ${{ runner.os }}-
+      - name: Cache petsc
+        id: cache-petsc
+        uses: actions/cache@v2
+        with:
+         path: ${{env.JULIA_PETSC_RealDouble_DIR}}
+         key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_RealDouble_DIR }}-
+         restore-keys: |
+           ${{ runner.os }}-build-${{ env.JULIA_PETSC_RealDouble_DIR }}-
+           ${{ runner.os }}-build-
+           ${{ runner.os }}-       
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -105,11 +116,32 @@ jobs:
       #       ${{ runner.os }}-test-${{ env.cache-name }}-
       #       ${{ runner.os }}-test-
       #       ${{ runner.os }}-
-      - run: |
-          julia --project=. -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
+      - name: Install petsc
+        if: steps.cache-petsc.outputs.cache-hit != 'true'
+        run: |
+          # Install p4est 2.2 from sources
+          CURR_DIR=$(pwd)
+          PACKAGE=petsc
+          VERSION=3.15.4
+          INSTALL_ROOT=/opt
+          PETSC_INSTALL=$INSTALL_ROOT/$PACKAGE/$VERSION
+          TAR_FILE=$PACKAGE-$VERSION.tar.gz
+          URL="https://ftp.mcs.anl.gov/pub/petsc/release-snapshots/"
+          ROOT_DIR=/tmp
+          SOURCES_DIR=$ROOT_DIR/$PACKAGE-$VERSION
+          BUILD_DIR=$SOURCES_DIR/build
+          wget -q $URL/$TAR_FILE -O $ROOT_DIR/$TAR_FILE
+          mkdir -p $SOURCES_DIR
+          tar xzf $ROOT_DIR/$TAR_FILE -C $SOURCES_DIR --strip-components=1
+          cd $SOURCES_DIR
+          ./configure --prefix=$PETSC_INSTALL --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpif90 \
+             --download-mumps --download-scalapack --download-parmetis --download-metis \
+             --download-ptscotch --with-debugging --with-x=0 --with-shared=1 \
+             --with-mpi=1 --with-64-bit-indices
+          make
+          make install      
+      - run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+      - run: 
       - run: julia --project=. --color=yes --check-bounds=yes test/mpi/runtests.jl
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
