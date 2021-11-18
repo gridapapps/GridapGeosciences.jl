@@ -12,7 +12,7 @@ module WeakDivPerpTestsMPI
      num_refs=[2,3,4,5]
      hs=[2.0/2^n for n in num_refs]
      model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
-     a,b,s=convergence_study(compute_error_weak_div_perp,hs,model_args_series,4)
+     a,b,s=convergence_study(compute_error_weak_div_perp,hs,model_args_series,0,4)
      println(a)
      println(b)
      println(s)
