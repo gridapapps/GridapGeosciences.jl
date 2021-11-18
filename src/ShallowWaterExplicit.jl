@@ -156,7 +156,7 @@ function shallow_water_explicit_time_stepper(model, order, degree,
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
       dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                       model, dΩ, dω, S, L2MM, H1MM,
                                       hn, un, wn, ϕ, F, g, 1, dt,
@@ -181,7 +181,7 @@ function shallow_water_explicit_time_stepper(model, order, degree,
                                         RTMMchol, L2MMchol, dt, τ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                         model, dΩ, dω, S, L2MM, H1MM,
                                         hn, un, wn, ϕ, F, g, istep, dt,
@@ -189,7 +189,7 @@ function shallow_water_explicit_time_stepper(model, order, degree,
                                         dump_diagnostics_on_screen)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
       end
     end
