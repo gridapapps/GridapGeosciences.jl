@@ -355,11 +355,9 @@ version = "0.2.0"
 
 [[GridapP4est]]
 deps = ["ArgParse", "FillArrays", "Gridap", "GridapDistributed", "MPI", "P4est_wrapper", "PartitionedArrays", "Test"]
-git-tree-sha1 = "f751f94435080081db7a13057a93c1fbed060337"
-repo-rev = "main"
-repo-url = "https://github.com/gridap/GridapP4est.jl"
+git-tree-sha1 = "d43815a202192c17d2dcbf6ecc9fe22c15db310c"
 uuid = "c2c8e14b-f5fd-423d-9666-1dd9ad120af9"
-version = "0.1.1"
+version = "0.1.2"
 
 [[GridapPETSc]]
 deps = ["Gridap", "GridapDistributed", "Libdl", "LinearAlgebra", "MPI", "PETSc_jll", "PartitionedArrays", "SparseArrays", "SparseMatricesCSR"]
