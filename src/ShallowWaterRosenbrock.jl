@@ -14,7 +14,7 @@ function shallow_water_rosenbrock_time_step!(
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
 
-  n = get_normal_vector(model)
+  n = get_normal_vector(Triangulation(model))
   dt₁ = dt
   if leap_frog
     dt₁ = 2.0*dt
@@ -103,7 +103,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   ldiv!(H1MMchol, get_free_dof_values(f))
 
   # assemble the approximate MultiFieldFESpace Jacobian
-  n = get_normal_vector(model)
+  n = get_normal_vector(Ω)
 
   Amat((u,p),(v,q)) = ∫(-dt*λ*f*(v⋅⟂(u,n)))dΩ + ∫(dt*λ*g*(DIV(v)*p))dω - ∫(dt*λ*H₀*(q*DIV(u)))dω
   Mmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix

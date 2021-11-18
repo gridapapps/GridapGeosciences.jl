@@ -22,7 +22,7 @@ function compute_error_weak_div_perp(model,order,degree)
   # Setup geometry
   Ω=Triangulation(model)
   dΩ=Measure(Ω,degree)
-  n=get_normal_vector(model)
+  n=get_normal_vector(Ω)
 
   # Setup H(div) spaces
   reffe_rt = ReferenceFE(raviart_thomas, Float64, order)

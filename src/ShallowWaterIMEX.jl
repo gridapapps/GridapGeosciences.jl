@@ -89,7 +89,7 @@ function shallow_water_imex_time_step!(
   # reference: eqns (31-33) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
 
-  n = get_normal_vector(model)
+  n = get_normal_vector(Triangulation(model))
   # explicit step for provisional velocity, uₚ
   dt1 = dt
   if leap_frog
@@ -158,7 +158,7 @@ function shallow_water_imex_time_stepper(model, order, degree,
       setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
-  hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S, 
+  hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S,
                                L2MMchol, RTMMchol, H1MMchol, h₀, u₀, f₀)
 
   # work arrays
