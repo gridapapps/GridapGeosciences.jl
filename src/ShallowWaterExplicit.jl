@@ -25,7 +25,8 @@ function compute_depth!(h1,dΩ,dω,Q,L2MMchol,h2,F,dt)
 end
 
 function compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,uu,h,g)
-  b(q)  = ∫(q*(0.5*uu + g*h))*dΩ
+  #b(q)  = ∫(q*(0.5*uu + g*h))*dΩ
+  b(q)  = ∫(0.5*q*uu + g*q*h)dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(ϕ), Q)
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
 end

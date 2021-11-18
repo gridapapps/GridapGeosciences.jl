@@ -63,10 +63,10 @@ function thermal_shallow_water_flux_adv_explicit_time_step!(
   # 2.6: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.7: solve for the buoyancy weighted mass flux
-  update_buoyancy_ff!(E₂,dΩ,dω,dΓ,S,H1MMchol,Eₘ,0.5*(e₁+eₑ),F,n,dt)
+  update_buoyancy_ff!(E₂,dΩ,dω,dΓ,S,H1MMchol,Eₘ,0.5*(e₁+e₂),F,n,dt)
 end
 
-function thermal_shallow_water_explicit_time_stepper(model, order, degree,
+function thermal_shallow_water_flux_adv_explicit_time_stepper(model, order, degree,
                         h₀, u₀, E₀, f₀,
                         dt, τ, τₑ, N;
                         write_diagnostics=true,
@@ -74,7 +74,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
                         dump_diagnostics_on_screen=true,
                         write_solution=false,
                         write_solution_freq=N/10,
-                        output_dir="tswe_ncells_$(num_cells(model))_order_$(order)_explicit")
+                        output_dir="tswe_fa_ncells_$(num_cells(model))_order_$(order)_explicit")
 
   # Forward integration of the shallow water equations
   Ω  = Triangulation(model)
@@ -93,10 +93,10 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
   hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S, 
                                L2MMchol, RTMMchol, H1MMchol, h₀, u₀, f₀)
 
-  b₄(q)   = ∫(q*E₀)dΩ
-  rhs4    = assemble_vector(b₄, Q)
-  En      = FEFunction(Q, copy(rhs4))
-  ldiv!(L2MMchol, get_free_dof_values(En))
+  b₄(s)   = ∫(s*E₀)dΩ
+  rhs4    = assemble_vector(b₄, S)
+  En      = FEFunction(S, copy(rhs4))
+  ldiv!(H1MMchol, get_free_dof_values(En))
 
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
@@ -140,7 +140,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
 
     if (write_diagnostics && write_diagnostics_freq==1)
       compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-      dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
+      dump_diagnostics_thermal_shallow_water_flux_adv!(h_tmp, w_tmp,
                                               model, dΩ, dω, S, L2MM, H1MM,
 					      hn, un, En, wn, ϕ, F, 0.5*(e1+e2)*F, 1, dt,
                                               diagnostics_file,
@@ -169,7 +169,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
-        dump_diagnostics_thermal_shallow_water!(h_tmp, w_tmp,
+        dump_diagnostics_thermal_shallow_water_flux_adv!(h_tmp, w_tmp,
                                                 model, dΩ, dω, S, L2MM, H1MM,
 						hn, un, En, wn, ϕ, F, 0.5*(e1+e2)*F, istep, dt,
                                                 diagnostics_file,
@@ -187,7 +187,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
     mkdir(output_dir)
   end
   if (write_solution)
-    pvdfile=joinpath(output_dir,"tswe_ncells_$(num_cells(model))_order_$(order)_explicit")
+    pvdfile=joinpath(output_dir,"tswe_fa_ncells_$(num_cells(model))_order_$(order)_explicit")
     paraview_collection(run_simulation,pvdfile)
   else
     run_simulation()
