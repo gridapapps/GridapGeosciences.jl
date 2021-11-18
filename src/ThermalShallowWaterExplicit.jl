@@ -11,8 +11,8 @@ function compute_buoyancy_flux!(eF,dΩ,V,RTMMchol,e,F)
 end
 
 # assume that H1chol factorization has already been performed
-function compute_buoyancy!(e,dΩ,R,S,H1MM,H1chol,E,h,u,τ)
-  b(s) = ∫(s*E + τ*E*(∇⋅(s⋅u)))dΩ
+function compute_buoyancy!(e,dΩ,dΓ,n,R,S,H1MM,H1chol,E,h,u,τ)
+  b(s) = ∫(s*E + τ*E*(∇⋅(s⋅u)))dΩ - ∫(τ*mean(s*E)*jump(u⋅n))dΓ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e), S)
   ldiv!(H1chol, get_free_dof_values(e))
 end
@@ -24,9 +24,9 @@ function compute_velocity_tswe!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,eAPVM,F,ϕ,dT,n,d
 end
 
 function thermal_shallow_water_explicit_time_step!(
-     h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,   # in/out args
-     model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ, e₁up, e₂up, # in args
-     H1MMchol, RTMMchol, L2MMchol, dt, τ, τₑ, leap_frog)               # more in args
+     h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,       # in/out args
+     model, dΩ, dω, dΓ, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ, e₁up, e₂up, # in args
+     H1MMchol, RTMMchol, L2MMchol, dt, τ, τₑ, leap_frog)                   # more in args
 
   # energetically balanced explicit second order thermal shallow water solver.
   # extends the explicit shallow water solver with the an additional buoyancy 
@@ -46,7 +46,7 @@ function thermal_shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,E₁,0.5)
   # 1.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
-  compute_buoyancy!(e₁,dΩ,R,S,H1h,H1hchol,E₁,h₁,u₁,τₑ)
+  compute_buoyancy!(e₁,dΩ,dΓ,n,R,S,H1h,H1hchol,E₁,h₁,u₁,τₑ)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
   compute_velocity_tswe!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),e₁,F,ϕ,dT,n,dt1)
@@ -62,7 +62,7 @@ function thermal_shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(E₁ + Eₚ),0.5)
   # 2.3: materially advected quantities (potential vorticity and buoyancy)
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
-  compute_buoyancy!(e₂,dΩ,R,S,H1h,H1hchol,Eₚ,hₚ,uₚ,τₑ)
+  compute_buoyancy!(e₂,dΩ,dΓ,n,R,S,H1h,H1hchol,Eₚ,hₚ,uₚ,τₑ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
   compute_velocity_tswe!(u₂,dΩ,dω,V,RTMMchol,u₁,0.5*(q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂)),0.5*(e₁+e₂),F,ϕ,dT,n,dt)
@@ -84,9 +84,11 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
                         output_dir="tswe_ncells_$(num_cells(model))_order_$(order)_explicit")
 
   # Forward integration of the shallow water equations
-  Ω = Triangulation(model)
+  Ω  = Triangulation(model)
+  Γ  = SkeletonTriangulation(model)
   dΩ = Measure(Ω, degree)
   dω = Measure(Ω, degree, ReferenceDomain())
+  dΓ = Measure(Γ, degree)
 
   # Setup the trial and test spaces
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
@@ -138,7 +140,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
 
     # first step, no leap frog integration
     thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
-                                              model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
+                                              model, dΩ, dω, dΓ, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
                                               H1MMchol, RTMMchol, L2MMchol, dt, τ, τₑ, false)
 
     if (write_diagnostics)
@@ -171,7 +173,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
       En    = E_aux
 
       thermal_shallow_water_explicit_time_step!(hn, un, En, hp, up, Ep, ϕ, F, q1, q2, e1, e2, H1h, H1hchol, eF,
-                                                model, dΩ, dω, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
+                                                model, dΩ, dω, dΓ, V, Q, R, S, f, hm1, um1, Em1, hm2, um2, Em2, e1up, e2up,
                                                 H1MMchol, RTMMchol, L2MMchol, dt, τ, τₑ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
