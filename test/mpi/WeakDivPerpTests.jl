@@ -4,29 +4,43 @@ module WeakDivPerpTestsMPI
    using FillArrays
    using Gridap
    using GridapGeosciences
+   using GridapPETSc
 
    include("../WeakDivPerpTests.jl")
    include("../ConvergenceAnalysisTools.jl")
 
+   function petsc_gamg_options()
+    """
+      -ksp_type cg -ksp_rtol 1.0e-06 -ksp_atol 0.0
+      -ksp_monitor -pc_type gamg -pc_gamg_type agg
+      -mg_levels_esteig_ksp_type cg -mg_coarse_sub_pc_type cg
+      -mg_coarse_sub_pc_factor_mat_ordering_type nd -pc_gamg_process_eq_limit 50
+      -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
+    """
+  end
+  function petsc_mumps_options()
+    """
+      -ksp_type preonly -ksp_error_if_not_converged true
+      -pc_type cholesky -pc_factor_mat_solver_type mumps
+    """
+  end
+
    function main(parts)
-     num_refs=[2,3,4,5]
-     hs=[2.0/2^n for n in num_refs]
-     model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
-     a,b,s=convergence_study(compute_error_weak_div_perp,hs,model_args_series,0,4)
-     println(a)
-     println(b)
-     println(s)
+     GridapPETSc.with(args=split(petsc_gamg_options())) do
+       num_refs=[2,3,4,5]
+       hs=[2.0/2^n for n in num_refs]
+       model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
+       t = PartitionedArrays.PTimer(parts,verbose=true)
+       PartitionedArrays.tic!(t)
+       a,b,s=convergence_study(compute_error_weak_div_perp,
+                             hs,model_args_series,0,4,PETScLinearSolver())
+       PartitionedArrays.toc!(t,"WeakDivPerpTest")
+       display(t)
+       println(a)
+       println(b)
+       println(s)
+     end
      # @test round(s,digits=1) ≈ 5.6
    end
    prun(main,mpi,4)
-
-
-  #  plotd=plot([ahs0,bihs0,biqhs0],[ak0errors,bik0errors,biqk0errors],
-  #  xaxis=:log, yaxis=:log,
-  #  label=["k=0 analytical map" "k=0 bilinear map" "k=0 biquadratic map"],
-  #  shape=:auto,
-  #  xlabel="h",ylabel="L2 error norm", legend=:bottomright)
-
-  #  savefig(plotd,"L2_error_weak_div_perp.png")
-
 end

@@ -269,6 +269,27 @@ struct D2toD3AnalyticalMapCubedSphereTriangulation{M} <: Triangulation{2,3}
   model::M
 end
 
+function Gridap.CellData.get_normal_vector(trian::D2toD3AnalyticalMapCubedSphereTriangulation)
+  cell_normal = Gridap.Geometry.get_facet_normal(trian)
+  Gridap.CellData.GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
+function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}})
+  n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
+  n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
+  n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
+  n = VectorValue(n1,n2,n3)
+  n/norm(n)
+end
+
+function Gridap.Geometry.get_facet_normal(trian::D2toD3AnalyticalMapCubedSphereTriangulation)
+  # Get the Jacobian of the cubed sphere mesh
+  map   = get_cell_map(trian)
+  Jt    = lazy_map(∇,map)
+  p=lazy_map(Operation(_unit_outward_normal),Jt)
+  p
+end
+
 # Triangulation API
 
 # Delegating to the underlying face Triangulation
@@ -328,22 +349,4 @@ Gridap.Geometry.get_grid_topology(model::D2toD3AnalyticalMapCubedSphereDiscreteM
 Gridap.Geometry.get_face_labeling(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.cube_model_top)
 function Gridap.Geometry.Triangulation(a::D2toD3AnalyticalMapCubedSphereDiscreteModel)
   D2toD3AnalyticalMapCubedSphereTriangulation(a)
-end
-function Gridap.CellData.get_normal_vector(model::D2toD3AnalyticalMapCubedSphereDiscreteModel)
-    cell_normal = Gridap.Geometry.get_facet_normal(model)
-    Gridap.CellData.GenericCellField(cell_normal,Triangulation(model),ReferenceDomain())
-end
-function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}})
-  n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
-  n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
-  n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
-  n = VectorValue(n1,n2,n3)
-  n/norm(n)
-end
-function Gridap.Geometry.get_facet_normal(model::D2toD3AnalyticalMapCubedSphereDiscreteModel)
-  # Get the Jacobian of the cubed sphere mesh
-  map   = get_cell_map(model)
-  Jt    = lazy_map(∇,map)
-  p=lazy_map(Operation(_unit_outward_normal),Jt)
-  p
 end

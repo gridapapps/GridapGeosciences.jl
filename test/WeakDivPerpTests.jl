@@ -18,7 +18,7 @@ function divM_perpW(θϕ)
   f(θϕ)
 end
 
-function compute_error_weak_div_perp(model,order,degree)
+function compute_error_weak_div_perp(model,order,degree,ls=BackslashSolver())
   # Setup geometry
   Ω=Triangulation(model)
   dΩ=Measure(Ω,degree)
@@ -38,7 +38,8 @@ function compute_error_weak_div_perp(model,order,degree)
   a1(u,v) = ∫(v⋅u)dΩ
   b1(v)   = ∫(v⋅(W∘xyz2θϕ))dΩ
   op      = AffineFEOperator(a1,b1,U,V)
-  wh      = solve(op)
+  fels    = LinearFESolver(ls)
+  wh      = solve(fels,op)
 
   e = (W∘xyz2θϕ)-wh
   println(sqrt(sum(∫(e⋅e)dΩ)))
@@ -47,7 +48,8 @@ function compute_error_weak_div_perp(model,order,degree)
   a2(u,v) = ∫(v*u)dΩ
   b2(v)   = ∫(⟂(∇(v),n)⋅(-wh) )dΩ
   op      = AffineFEOperator(a2,b2,R,S)
-  divwh   = solve(op)
+  fels    = LinearFESolver(ls)
+  divwh   = solve(fels,op)
   e = divwh-divM_perpW∘xyz2θϕ
 
   sqrt(sum(∫(e*e)dΩ))

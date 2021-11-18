@@ -30,6 +30,6 @@ end
 #run_driver(4,"CubedSphereDiscreteModelsTests.jl",sysimage)
 #run_driver(4,"DarcyCubedSphereTests.jl",sysimage)
 #run_driver(4,"LaplaceBeltramiCubedSphereTests.jl",sysimage)
-run_driver(4,"WeakDivPerpTests.jl",sysimage)
+run_driver(1,"WeakDivPerpTests.jl",sysimage)
 
 end # module
