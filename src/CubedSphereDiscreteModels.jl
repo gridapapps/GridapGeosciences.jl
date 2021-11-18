@@ -45,6 +45,16 @@ function generate_Γface_to_bgface(model)
   Γface_to_bgface_panelwise
 end
 
+struct PolynomialMapCubedSphereDiscreteModel <: Gridap.Geometry.DiscreteModel{2,3}
+  model::Gridap.Geometry.UnstructuredDiscreteModel{2,3}
+end
+
+Gridap.Geometry.get_cell_map(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_cell_map(model.model)
+Gridap.Geometry.get_grid(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid(model.model)
+Gridap.Geometry.get_grid_topology(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.model)
+Gridap.Geometry.get_face_labeling(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.model)
+Gridap.Geometry.Triangulation(a::PolynomialMapCubedSphereDiscreteModel) = PolynomialMapCubedSphereTriangulation(a.model)
+
 function CubedSphereDiscreteModel(n,order; radius=1)
   function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
     cache_cell_node_ids = array_cache(cell_node_ids)
@@ -90,7 +100,8 @@ function CubedSphereDiscreteModel(n,order; radius=1)
   cube_surface_model = Gridap.Geometry.compute_active_model(cube_surface_trian)
   topology            = Gridap.Geometry.get_grid_topology(cube_surface_model)
   labeling           = Gridap.Geometry.get_face_labeling(cube_surface_model)
-  Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,labeling)
+  PolynomialMapCubedSphereDiscreteModel(
+    Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,labeling))
 end
 
 
@@ -127,35 +138,4 @@ Gridap.Geometry.Triangulation(a::AnalyticalMapCubedSphereDiscreteModel) = Analyt
 
 function CubedSphereDiscreteModel(n;radius=1)
   AnalyticalMapCubedSphereDiscreteModel(n;radius)
-end
-
-const CSDMT = Union{AnalyticalMapCubedSphereDiscreteModel,
-                 <:Gridap.Geometry.UnstructuredDiscreteModel{2,3}}
-
-function Gridap.CellData.get_normal_vector(model::CSDMT)
-    cell_normal = Gridap.Geometry.get_facet_normal(model)
-    Gridap.CellData.GenericCellField(cell_normal,Triangulation(model),ReferenceDomain())
-end
-
-function Gridap.Geometry.get_facet_normal(model::CSDMT)
-  function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}},sign_flip::Bool)
-    n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
-    n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
-    n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
-    n = VectorValue(n1,n2,n3)
-    (-1)^sign_flip*n/norm(n)
-  end
-
-  # Get the Jacobian of the cubed sphere mesh
-  trian = Triangulation(model)
-  map   = get_cell_map(trian)
-  Jt    = lazy_map(∇,map)
-
-  # Get the index of the panel for each element
-  fl = get_face_labeling(model)
-  panel_id  = fl.d_to_dface_to_entity[3]
-  sign_flip = [panel_id[i] == 25 || panel_id[i] == 21 || panel_id[i] == 24 for i=1:length(panel_id)]
-  fsign_flip = lazy_map(Gridap.Fields.ConstantField,sign_flip)
-
-  lazy_map(Operation(_unit_outward_normal),Jt,fsign_flip)
 end
