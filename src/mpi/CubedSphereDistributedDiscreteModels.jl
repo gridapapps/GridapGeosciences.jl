@@ -279,9 +279,9 @@ Gridap.Geometry.get_reffes(trian::D2toD3AnalyticalMapCubedSphereTriangulation) =
 
 Gridap.Geometry.get_cell_type(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_type(trian.model.cube_grid_geo)
 
-Gridap.Geometry.get_node_coordinates(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = Gridap.Helpers.get_node_coordinates(trian.model.cube_grid_geo)
+Gridap.Geometry.get_node_coordinates(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = Gridap.Geometry.get_node_coordinates(trian.model.cube_grid_geo)
 
-Gridap.Geometry.get_cell_node_ids(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = Gridap.Helpers.get_cell_node_ids(trian.model.cube_grid_geo)
+Gridap.Geometry.get_cell_node_ids(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_node_ids(trian.model.cube_grid_geo)
 
 Gridap.Geometry.get_cell_map(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = trian.model.cell_map
 
