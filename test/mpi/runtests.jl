@@ -18,15 +18,15 @@ function run_driver(procs,file,sysimage)
   mpiexec() do cmd
     if sysimage!=nothing
        extra_args="-J$(sysimage)"
-       cmd=`$cmd -n $procs $(Base.julia_cmd()) $(extra_args) --project=$repodir $(joinpath(mpidir,file))`
+       cmd=`$cmd -n $procs --allow-run-as-root --oversubscribe $(Base.julia_cmd()) --project=$repodir $(joinpath(mpidir,file))`
     else
-       cmd=`$cmd -n $procs $(Base.julia_cmd()) --project=$repodir $(joinpath(mpidir,file))`
+       cmd=`$cmd -n $procs --allow-run-as-root --oversubscribe $(Base.julia_cmd()) --project=$repodir $(joinpath(mpidir,file))`
     end
     println(cmd)
     run(cmd)
     @test true
   end
 end
-run_driver(4,"CubedSphereDiscreteModelsTests.jl",sysimage)
-
+#run_driver(4,"CubedSphereDiscreteModelsTests.jl",sysimage)
+run_driver(4,"DarcyCubedSphereTests.jl",sysimage)
 end # module

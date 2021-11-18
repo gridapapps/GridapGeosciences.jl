@@ -1,9 +1,3 @@
-module CubedSphereDiscreteModelsTests
- using GridapGeosciences
- using Gridap
-
- include("ConvergenceAnalysisTools.jl")
-
  """
  Performs a convergence study of the discrete cubed sphere surface
  using a Gauss quadrature of degree degree for numerical integration.
@@ -36,5 +30,3 @@ module CubedSphereDiscreteModelsTests
    f(x)=1
    sum(∫(f)dΩ)
  end
-
-end
