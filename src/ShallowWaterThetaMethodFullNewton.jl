@@ -25,7 +25,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
       output_dir="nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton")
 
   Ω  = Triangulation(model)
-  n  = get_normal_vector(model)
+  n  = get_normal_vector(Ω)
   dΩ = Measure(Ω,degree)
   dω = Measure(Ω,degree,ReferenceDomain())
 
@@ -97,7 +97,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
          ∫(s*qvort*hiΔh + ⟂(∇(s),n)⋅uiΔu - s*fn +   # eq3
              v2⋅(F-hiΔh*uiΔu))dΩ                      # eq4
        end
-       
+
        # Solve fully-coupled monolithic nonlinear problem
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF

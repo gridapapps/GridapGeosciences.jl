@@ -14,7 +14,7 @@ function shallow_water_rosenbrock_time_step!(
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
 
-  n = get_normal_vector(model)
+  n = get_normal_vector(Triangulation(model))
   dt₁ = dt
   if leap_frog
     dt₁ = 2.0*dt
@@ -103,7 +103,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   ldiv!(H1MMchol, get_free_dof_values(f))
 
   # assemble the approximate MultiFieldFESpace Jacobian
-  n = get_normal_vector(model)
+  n = get_normal_vector(Ω)
 
   Amat((u,p),(v,q)) = ∫(-dt*λ*f*(v⋅⟂(u,n)))dΩ + ∫(dt*λ*g*(DIV(v)*p))dω - ∫(dt*λ*H₀*(q*DIV(u)))dω
   Mmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
@@ -166,7 +166,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
                                         RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false)
 
     if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
       dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                       model, dΩ, dω, S, L2MM, H1MM,
                                       hn, un, wn, ϕ, F, g, istep, dt,
@@ -188,7 +188,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
       #                 each iteration
       un, hn = yn
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                         model, dΩ, dω, S, L2MM, H1MM,
                                         hn, un, wn, ϕ, F, g, istep, dt,
@@ -196,7 +196,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
                                         dump_diagnostics_on_screen)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
       end
     end
