@@ -13,21 +13,14 @@ module WeakDivPerpTestsMPI
     """
       -ksp_type cg -ksp_rtol 1.0e-06 -ksp_atol 0.0
       -ksp_monitor -pc_type gamg -pc_gamg_type agg
-      -mg_levels_esteig_ksp_type cg -mg_coarse_sub_pc_type cg
+      -mg_levels_esteig_ksp_type cg -mg_coarse_sub_pc_type cholesky
       -mg_coarse_sub_pc_factor_mat_ordering_type nd -pc_gamg_process_eq_limit 50
       -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
     """
-  end
-  function petsc_mumps_options()
-    """
-      -ksp_type preonly -ksp_error_if_not_converged true
-      -pc_type cholesky -pc_factor_mat_solver_type mumps
-    """
-  end
-
+   end
    function main(parts)
      GridapPETSc.with(args=split(petsc_gamg_options())) do
-       num_refs=[2,3,4,5]
+       num_refs=[1,2,3,4,5]
        hs=[2.0/2^n for n in num_refs]
        model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
        t = PartitionedArrays.PTimer(parts,verbose=true)
@@ -36,11 +29,8 @@ module WeakDivPerpTestsMPI
                              hs,model_args_series,0,4,PETScLinearSolver())
        PartitionedArrays.toc!(t,"WeakDivPerpTest")
        display(t)
-       println(a)
-       println(b)
-       println(s)
+       @test round(s,digits=2) ≈ 2.12
      end
-     # @test round(s,digits=1) ≈ 5.6
    end
    prun(main,mpi,4)
 end

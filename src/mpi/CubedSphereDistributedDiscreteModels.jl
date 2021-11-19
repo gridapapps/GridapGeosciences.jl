@@ -343,8 +343,12 @@ struct D2toD3AnalyticalMapCubedSphereDiscreteModel{T,B,C} <: Gridap.Geometry.Dis
   end
 end
 
+# IMPORTANT NOTE: this method is needed as its default definition in Gridap
+#   num_point_dims(model::DiscreteModel) = num_point_dims(get_grid_topology(model))
+# returns Dp=2 as the topological dimension of the model is 2
+Gridap.Geometry.num_point_dims(::D2toD3AnalyticalMapCubedSphereDiscreteModel) = 3
 Gridap.Geometry.get_cell_map(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = model.cell_map
-Gridap.Geometry.get_grid(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid(model.cube_model_top)
+Gridap.Geometry.get_grid(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = model.cube_grid_geo
 Gridap.Geometry.get_grid_topology(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.cube_model_top)
 Gridap.Geometry.get_face_labeling(model::D2toD3AnalyticalMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.cube_model_top)
 function Gridap.Geometry.Triangulation(a::D2toD3AnalyticalMapCubedSphereDiscreteModel)
