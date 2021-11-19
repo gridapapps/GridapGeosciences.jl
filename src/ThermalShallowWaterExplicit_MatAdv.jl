@@ -88,7 +88,7 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # 2.6: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.7: solve for the buoyancy
-  compute_buoyancy!(e₂,dΩ,S,H1MMchol,eₘ,0.5*(de₁+de₂),F,dt)
+  compute_buoyancy!(e₂,dΩ,S,H1MMchol,e₁,0.5*(de₁+de₂),F,dt)
 end
 
 function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degree,
@@ -176,7 +176,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
                                               H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, false)
 
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "internal", "power_k2p", "power_k2i")
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "buoyancy", "kinetic", "internal", "power_k2p", "power_k2i")
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)

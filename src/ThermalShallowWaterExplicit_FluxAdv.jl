@@ -1,11 +1,15 @@
 function update_velocity_tswe_ff!(u1,dΩ,dω,dΓ,V,RTMMchol,u2,q,e,F,ϕ,T,n,dt)
-  b(v) = ∫(v⋅u2 - dt*q*(v⋅⟂(F,n)) + (∇⋅(e*v))*dt*T)dΩ - ∫(dt*mean(e*T)*jump(v⋅n))dΓ + ∫(dt*DIV(v)*ϕ)dω
+  #b(v) = ∫(v⋅u2 - dt*q*(v⋅⟂(F,n)) + (∇⋅(e*v))*dt*T)dΩ - ∫(dt*mean(e*T)*jump(v⋅n))dΓ + ∫(dt*DIV(v)*ϕ)dω
+  b(v) = ∫(v⋅u2 - dt*q*(v⋅⟂(F,n)) + (∇⋅(e*v))*dt*T)dΩ - ∫(dt*mean(T)*jump((e*v)⋅n))dΓ + ∫(dt*DIV(v)*ϕ)dω
+  #b(v) = ∫(v⋅u2 - dt*q*(v⋅⟂(F,n)) + (∇⋅(e*v))*dt*T)dΩ + ∫(dt*DIV(v)*ϕ)dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(u1), V)
   ldiv!(RTMMchol, get_free_dof_values(u1))
 end
 
 function update_buoyancy_ff!(E1,dΩ,dω,dΓ,S,H1MMchol,E2,e,F,n,dt)
-  b(s) = ∫(s*E2 - dt*s*(∇⋅(e*F)))dΩ + ∫(dt*mean(e*s)*jump(F⋅n))dΓ
+  #b(s) = ∫(s*E2 - dt*s*(∇⋅(e*F)))dΩ + ∫(dt*mean(e*s)*jump(F⋅n))dΓ
+  b(s) = ∫(s*E2 - dt*s*(∇⋅(e*F)))dΩ + ∫(dt*mean(s)*jump((e*F)⋅n))dΓ
+  #b(s) = ∫(s*E2 - dt*s*(∇⋅(e*F)))dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(E1), S)
   ldiv!(H1MMchol, get_free_dof_values(E1))
 end
@@ -63,7 +67,7 @@ function thermal_shallow_water_flux_adv_explicit_time_step!(
   # 2.6: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.7: solve for the buoyancy weighted mass flux
-  update_buoyancy_ff!(E₂,dΩ,dω,dΓ,S,H1MMchol,Eₘ,0.5*(e₁+e₂),F,n,dt)
+  update_buoyancy_ff!(E₂,dΩ,dω,dΓ,S,H1MMchol,E₁,0.5*(e₁+e₂),F,n,dt)
 end
 
 function thermal_shallow_water_flux_adv_explicit_time_stepper(model, order, degree,
@@ -74,7 +78,7 @@ function thermal_shallow_water_flux_adv_explicit_time_stepper(model, order, degr
                         dump_diagnostics_on_screen=true,
                         write_solution=false,
                         write_solution_freq=N/10,
-                        output_dir="tswe_fa_ncells_$(num_cells(model))_order_$(order)_explicit")
+                        output_dir="tswe_fa2_ncells_$(num_cells(model))_order_$(order)_explicit")
 
   # Forward integration of the shallow water equations
   Ω  = Triangulation(model)
@@ -187,7 +191,7 @@ function thermal_shallow_water_flux_adv_explicit_time_stepper(model, order, degr
     mkdir(output_dir)
   end
   if (write_solution)
-    pvdfile=joinpath(output_dir,"tswe_fa_ncells_$(num_cells(model))_order_$(order)_explicit")
+    pvdfile=joinpath(output_dir,"tswe_fa2_ncells_$(num_cells(model))_order_$(order)_explicit")
     paraview_collection(run_simulation,pvdfile)
   else
     run_simulation()
