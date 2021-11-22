@@ -55,16 +55,16 @@ jobs:
            ${{ runner.os }}-build-${{ env.P4EST_ROOT_DIR }}-
            ${{ runner.os }}-build-
            ${{ runner.os }}-
-      - name: Cache petsc
-        id: cache-petsc
-        uses: actions/cache@v2
-        with:
-         path: ${{env.JULIA_PETSC_LIBRARY}}
-         key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
-         restore-keys: |
-           ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
-           ${{ runner.os }}-build-
-           ${{ runner.os }}-       
+      #- name: Cache petsc
+      #  id: cache-petsc
+      #  uses: actions/cache@v2
+      #  with:
+      #   path: ${{env.JULIA_PETSC_LIBRARY}}
+      #   key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
+      #   restore-keys: |
+      #     ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
+      #     ${{ runner.os }}-build-
+      #     ${{ runner.os }}-       
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -97,7 +97,7 @@ jobs:
           rm -rf $ROOT_DIR/$TAR_FILE $SOURCES_DIR
           cd $CURR_DIR       
       - name: Install petsc
-        if: steps.cache-petsc.outputs.cache-hit != 'true'
+        # if: steps.cache-petsc.outputs.cache-hit != 'true'
         run: |
           # Install p4est 2.2 from sources
           CURR_DIR=$(pwd)
