@@ -249,9 +249,9 @@ version = "1.11.2"
 
 [[FilePathsBase]]
 deps = ["Dates", "Mmap", "Printf", "Test", "UUIDs"]
-git-tree-sha1 = "79a9cbc545abe411a5ea34c195dd6d5722fe3e7d"
+git-tree-sha1 = "618835ab81e4a40acf215c98768978d82abc5d97"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
-version = "0.9.15"
+version = "0.9.16"
 
 [[FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays"]
@@ -361,7 +361,7 @@ version = "0.1.2"
 
 [[GridapPETSc]]
 deps = ["Gridap", "GridapDistributed", "Libdl", "LinearAlgebra", "MPI", "PETSc_jll", "PartitionedArrays", "SparseArrays", "SparseMatricesCSR"]
-git-tree-sha1 = "dd671660a9e7d5f75a48cea11d3d89f9ad47e85a"
+git-tree-sha1 = "4d08fe8af5b915b9d4f56067c8ae6825a0597598"
 repo-rev = "exploring_petsc_garbage_collection"
 repo-url = "https://github.com/gridap/GridapPETSc.jl"
 uuid = "bcdc36c2-0c3e-11ea-095a-c9dadae499f1"
@@ -939,9 +939,9 @@ version = "1.0.0"
 
 [[StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "eb35dcc66558b2dda84079b9a1be17557d32091a"
+git-tree-sha1 = "2bb0cb32026a66037360606510fca5984ccc6b75"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.33.12"
+version = "0.33.13"
 
 [[StructArrays]]
 deps = ["Adapt", "DataAPI", "StaticArrays", "Tables"]

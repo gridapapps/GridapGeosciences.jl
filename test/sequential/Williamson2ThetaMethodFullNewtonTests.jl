@@ -1,4 +1,4 @@
-module Williamsom2ThetaMethodFullNewtonTests
+module Williamsom2ThetaMethodFullNewtonTestsSeq
 
 using Test
 using Gridap
@@ -34,10 +34,13 @@ for i in 1:2
                               GridapPardiso.new_iparm(),
                               GridapPardiso.MSGLVL_QUIET,
                               GridapPardiso.new_pardiso_handle())
-  hf, uf = shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
+  nls=NLSolver(linear_solver;
+               show_trace=true,
+               method=:newton,
+               ftol=1.0e-12,
+               xtol=1.0e-02)
+  hf, uf = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
                                                                h₀, u₀, f₀, topography, g, θ, T, nstep, τ;
-                                                               linear_solver=linear_solver,
-                                                               sparse_matrix_type=SparseMatrixCSR{1,Float64,Int},
                                                                write_solution=false,
                                                                write_solution_freq=5,
                                                                write_diagnostics=true,
@@ -53,6 +56,10 @@ for i in 1:2
   e     = u₀-uf
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
+
+  # Do garbage collection of all PETSc objects
+  # set up during convergence_study
+  GridapPETSc.gridap_petsc_gc()
 
   #@test abs(err_u - l2_err_u[i]) < 10.0^-12
   #@test abs(err_h - l2_err_h[i]) < 10.0^-12

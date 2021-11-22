@@ -202,6 +202,7 @@ end
 function CubedSphereDiscreteModel(
   parts::MPIData,
   num_uniform_refinements::Int;
+  radius=1,
   p4est_verbosity_level=P4est_wrapper.SC_LP_DEFAULT)
 
   comm = parts.comm
@@ -246,7 +247,7 @@ function CubedSphereDiscreteModel(
 
   ddiscretemodel=
   map_parts(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
-    D2toD3AnalyticalMapCubedSphereDiscreteModel(cube_grid_geo, cube_grid_top)
+    D2toD3AnalyticalMapCubedSphereDiscreteModel(cube_grid_geo, cube_grid_top, radius=radius)
   end
 
   # Write forest to VTK file

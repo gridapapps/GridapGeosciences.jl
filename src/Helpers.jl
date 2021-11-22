@@ -35,6 +35,26 @@ function setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
   H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol
 end
 
+function setup_and_factorize_mass_matrices_bis(dΩ,
+                                               R, S, U, V, P, Q;
+                                               mass_matrix_solver=BackslashSolver())
+  amm(a,b) = ∫(a⋅b)dΩ
+  H1MM   = assemble_matrix(amm, R, S)
+  RTMM   = assemble_matrix(amm, U, V)
+  L2MM   = assemble_matrix(amm, P, Q)
+
+  ssH1MM = symbolic_setup(mass_matrix_solver,H1MM)
+  nsH1MM = numerical_setup(ssH1MM,H1MM)
+
+  ssRTMM = symbolic_setup(mass_matrix_solver,RTMM)
+  nsRTMM = numerical_setup(ssRTMM,RTMM)
+
+  ssL2MM = symbolic_setup(mass_matrix_solver,L2MM)
+  nsL2MM = numerical_setup(ssL2MM,L2MM)
+
+  H1MM, RTMM, L2MM, nsH1MM, nsRTMM, nsL2MM
+end
+
 function new_vtk_step(Ω,file,_cellfields)
   n = size(_cellfields)[1]
   createvtk(Ω,

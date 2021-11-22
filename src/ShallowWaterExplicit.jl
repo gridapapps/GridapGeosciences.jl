@@ -6,6 +6,14 @@ function compute_potential_vorticity!(q,H1h,H1hchol,dΩ,R,S,h,u,f,n)
   ldiv!(H1hchol, get_free_dof_values(q))
 end
 
+function compute_potential_vorticity_bis!(q,H1h,H1hchol,dΩ,R,S,h,u,f,n)
+  a(r,s) = ∫(s*h*r)dΩ
+  c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
+  Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), R, S)
+  numerical_setup!(H1hchol,H1h)
+  solve!(get_free_dof_values(q),H1hchol,get_free_dof_values(q))
+end
+
 function compute_velocity!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,F,ϕ,n,dt1,dt2)
   b(v) = ∫(v⋅u2 - dt1*(qAPVM)*(v⋅⟂(F,n)))dΩ + ∫(dt2*DIV(v)*ϕ)dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(u1), V)
@@ -17,6 +25,14 @@ function compute_mass_flux!(F,dΩ,V,RTMMchol,u)
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(F), V)
   ldiv!(RTMMchol, get_free_dof_values(F))
 end
+
+function compute_mass_flux_bis!(F,dΩ,V,RTMMchol,u)
+  b(v) = ∫(v⋅u)dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(F), V)
+  solve!(get_free_dof_values(F),RTMMchol,get_free_dof_values(F))
+end
+
+compute_mass_flux!
 
 function compute_depth!(h1,dΩ,dω,Q,L2MMchol,h2,F,dt)
   b(q)  = ∫(q*h2)dΩ - ∫(dt*q*DIV(F))dω
