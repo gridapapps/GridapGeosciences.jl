@@ -57,10 +57,6 @@ for i in 1:2
   err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
   println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
 
-  # Do garbage collection of all PETSc objects
-  # set up during convergence_study
-  GridapPETSc.gridap_petsc_gc()
-
   #@test abs(err_u - l2_err_u[i]) < 10.0^-12
   #@test abs(err_h - l2_err_h[i]) < 10.0^-12
 end

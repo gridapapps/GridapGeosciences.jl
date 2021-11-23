@@ -20,9 +20,10 @@ function shallow_water_theta_method_full_newton_time_stepper(
       write_diagnostics=true,
       write_diagnostics_freq=1,
       dump_diagnostics_on_screen=true,
+      am_i_root=true,
       write_solution=false,
       write_solution_freq=N/10,
-      output_dir="xxx")#"nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton")
+      output_dir="nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton")
 
   Ω  = Triangulation(model)
   n  = get_normal_vector(Ω)
@@ -73,18 +74,20 @@ function shallow_water_theta_method_full_newton_time_stepper(
   w_tmp = copy(fnv)
 
   function run_simulation(pvd=nothing)
-    diagnostics_file = joinpath(output_dir,"nswe_diagnostics_theta_method_full_newton.csv")
-
     dt  = T/N
     τ   = dt/2 # APVM stabilization parameter
     hc  = CellField(h₀,Ω)
     uc  = CellField(u₀,Ω)
 
-    # if (write_diagnostics)
-    #   ϕ = clone_fe_function(Q,hn)
-    #   wn = clone_fe_function(S,fn)
-    #   initialize_csv(diagnostics_file, "time", "mass", "vorticity", "kinetic", "potential", "power")
-    # end
+    if (write_diagnostics)
+      ϕ  = clone_fe_function(Q,hn)
+      wn = clone_fe_function(S,fn)
+      diagnostics_file = joinpath(output_dir,"nswe_diagnostics_theta_method_full_newton.csv")
+      if (am_i_root)
+        initialize_csv(diagnostics_file,
+                       "time", "mass", "vorticity", "kinetic", "potential", "power")
+      end
+    end
 
     for step=1:N
       function residual((Δu,Δh,qvort,F),(v,q,s,v2))
@@ -126,33 +129,34 @@ function shallow_water_theta_method_full_newton_time_stepper(
        unv .= unv .+ get_free_dof_values(Δu)
        hnv .= hnv .+ get_free_dof_values(Δh)
 
-      #  if (write_diagnostics && write_diagnostics_freq>0 && mod(step, write_diagnostics_freq) == 0)
-      #   compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
-      #   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,un⋅un,hn,g)
-      #   dump_diagnostics_shallow_water!(h_tmp, w_tmp,
-      #                                   model, dΩ, dω, S, L2MM, H1MM,
-      #                                   hn, un, wn, ϕ, F, g, step, dt,
-      #                                   diagnostics_file,
-      #                                   dump_diagnostics_on_screen)
-      # end
-      # if (write_solution && write_solution_freq>0 && mod(step, write_solution_freq) == 0)
-      #   if (!write_diagnostics || write_diagnostics_freq != write_solution_freq)
-      #     compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
-      #   end
-      #   pvd[dt*Float64(step)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(step)"),hn,un,wn)
-      # end
+       if (write_diagnostics && write_diagnostics_freq>0 && mod(step, write_diagnostics_freq) == 0)
+        compute_diagnostic_vorticity_bis!(wn, dΩ, S, H1MMchol, un, n)
+        compute_bernoulli_potential_bis!(ϕ,dΩ,Q,L2MMchol,un⋅un,hn,g)
+        dump_diagnostics_shallow_water!(h_tmp, w_tmp,
+                                        model, dΩ, dω, S, L2MM, H1MM,
+                                        hn, un, wn, ϕ, F, g, step, dt,
+                                        diagnostics_file,
+                                        dump_diagnostics_on_screen,
+                                        am_i_root)
+      end
+      if (write_solution && write_solution_freq>0 && mod(step, write_solution_freq) == 0)
+        if (!write_diagnostics || write_diagnostics_freq != write_solution_freq)
+          compute_diagnostic_vorticity_bis!(wn, dΩ, S, H1MMchol, un, n)
+        end
+        pvd[dt*Float64(step)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(step)"),hn,un,wn)
+      end
     end
     hn, un
   end
-  # if (write_diagnostics || write_solution)
-  #   rm(output_dir,force=true,recursive=true)
-  #   mkdir(output_dir)
-  # end
-  # if (write_solution)
-  #   pvdfile=joinpath(output_dir,
-  #      "nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton")
-  #   paraview_collection(run_simulation,pvdfile)
-  # else
-  run_simulation()
-  # end
+  if (am_i_root && (write_diagnostics || write_solution))
+    rm(output_dir,force=true,recursive=true)
+    mkdir(output_dir)
+  end
+  if (write_solution)
+     pvdfile=joinpath(output_dir,
+        "nswe_ncells_$(num_cells(model))_order_$(order)_theta_method_full_newton")
+     paraview_collection(run_simulation,pvdfile)
+   else
+    run_simulation()
+  end
 end

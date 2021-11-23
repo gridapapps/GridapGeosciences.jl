@@ -32,8 +32,6 @@ function compute_mass_flux_bis!(F,dΩ,V,RTMMchol,u)
   solve!(get_free_dof_values(F),RTMMchol,get_free_dof_values(F))
 end
 
-compute_mass_flux!
-
 function compute_depth!(h1,dΩ,dω,Q,L2MMchol,h2,F,dt)
   b(q)  = ∫(q*h2)dΩ - ∫(dt*q*DIV(F))dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(h1), Q)
@@ -46,10 +44,22 @@ function compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,uu,h,g)
   ldiv!(L2MMchol, get_free_dof_values(ϕ))
 end
 
+function compute_bernoulli_potential_bis!(ϕ,dΩ,Q,L2MMchol,uu,h,g)
+  b(q)  = ∫(q*(0.5*uu + g*h))*dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(ϕ), Q)
+  solve!(get_free_dof_values(ϕ),L2MMchol,get_free_dof_values(ϕ))
+end
+
 function compute_diagnostic_vorticity!(w,dΩ,S,H1MMchol,u,n)
   b(s) = ∫(⟂(n,∇(s))⋅(u))dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(w), S)
   ldiv!(H1MMchol, get_free_dof_values(w))
+end
+
+function compute_diagnostic_vorticity_bis!(w,dΩ,S,H1MMchol,u,n)
+  b(s) = ∫(⟂(n,∇(s))⋅(u))dΩ
+  Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(w), S)
+  solve!(get_free_dof_values(w),H1MMchol,get_free_dof_values(w))
 end
 
 function shallow_water_explicit_time_step!(
