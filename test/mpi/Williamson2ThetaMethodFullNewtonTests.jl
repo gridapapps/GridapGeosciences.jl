@@ -40,11 +40,7 @@ options = """
           -snes_atol 0.0
           -snes_monitor
           -snes_converged_reason
-          -ksp_type gmres -ksp_rtol 1.0e-06 -ksp_atol 0.0 -ksp_gmres_restart 100
-          -ksp_monitor -pc_type gamg -pc_gamg_type agg
-          -mg_levels_esteig_ksp_type gmres -mg_coarse_sub_pc_type lu
-          -mg_coarse_sub_pc_factor_mat_ordering_type nd -pc_gamg_process_eq_limit 50
-          -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
+          $(mumps)
           -mm_ksp_type cg
           -mm_ksp_monitor
           -mm_ksp_rtol 1.0e-6
@@ -68,6 +64,10 @@ end
 
 function main(parts)
   GridapPETSc.with(args=split(options)) do
+      if (PArrays.get_part_id(parts)==1)
+        println(options)
+      end
+
       # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
       # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
       # the potential gradient term to achieve a steady state

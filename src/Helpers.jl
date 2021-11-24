@@ -23,21 +23,9 @@ function setup_mixed_spaces(model, order)
   R, S, U, V, P, Q
 end
 
-function setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
-  amm(a,b) = ∫(a⋅b)dΩ
-  H1MM = assemble_matrix(amm, R, S)
-  RTMM = assemble_matrix(amm, U, V)
-  L2MM = assemble_matrix(amm, P, Q)
-  H1MMchol = lu(H1MM)
-  RTMMchol = lu(RTMM)
-  L2MMchol = lu(L2MM)
-
-  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol
-end
-
-function setup_and_factorize_mass_matrices_bis(dΩ,
-                                               R, S, U, V, P, Q;
-                                               mass_matrix_solver=BackslashSolver())
+function setup_and_factorize_mass_matrices(dΩ,
+                                           R, S, U, V, P, Q;
+                                           mass_matrix_solver=BackslashSolver())
   amm(a,b) = ∫(a⋅b)dΩ
   H1MM   = assemble_matrix(amm, R, S)
   RTMM   = assemble_matrix(amm, U, V)

@@ -35,7 +35,9 @@ function shallow_water_theta_method_full_newton_time_stepper(
 
   if (write_diagnostics)
     # assemble the mass matrices
-    H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices_bis(dΩ, R, S, U, V, P, Q; mass_matrix_solver=mass_matrix_solver)
+    H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
+      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
+                                        mass_matrix_solver=mass_matrix_solver)
   end
 
   Y = MultiFieldFESpace([V,Q,S,V])
@@ -64,9 +66,9 @@ function shallow_water_theta_method_full_newton_time_stepper(
   #     - Initial volume flux (F₀)
   #     - Initial full solution
   q₀=clone_fe_function(R,fn)
-  compute_potential_vorticity_bis!(q₀,H1MM,H1MMchol,dΩ,R,S,hn,un,fn,n)
+  compute_potential_vorticity!(q₀,H1MM,H1MMchol,dΩ,R,S,hn,un,fn,n)
   F₀=clone_fe_function(V,un)
-  compute_mass_flux_bis!(F₀,dΩ,V,RTMMchol,un*hn)
+  compute_mass_flux!(F₀,dΩ,V,RTMMchol,un*hn)
   ΔuΔhqF=uhqF₀(un,hn,q₀,F₀,X,Y,dΩ; mass_matrix_solver=mass_matrix_solver)
   Δu,Δh,q,F = ΔuΔhqF
 
@@ -130,8 +132,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
        hnv .= hnv .+ get_free_dof_values(Δh)
 
        if (write_diagnostics && write_diagnostics_freq>0 && mod(step, write_diagnostics_freq) == 0)
-        compute_diagnostic_vorticity_bis!(wn, dΩ, S, H1MMchol, un, n)
-        compute_bernoulli_potential_bis!(ϕ,dΩ,Q,L2MMchol,un⋅un,hn,g)
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
+        compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,un⋅un,hn,g)
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                         model, dΩ, dω, S, L2MM, H1MM,
                                         hn, un, wn, ϕ, F, g, step, dt,
@@ -141,7 +143,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
       end
       if (write_solution && write_solution_freq>0 && mod(step, write_solution_freq) == 0)
         if (!write_diagnostics || write_diagnostics_freq != write_solution_freq)
-          compute_diagnostic_vorticity_bis!(wn, dΩ, S, H1MMchol, un, n)
+          compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, n)
         end
         pvd[dt*Float64(step)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(step)"),hn,un,wn)
       end

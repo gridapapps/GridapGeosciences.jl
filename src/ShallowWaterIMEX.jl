@@ -116,8 +116,8 @@ function shallow_water_imex_time_step!(
   assemble_Asub_mul_u!(h_wrk,U,P,dΩ,L2MMinvD,Fv)                  # h_wrk = L2MMinvD * Fv
   h_wrk .= h₁v .- dt .* h_wrk
   assemble_Asub_mul_u!(u_wrk, P, U, dΩ, A, h_wrk)                        # u_wrk = A * h_wrk
-  lu!(Bchol, B)
-  ldiv!(Bchol, u_wrk)
+  numerical_setup!(Bchol, B)
+  solve!(u_wrk, Bchol, u_wrk)
   # 2.3: combine the two mass flux components
   Fv .= Fv .+ u_wrk
   # 2.4: compute the divergence of the total mass flux
@@ -135,15 +135,18 @@ end
 
 
 
-function shallow_water_imex_time_stepper(model, order, degree,
-                        h₀, u₀, f₀, g,
-                        dt, τ, N;
-                        write_diagnostics=true,
-                        write_diagnostics_freq=1,
-                        dump_diagnostics_on_screen=true,
-                        write_solution=false,
-                        write_solution_freq=N/10,
-                        output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_imex")
+function shallow_water_imex_time_stepper(
+  model, order, degree,
+  h₀, u₀, f₀, g,
+  dt, τ, N;
+  mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+  jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+  write_diagnostics=true,
+  write_diagnostics_freq=1,
+  dump_diagnostics_on_screen=true,
+  write_solution=false,
+  write_solution_freq=N/10,
+  output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_imex")
 
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
@@ -155,7 +158,8 @@ function shallow_water_imex_time_stepper(model, order, degree,
 
   # assemble the mass matrices (RTMM not actually needed in assembled form)
   H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
-      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
+                                        mass_matrix_solver=mass_matrix_solver)
 
   # Project the initial conditions onto the trial spaces
   hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S,
@@ -169,14 +173,14 @@ function shallow_water_imex_time_stepper(model, order, degree,
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = lu(H1h)
+  H1hchol  = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
 
   A        = setup_subassembled_A(P,V,un,dΩ)
   RTMM     = setup_subassembled_RTMM(U,V,dΩ)
   invL2MMD = setup_subassembled_invL2MMD(U,P,Q,dΩ,dω)
 
   B        = assemble_implicit_compound_operator(P,U,V,dt,dΩ,A,RTMM,invL2MMD)
-  Bchol    = lu(B)
+  Bchol    = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")

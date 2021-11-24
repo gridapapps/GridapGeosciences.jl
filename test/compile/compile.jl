@@ -11,7 +11,7 @@ else
     append!(pkgs, [Symbol(name) for name in keys(Pkg.installed())])
 end
 
-println(pkgs)
+pkgs = [:Gridap,:GridapDistributed]
 create_sysimage(pkgs,
   sysimage_path=joinpath(@__DIR__,"GridapGeosciences.so"),
   precompile_execution_file=joinpath(@__DIR__,"..","mpi/Williamson2ThetaMethodFullNewtonTests.jl"))

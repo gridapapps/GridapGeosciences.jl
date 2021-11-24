@@ -29,7 +29,7 @@ end
 function _ssrk2_update!(res,MM,MMchol,DIV,α,a,b)
   mul!(res, MM, a)            # res <- MM*a
   mul!(res, DIV, b, α, 1.0)   # res <- 1.0*res + α*DIV*b
-  ldiv!(MMchol,res)           # res <- inv(MM)*res
+  solve!(res,MMchol,res)           # res <- inv(MM)*res
 end
 
 function generate_energy_plots(outdir,N,ke,pe,kin_to_pot,pot_to_kin)
@@ -79,8 +79,8 @@ function solve_wave_equation_ssrk2(
   amm(u,v) = ∫(v⋅u)dΩ
   RTMM=assemble_matrix(amm,U,V)
   L2MM=assemble_matrix(amm,P,Q)
-  RTMMchol=lu(RTMM)
-  L2MMchol=lu(L2MM)
+  RTMMchol=numerical_setup(symbolic_setup(jacobian_matrix_solver,RTMM),RTMM)
+  L2MMchol=numerical_setup(symbolic_setup(jacobian_matrix_solver,L2MM),L2MM)
 
   # Build g*DIV(v)*h and H*q*DIV(u)
   ad(h,v) = ∫(DIV(v)*h)dω
