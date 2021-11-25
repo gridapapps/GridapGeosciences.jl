@@ -58,6 +58,7 @@ end
 """
 function solve_wave_equation_ssrk2(
       model,order,degree,g,H,T,N;
+      mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
       write_results=false,
       out_dir="wave_eq_ncells_$(num_cells(model))_order_$(order)_ssrk2",
       out_period=N/10)
@@ -79,8 +80,8 @@ function solve_wave_equation_ssrk2(
   amm(u,v) = ∫(v⋅u)dΩ
   RTMM=assemble_matrix(amm,U,V)
   L2MM=assemble_matrix(amm,P,Q)
-  RTMMchol=numerical_setup(symbolic_setup(jacobian_matrix_solver,RTMM),RTMM)
-  L2MMchol=numerical_setup(symbolic_setup(jacobian_matrix_solver,L2MM),L2MM)
+  RTMMchol=numerical_setup(symbolic_setup(mass_matrix_solver,RTMM),RTMM)
+  L2MMchol=numerical_setup(symbolic_setup(mass_matrix_solver,L2MM),L2MM)
 
   # Build g*DIV(v)*h and H*q*DIV(u)
   ad(h,v) = ∫(DIV(v)*h)dω
