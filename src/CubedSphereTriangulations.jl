@@ -68,3 +68,13 @@ Gridap.Geometry.get_cell_node_ids(trian::AnalyticalMapCubedSphereTriangulation) 
 Gridap.Geometry.get_cell_map(trian::AnalyticalMapCubedSphereTriangulation) = trian.model.cell_map
 
 Gridap.Geometry.get_grid(trian::AnalyticalMapCubedSphereTriangulation) = get_grid(trian.model.cubed_sphere_linear_model)
+
+Gridap.Geometry.get_background_model(trian::AnalyticalMapCubedSphereTriangulation) = trian.model
+
+function Gridap.Geometry.get_glue(a::AnalyticalMapCubedSphereTriangulation,D::Val{2})
+  nc=num_cells(a.model)
+  tface_to_mface=Gridap.Fields.IdentityVector(nc)
+  tface_to_mface_map=Fill(Gridap.Fields.GenericField(identity),nc)
+  mface_to_tface=tface_to_mface
+  Gridap.Geometry.FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
