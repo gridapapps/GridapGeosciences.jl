@@ -61,11 +61,11 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # 1.3: compute the temperature, dH/ds
   compute_temperature!(T,dΩ,S,H1MMchol,0.5*h₁*h₁)
   # 1.4: materially advected quantities (potential vorticity and buoyancy gradient)
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,norm_vec)
   upwind_buoyancy!(e₁up,dΩ,S,H1MMchol,e₁,u₁,τₑ)
   compute_buoyancy_gradient!(de₁,dΩ,U,V,RTMMh,RTMMhchol,e₁up,h₁)
   # 1.5: solve for the provisional velocity
-  compute_velocity_tswe_mat_adv!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),de₁,F,ϕ,T,n,dt1,dt1)
+  compute_velocity_tswe_mat_adv!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),de₁,F,ϕ,T,norm_vec,dt1,dt1)
   # 1.6: solve for the provisional depth
   compute_depth!(hₚ,dΩ,dω,Q,L2MMchol,hₘ,F,dt1)
   # 1.7: solve for the buoyancy
@@ -79,11 +79,11 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # 2.3: compute the temperature, dH/ds
   compute_temperature!(T,dΩ,S,H1MMchol,(h₁*h₁+h₁*hₚ+hₚ*hₚ)/6.0)
   # 2.4: materially advected quantities (potential vorticity and buoyancy gradient)
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,norm_vec)
   upwind_buoyancy!(e₂up,dΩ,S,H1MMchol,eₚ,uₚ,τₑ)
   compute_buoyancy_gradient!(de₂,dΩ,U,V,RTMMh,RTMMhchol,e₂up,hₚ)
   # 2.5: solve for the final velocity
-  compute_velocity_tswe_mat_adv!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),de₁+de₂,F,ϕ,T,n,0.5*dt,dt)
+  compute_velocity_tswe_mat_adv!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),de₁+de₂,F,ϕ,T,norm_vec,0.5*dt,dt)
   # 2.6: solve for the final depth
   compute_depth!(h₂,dΩ,dω,Q,L2MMchol,h₁,F,dt)
   # 2.7: solve for the buoyancy
