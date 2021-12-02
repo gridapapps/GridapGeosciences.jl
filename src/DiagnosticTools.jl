@@ -78,8 +78,14 @@ end
 function compute_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
 					 h, u, w, ϕ, F, h2, c)
-  mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
-  vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
+
+  H = similar(get_free_dof_values(h),(axes(L2MM)[2],))
+  copy!(H,get_free_dof_values(h))
+  W = similar(get_free_dof_values(w),(axes(H1MM)[2],))
+  copy!(W,get_free_dof_values(w))
+
+  mass_i = compute_total_mass!(h_tmp, L2MM, H)
+  vort_i = compute_total_mass!(w_tmp, H1MM, W)
   kin_i  = Eₖ(u,h,dΩ)
   pot_i  = Eₚ(h,h2,c,dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)

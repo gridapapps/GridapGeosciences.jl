@@ -5,6 +5,7 @@ using Gridap
 using GridapGeosciences
 using GridapPardiso
 using SparseMatricesCSR
+using SparseArrays
 
 # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
 # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
@@ -39,7 +40,7 @@ for i in 1:2
                method=:newton,
                ftol=1.0e-12,
                xtol=1.0e-02)
-  hf, uf = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
+  hf, uf, _ = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
                                                                h₀, u₀, f₀, topography, g, θ, T, nstep, τ;
                                                                write_solution=false,
                                                                write_solution_freq=5,

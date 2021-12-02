@@ -17,6 +17,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
       nls::Gridap.Algebra.NonlinearSolver,
       model, order, degree, h₀, u₀, f₀, topography, g, θ, T, N, τ;
       mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+      matrix_type::Type{<:AbstractSparseMatrix}=SparseMatrixCSC{Float64,Int},
+      vector_type::Type{<:AbstractVector}=Vector{Float64},
       write_diagnostics=true,
       write_diagnostics_freq=1,
       dump_diagnostics_on_screen=true,
@@ -42,6 +44,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
 
   Y = MultiFieldFESpace([V,Q,S,V])
   X = MultiFieldFESpace([U,P,R,U])
+
+  assem=SparseMatrixAssembler(matrix_type,vector_type,U,V)
 
   fes=FESolver(mass_matrix_solver)
 
@@ -148,7 +152,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
         pvd[dt*Float64(step)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(step)"),hn,un,wn)
       end
     end
-    hn, un
+    hn, un, num_free_dofs(Y)
   end
   if (am_i_root && (write_diagnostics || write_solution))
     rm(output_dir,force=true,recursive=true)

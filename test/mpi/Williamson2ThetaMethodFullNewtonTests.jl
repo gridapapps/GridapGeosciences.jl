@@ -7,6 +7,8 @@ using  Gridap
 using  GridapDistributed
 using  GridapGeosciences
 using  GridapPETSc
+using SparseArrays
+using MPI
 
 const PArrays=PartitionedArrays
 
@@ -42,7 +44,7 @@ options = """
           -snes_converged_reason
           -mm_ksp_type cg
           -mm_ksp_monitor
-          -mm_ksp_rtol 1.0e-6
+          -mm_ksp_rtol 1.0e-14
           -mm_pc_type jacobi
           """
 function mysnessetup(snes)
@@ -104,7 +106,7 @@ function main(parts)
         model  = CubedSphereDiscreteModel(parts, n; radius=rₑ)
         nls    = PETScNonlinearSolver(mysnessetup)
         mmls   = PETScLinearSolver(set_ksp_mm)
-        hf, uf = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
+        hf, uf, _ = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
                                                             h₀, u₀, f₀, topography,
                                                             g, θ, T, nstep, τ;
                                                             mass_matrix_solver=mmls,
@@ -131,6 +133,7 @@ function main(parts)
       end
   end
 end
-prun_debug(main,mpi,1)
+MPI.Init()
+prun(main,mpi,MPI.Comm_size(MPI.COMM_WORLD))
 
 end # module
