@@ -32,9 +32,9 @@ function upwind_buoyancy!(eup,dΩ,S,H1MMchol,e,u,τ)
 end
 
 function thermal_shallow_water_mat_adv_explicit_time_step!(
-     h₂, u₂, e₂, hₚ, uₚ, eₚ, ϕ, F, T, q₁, q₂, de₁, de₂, H1h, H1hchol,      # in/out args
-     model, dΩ, dω, U, V, Q, R, S, f, h₁, u₁, e₁, hₘ, uₘ, eₘ, e₁up, e₂up,  # in args
-     H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, τₑ, leap_frog) # more in args
+     h₂, u₂, e₂, hₚ, uₚ, eₚ, ϕ, F, T, q₁, q₂, de₁, de₂, H1h, H1hchol,        # in/out args
+     norm_vec, dΩ, dω, U, V, Q, R, S, f, h₁, u₁, e₁, hₘ, uₘ, eₘ, e₁up, e₂up, # in args
+     H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, τₑ, leap_frog)   # more in args
 
   # energetically balanced explicit second order thermal shallow water solver
   #
@@ -48,7 +48,6 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
   # leap_frog  : do leap frog time integration for the first step (boolean)
   # dΩ         : measure of the elements
 
-  n = get_normal_vector(model)
   # explicit step for provisional velocity, uₚ
   dt1 = dt
   if leap_frog
@@ -105,6 +104,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
   Ω = Triangulation(model)
   dΩ = Measure(Ω, degree)
   dω = Measure(Ω, degree, ReferenceDomain())
+  norm_vec = get_normal_vector(Ω)
 
   # Setup the trial and test spaces
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
@@ -172,7 +172,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
 
     # first step, no leap frog integration
     thermal_shallow_water_mat_adv_explicit_time_step!(hn, un, en, hp, up, ep, ϕ, F, T, q1, q2, de1, de2, H1h, H1hchol,
-                                              model, dΩ, dω, U, V, Q, R, S, f, hm1, um1, em1, hm2, um2, em2, e1up, e2up,
+                                              norm_vec, dΩ, dω, U, V, Q, R, S, f, hm1, um1, em1, hm2, um2, em2, e1up, e2up,
                                               H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, τₑ, false)
 
     if (write_diagnostics)
@@ -180,7 +180,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
     end
 
     if (write_diagnostics && write_diagnostics_freq==1)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, norm_vec)
       dump_diagnostics_thermal_shallow_water_mat_adv!(h_tmp, w_tmp,
                                               model, dΩ, dω, S, L2MM, H1MM,
 					      hn, un, en, wn, ϕ, F, 0.5*(de1+de2), 1, dt,
@@ -205,11 +205,11 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
       en    = e_aux
 
       thermal_shallow_water_mat_adv_explicit_time_step!(hn, un, en, hp, up, ep, ϕ, F, T, q1, q2, de1, de2, H1h, H1hchol,
-                                                model, dΩ, dω, U, V, Q, R, S, f, hm1, um1, em1, hm2, um2, em2, e1up, e2up,
+                                                norm_vec, dΩ, dω, U, V, Q, R, S, f, hm1, um1, em1, hm2, um2, em2, e1up, e2up,
                                                 H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, τₑ, true)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, norm_vec)
         dump_diagnostics_thermal_shallow_water_mat_adv!(h_tmp, w_tmp,
                                                 model, dΩ, dω, S, L2MM, H1MM,
 						hn, un, en, wn, ϕ, F, 0.5*(de1+de2), istep, dt,
@@ -217,7 +217,7 @@ function thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degre
                                                 dump_diagnostics_on_screen)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(model))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, norm_vec)
 	pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn,"en"=>en])
       end
     end
