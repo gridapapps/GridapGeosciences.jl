@@ -36,19 +36,6 @@ function thermal_shallow_water_mat_adv_explicit_time_step!(
      norm_vec, dΩ, dω, U, V, Q, R, S, f, h₁, u₁, e₁, hₘ, uₘ, eₘ, e₁up, e₂up, # in args
      H1MMchol, RTMMchol, L2MMchol, RTMMh, RTMMhchol, dt, τ, τₑ, leap_frog)   # more in args
 
-  # energetically balanced explicit second order thermal shallow water solver
-  #
-  # f          : coriolis force (field)
-  # h₁         : fluid depth at current time level
-  # u₁         : fluid velocity at current time level
-  # E₁         : fluid buoyancy at current time level
-  # RTMM       : H(div) mass matrix, ∫β⋅βdΩ, ∀β∈ H(div,Ω)
-  # L2MM       : L² mass matrix, ∫γγdΩ, ∀γ∈ L²(Ω)
-  # dt         : time step
-  # leap_frog  : do leap frog time integration for the first step (boolean)
-  # dΩ         : measure of the elements
-
-  # explicit step for provisional velocity, uₚ
   dt1 = dt
   if leap_frog
     dt1 = 2.0*dt

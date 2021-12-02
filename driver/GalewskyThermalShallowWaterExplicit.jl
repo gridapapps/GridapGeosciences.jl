@@ -20,6 +20,16 @@ function gh₀(xyz)
   E
 end
 
+function g₀(xyz)
+  θϕr   = xyz2θϕr(xyz)
+  x,y,z = xyz
+  θ,ϕ,r = θϕr
+  α     = 1.0/3.0
+  β     = 1.0/10.0 #1.0/15.0
+  ϕ₂    = π/4
+  g + g*(200.0/H₀)*cos(ϕ)*exp(-1.0*(θ/α)*(θ/α))*exp(-1.0*((ϕ₂ - ϕ)/β)*((ϕ₂ - ϕ)/β))
+end
+
 order  = 1
 degree = 4
 
@@ -29,9 +39,9 @@ dt     = 60.0
 
 model = CubedSphereDiscreteModel(n; radius=rₑ)
 
-hf, uf = thermal_shallow_water_explicit_time_stepper(model, order, degree,
-                                    h₀, u₀, gh₀, f,
-                                    dt, 0.5*dt, nstep;
+hf, uf = thermal_shallow_water_mat_adv_explicit_time_stepper(model, order, degree,
+                                    h₀, u₀, g₀, f,
+                                    dt, 0.5*dt, 0.5*dt, nstep;
                                     write_solution=true,
                                     write_solution_freq=240,
                                     write_diagnostics=true,
