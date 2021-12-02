@@ -18,6 +18,6 @@ The goal of this repository is to showcase the suitability of the [Gridap](https
 * [[click here]] Much more to come ...
 
 <p align="center">
-  <img src="_readme/NSWE_48x48_1_ROS_dt_480_20days.gif">
-  Vorticity field for the Nonlinear Rotating Shallow Water Equations on the cubed sphere. Galewsky benchmark (20 days).
+  <img src="_readme/NSWE_48x48_1_trapezoidal_dt_480_tau_dtdiv2.gif">
+  Vorticity field for the Nonlinear Rotating Shallow Water Equations on the cubed sphere. Galewsky benchmark.
 </p>
