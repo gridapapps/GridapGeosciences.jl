@@ -1,0 +1,9 @@
+[deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Mustache = "ffc61752-8dc7-55ee-8c37-f3e9cdd09e70"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
