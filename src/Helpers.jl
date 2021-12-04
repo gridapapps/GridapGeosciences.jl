@@ -42,3 +42,38 @@ function new_vtk_step(Ω,file,_cellfields)
             cellfields=_cellfields,
             nsubcells=n)
 end
+
+import Gridap.FESpaces: TrialBasis, SingleFieldFEBasis, SingleFieldFEFunction, ContraVariantPiolaMap
+import Gridap.Fields: linear_combination, ConstantField, GenericField
+import Gridap.CellData: GenericCellField
+
+"""
+ qh :: Trial functions potential vorticity space
+ u  :: RT space FE Function
+"""
+function upwind_trial_functions(
+  qh::SingleFieldFEBasis{<:TrialBasis},
+  uh::SingleFieldFEFunction,
+  τ::Real)
+  uh_data=Gridap.CellData.get_data(uh)
+  qh_data=Gridap.CellData.get_data(qh)
+  rt_trial_ref=_undo_piola_map(uh_data.args[2])
+  uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  cfτ=Fill(ConstantField(τ),length(uh_data))                       # tau
+  m=Broadcasting(Operation(*))
+  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                  # tau*u
+  xi = Fill(GenericField(identity),length(uh_data))                # xi
+  m=Broadcasting(Operation(-))
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref)  # xi - tau*u
+  cell_field=lazy_map(∘,qh_data,xi_minus_cfτ_mul_uh_data_ref)      # qh ∘ (xi - tau*u)
+  GenericCellField(cell_field,get_triangulation(uh),ReferenceDomain())
+end
+
+
+function _undo_piola_map(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ       = f.args[1]
+  fsign_flip = f.args[4]
+  fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  lazy_map(Broadcasting(Operation(*)),fsign_flip,ϕrgₖ)
+end
