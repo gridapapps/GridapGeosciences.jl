@@ -28,24 +28,7 @@ end
 function h₀(xyz)
   θϕr   = xyz2θϕr(xyz)
   θ,ϕ,r = θϕr
-  #h     = H₀
-  #ni    = 1000
-  #ϕₚ    = 0.0
-  #dϕ    = abs(ϕ/ni)
-  #sgn   = 1.0
-  #if ϕ < 0.0
-  #  sgn = -1.0
-  #end
-  #for i in 1:ni
-  #  ϕₚ   = ϕₚ + sgn*dϕ
-  #  _θϕr = VectorValue(θ,ϕₚ,r)
-  #  u    = uθ(_θϕr)
-  #  _f   = 2.0*Ωₑ*sin(ϕₚ)
-  #  h    = h - rₑ*u*(_f + tan(ϕₚ)*u/rₑ)*dϕ/g
-  #end
-  #h = -1.0*U₀*Ωₑ*xyz[3]*xyz[3]/rₑ/g + H₀
   h = havg(xyz)
-  #Rc = π/9.0
   Rc = π/8.0
   θc = -π/2.0 # mountain top longitude
   ϕc = +π/6.0 # mountain top latitude
