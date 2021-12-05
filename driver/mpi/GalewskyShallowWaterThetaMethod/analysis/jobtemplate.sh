@@ -3,6 +3,7 @@
 #PBS -q {{q}} 
 #PBS -l walltime={{walltime}}
 #PBS -l ncpus={{ncpus}}
+#PBS -l jobfs=40GB
 #PBS -l mem={{mem}}
 #PBS -N {{{name}}}
 #PBS -l wd
@@ -17,5 +18,5 @@ source {{{modules}}}
 
 $HOME/.julia/bin/mpiexecjl --project={{{projectdir}}} -n {{n}}\
     julia -J {{{sysimage}}} -O3 --check-bounds=no -e\
-      'using GalewskyShallowWaterThetaMethod; GalewskyShallowWaterThetaMethod.main(np={{n}},numrefs={{numrefs}},dt={{dt}},write_solution=false,write_solution_freq={{write_solution_freq}},title="{{{title}}}",k={{k}},degree={{degree}},mumps_relaxation={{mumps_relaxation}})'
+      'using GalewskyShallowWaterThetaMethod; GalewskyShallowWaterThetaMethod.main(np={{n}},numrefs={{numrefs}},dt={{dt}},write_solution=false,write_solution_freq={{write_solution_freq}},title="{{{title}}}",k={{k}},degree={{degree}},mumps_relaxation={{mumps_relaxation}})' > {{{title}}}.stdout
 
