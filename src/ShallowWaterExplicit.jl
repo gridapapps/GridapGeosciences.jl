@@ -1,7 +1,8 @@
-function compute_potential_vorticity!(q,H1h,H1hchol,dΩ,R,S,h,u,f,n)
+function compute_potential_vorticity!(
+  q,H1h,H1hchol,dΩ,R,S,h,u,f,n,assem)
   a(r,s) = ∫(s*h*r)dΩ
   c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), R, S)
+  Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), assem, R, S)
   numerical_setup!(H1hchol,H1h)
   solve!(get_free_dof_values(q),H1hchol,get_free_dof_values(q))
 end

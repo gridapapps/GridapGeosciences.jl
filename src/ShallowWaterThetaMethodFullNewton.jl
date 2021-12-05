@@ -45,21 +45,22 @@ function shallow_water_theta_method_full_newton_time_stepper(
   Y = MultiFieldFESpace([V,Q,S,V])
   X = MultiFieldFESpace([U,P,R,U])
 
-  assem=SparseMatrixAssembler(matrix_type,vector_type,U,V)
-
   fes=FESolver(mass_matrix_solver)
 
   a1(u,v)=∫(v⋅u)dΩ
   l1(v)=∫(v⋅u₀)dΩ
-  un=solve(fes,AffineFEOperator(a1,l1,U,V))
+  assem=SparseMatrixAssembler(matrix_type,vector_type,U,V)
+  un=solve(fes,AffineFEOperator(a1,l1,U,V,assem))
 
   a2(u,v)=∫(v*u)dΩ
   l2(v)=∫(v*h₀)dΩ
-  hn=solve(fes,AffineFEOperator(a2,l2,P,Q))
+  assem=SparseMatrixAssembler(matrix_type,vector_type,P,Q)
+  hn=solve(fes,AffineFEOperator(a2,l2,P,Q,assem))
 
   a3(u,v)=∫(v*u)dΩ
   l3(v)=∫(v*f₀)dΩ
-  fn=solve(fes,AffineFEOperator(a3,l3,R,S))
+  assem=SparseMatrixAssembler(matrix_type,vector_type,R,S)
+  fn=solve(fes,AffineFEOperator(a3,l3,R,S,assem))
 
   unv,hnv,fnv=get_free_dof_values(un,hn,fn)
 
@@ -70,7 +71,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
   #     - Initial volume flux (F₀)
   #     - Initial full solution
   q₀=clone_fe_function(R,fn)
-  compute_potential_vorticity!(q₀,H1MM,H1MMchol,dΩ,R,S,hn,un,fn,n)
+  compute_potential_vorticity!(q₀,H1MM,H1MMchol,dΩ,R,S,hn,un,fn,n,assem)
   F₀=clone_fe_function(V,un)
   compute_mass_flux!(F₀,dΩ,V,RTMMchol,un*hn)
   ΔuΔhqF=uhqF₀(un,hn,q₀,F₀,X,Y,dΩ; mass_matrix_solver=mass_matrix_solver)
@@ -126,8 +127,8 @@ function shallow_water_theta_method_full_newton_time_stepper(
        # Use previous time-step solution, ΔuΔhqF, as initial guess
        # Overwrite solution into ΔuΔhqF
 
-       #assem = SparseMatrixAssembler(sparse_matrix_type,Vector{Float64},X,Y)
-       op=FEOperator(residual,jacobian,X,Y)#,assem)
+       assem = SparseMatrixAssembler(matrix_type,Vector{Float64},X,Y)
+       op=FEOperator(residual,jacobian,X,Y,assem)
        solver=FESolver(nls)
        solve!(ΔuΔhqF,solver,op)
 

@@ -7,12 +7,11 @@ using  Gridap
 using  GridapDistributed
 using  GridapGeosciences
 using  GridapPETSc
-using SparseArrays
-using MPI
+using  SparseArrays
+using  MPI
+using  SparseMatricesCSR
 
 const PArrays=PartitionedArrays
-
-Base.unaliascopy(A::Gridap.Arrays.SubVector) = typeof(A)(Base.unaliascopy(A.vector), A.pini, A.pend)
 
 include("../sequential/Williamson2InitialConditions.jl")
 
@@ -90,46 +89,59 @@ function main(parts)
 
       l2_err_u = [0.011370921987771046 , 0.002991229234176333 ]
       l2_err_h = [0.005606685579166809, 0.001458107077200681 ]
+      for matrix_type in [SparseMatrixCSR{0,GridapPETSc.PetscScalar,GridapPETSc.PetscInt},
+                          SparseMatrixCSC{Float64,Int}]
+          order=1
+          degree=4
+          θ=0.5
+          for i in 1:1
+            n      = i+1
+            nstep  = 5*2^n
+            Uc     = sqrt(g*H₀)
+            dx     = 2.0*π*rₑ/(4*n)
+            dt     = 0.25*dx/Uc
+            println("timestep: ", dt)   # gravity wave time step
+            T      = dt*nstep
+            τ      = dt/2
+            model  = CubedSphereDiscreteModel(parts, n; radius=rₑ)
+            nls    = PETScNonlinearSolver(mysnessetup)
+            mmls   = PETScLinearSolver(set_ksp_mm)
 
-      order=1
-      degree=4
-      θ=0.5
-      for i in 1:1
-        n      = i+1
-        nstep  = 5*2^n
-        Uc     = sqrt(g*H₀)
-        dx     = 2.0*π*rₑ/(4*n)
-        dt     = 0.25*dx/Uc
-        println("timestep: ", dt)   # gravity wave time step
-        T      = dt*nstep
-        τ      = dt/2
-        model  = CubedSphereDiscreteModel(parts, n; radius=rₑ)
-        nls    = PETScNonlinearSolver(mysnessetup)
-        mmls   = PETScLinearSolver(set_ksp_mm)
-        hf, uf, _ = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
-                                                            h₀, u₀, f₀, topography,
-                                                            g, θ, T, nstep, τ;
-                                                            mass_matrix_solver=mmls,
-                                                            am_i_root=PArrays.get_part_id(parts)==1,
-                                                            write_solution=false,
-                                                            write_solution_freq=5,
-                                                            write_diagnostics=true,
-                                                            write_diagnostics_freq=1,
-                                                            dump_diagnostics_on_screen=true)
+            function ts()
+              shallow_water_theta_method_full_newton_time_stepper(
+                nls, model, order, degree,
+                h₀, u₀, f₀, topography,
+                g, θ, T, nstep, τ;
+                mass_matrix_solver=mmls,
+                matrix_type=matrix_type,
+                am_i_root=PArrays.get_part_id(parts)==1,
+                write_solution=false,
+                write_solution_freq=5,
+                write_diagnostics=true,
+                write_diagnostics_freq=1,
+                dump_diagnostics_on_screen=true)
+            end
 
-        Ω     = Triangulation(model)
-        dΩ    = Measure(Ω, degree)
-        hc    = CellField(h₀, Ω)
-        e     = h₀-hf
-        err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
-        uc    = CellField(u₀, Ω)
-        e     = u₀-uf
-        err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
-        if PArrays.get_part_id(parts)==1
-          println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
-        end
-        #@test abs(err_u - l2_err_u[i]) < 10.0^-12
-        #@test abs(err_h - l2_err_h[i]) < 10.0^-12
+            if (PArrays.get_part_id(parts)==1)
+              @time hf, uf, _ = ts()
+            else
+              hf, uf, _ = ts()
+            end
+
+            Ω     = Triangulation(model)
+            dΩ    = Measure(Ω, degree)
+            hc    = CellField(h₀, Ω)
+            e     = h₀-hf
+            err_h = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(hc⋅hc)*dΩ))
+            uc    = CellField(u₀, Ω)
+            e     = u₀-uf
+            err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
+            if PArrays.get_part_id(parts)==1
+              println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
+            end
+            #@test abs(err_u - l2_err_u[i]) < 10.0^-12
+            #@test abs(err_h - l2_err_h[i]) < 10.0^-12
+          end
       end
   end
 end
