@@ -1,0 +1,4 @@
+name = "GalewskyShallowWaterThetaMethod"
+uuid = "ea0b1960-4b74-4938-946f-e9322b94f3de"
+authors = ["Alberto F. Martin <alberto.martin@monash.edu>"]
+version = "0.1.0"

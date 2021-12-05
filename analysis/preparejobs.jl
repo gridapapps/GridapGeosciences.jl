@@ -36,14 +36,24 @@ function jobdict(params)
 end
 
 
-dicts_cartesian=generate_2d_dicts(:cartesian,:gamg,collect(3:8),[16,32,64,128,256,512])
-dicts=generate_2d_dicts(:p4est,:gamg,collect(3:8),collect(4:9))
-append!(dicts,dicts_cartesian)
+allparams = Dict(
+ :np => 8,
+ :numrefs => 2,
+ :write_solution => false,
+ :write_solution_freq => 4,
+ :dt => 480,
+ :k => 1,
+ :degree => 4,
+ :mumps_relaxation => 1000,
+ )
+
 template = read(projectdir("jobtemplate.sh"),String)
+
+dicts = dict_list(allparams)
+
 for params in dicts
-   fparams=convert_nc_np_to_prod(params)
-   jobfile = datadir(jobname(fparams,"sh"))
-   open(jobfile,"w") do io
-     render(io,template,jobdict(params))
-   end
+  jobfile = datadir(jobname(params,"sh"))
+  open(jobfile,"w") do io
+    render(io,template,jobdict(params))
+  end
 end

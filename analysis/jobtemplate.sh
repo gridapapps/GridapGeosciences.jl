@@ -17,5 +17,5 @@ source {{{modules}}}
 
 $HOME/.julia/bin/mpiexecjl --project={{{projectdir}}} -n {{n}}\
     julia -J {{{sysimage}}} -O3 --check-bounds=no -e\
-      'using GalewskyShallowWaterThetaMethod; GalewskyShallowWaterThetaMethod.main(np={{n}},numrefs={{numrefs}},dt={{dt}},write_solution={{write_solution}},write_solution_freq={{write_solution_freq}},title="{{{title}}}",k={{k}},degree={{degree}},mumps_relaxation={{mumps_relaxation}})'
+      'include("GalewskyShallowWaterThetaMethod.jl"); using GalewskyShallowWaterThetaMethod; GalewskyShallowWaterThetaMethod.main(np={{n}},numrefs={{numrefs}},dt={{dt}},write_solution={{write_solution}},write_solution_freq={{write_solution_freq}},title="{{{title}}}",k={{k}},degree={{degree}},mumps_relaxation={{mumps_relaxation}})'
 
