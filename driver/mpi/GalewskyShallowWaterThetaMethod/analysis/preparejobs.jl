@@ -12,7 +12,7 @@ function jobdict(params)
   k = params[:k]
   degree = params[:degree]
   mumps_relaxation = params[:mumps_relaxation]
-  Dict(
+  d=Dict(
   "q" => "normal",
   "o" => datadir(jobname(params,"o.txt")),
   "e" => datadir(jobname(params,"e.txt")),
@@ -23,7 +23,7 @@ function jobdict(params)
   "numrefs" => params[:numrefs],
   "n" => np,
   "dt" => dt,
-  "write_solution" => write_solution,
+  "ws" => write_solution,
   "write_solution_freq" => write_solution_freq,
   "k" => k,
   "degree" => degree,
@@ -31,8 +31,10 @@ function jobdict(params)
   "projectdir" => driverdir(),
   "modules" => driverdir("modules.sh"),
   "title" => datadir(jobname(params)),
-  "sysimage" => driverdir("GridapGeosciences.so")
+  "sysimage" => driverdir("GalewskyShallowWaterThetaMethod.so")
   )
+  println(d)
+  d
 end
 
 
@@ -41,7 +43,7 @@ allparams = Dict(
  :numrefs => 2,
  :write_solution => false,
  :write_solution_freq => 4,
- :dt => 480,
+ :dt => 600.0,
  :k => 1,
  :degree => 4,
  :mumps_relaxation => 1000,

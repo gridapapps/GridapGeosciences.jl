@@ -8,6 +8,8 @@ using PartitionedArrays
 const PArrays=PartitionedArrays
 using GridapGeosciences
 using SparseMatricesCSR
+using FileIO
+
 
 
 gamg = """
@@ -63,7 +65,7 @@ options = """
       @check_error_code GridapPETSc.PETSC.PCFactorGetMatrix(pc[],mumpsmat)
       @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  4, 1)
       # percentage increase in the estimated working space
-      @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  14, 1000)
+      @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  14, mumps_relaxation)
       @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[], 28, 2)
       @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[], 29, 2)
       @check_error_code GridapPETSc.PETSC.MatMumpsSetCntl(mumpsmat[], 3, 1.0e-6)
@@ -116,7 +118,7 @@ options = """
 
     prun(mpi,np) do parts
         GridapPETSc.with(args=split(options)) do
-          main(parts,np,numrefs,dt,τ,
+          main_galewsky(parts,np,numrefs,dt,τ,
               write_solution,write_solution_freq,title,
               k,degree,
               verbose,mumps_relaxation)
@@ -124,7 +126,7 @@ options = """
     end
   end
 
-  include("../sequential/GalewskyInitialConditions.jl")
+  include("../../../sequential/GalewskyInitialConditions.jl")
 
   function galewsky(parts,numrefs,dt,τ,
                     write_solution,write_solution_freq,title,order,degree,
@@ -137,16 +139,25 @@ options = """
 
       nls    = PETScNonlinearSolver(mysnessetup)
       mmls   = PETScLinearSolver(set_ksp_mm)
-      _,_,ndofs=shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
-                                                    h₀, u₀, f, topography, g, θ, T, nstep, τ;
-                                                    mass_matrix_solver=mmls,
-                                                    am_i_root=PArrays.get_part_id(parts)==1,
-                                                    write_solution=write_solution,
-                                                    write_solution_freq=write_solution_freq,
-                                                    write_diagnostics=true,
-                                                    write_diagnostics_freq=1,
-                                                    dump_diagnostics_on_screen=true,
-                                                    output_dir=title)
+
+      function ts()
+        shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
+        h₀, u₀, f, topography, g, θ, T, nstep, τ;
+        mass_matrix_solver=mmls,
+        am_i_root=PArrays.get_part_id(parts)==1,
+        write_solution=write_solution,
+        write_solution_freq=write_solution_freq,
+        write_diagnostics=true,
+        write_diagnostics_freq=1,
+        dump_diagnostics_on_screen=true,
+        output_dir=title)
+      end
+
+      if (PArrays.get_part_id(parts)==1)
+        @time _,_,ndofs = ts()
+      else
+        _,_,ndofs = ts()
+      end
 
       num_cells(model), ndofs
   end

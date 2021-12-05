@@ -2,3 +2,15 @@ name = "GalewskyShallowWaterThetaMethod"
 uuid = "ea0b1960-4b74-4938-946f-e9322b94f3de"
 authors = ["Alberto F. Martin <alberto.martin@monash.edu>"]
 version = "0.1.0"
+
+[deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+GridapDistributed = "f9701e48-63b3-45aa-9a63-9bc6c271f355"
+GridapGeosciences = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
+GridapP4est = "c2c8e14b-f5fd-423d-9666-1dd9ad120af9"
+GridapPETSc = "bcdc36c2-0c3e-11ea-095a-c9dadae499f1"
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+PackageCompiler = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
+PartitionedArrays = "5a9dfac6-5c52-46f7-8278-5e2210713be9"
+SparseMatricesCSR = "a0a7dd2c-ebf4-11e9-1f05-cf50bc540ca1"
