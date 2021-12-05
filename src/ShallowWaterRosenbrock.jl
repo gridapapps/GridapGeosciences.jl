@@ -14,7 +14,7 @@ end
 
 function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R_up,S,h,u,f,n,τ)
   qh = get_trial_fe_basis(R_up)
-  qh_upwinded=upwind_potential_vorticity_trial_functions(qh,u,τ)
+  qh_upwinded=upwind_trial_functions(qh,u,τ)
 
   a(r,s) = ∫(s*h*r)dΩ
   c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
@@ -48,7 +48,7 @@ function shallow_water_rosenbrock_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
-  compute_potential_vorticity_downtrial!(q₁,H1h_1,H1hchol_1,dΩ,R1_up,S,h₁,u₁,f,n)
+  compute_potential_vorticity_downtrial!(q₁,H1h_1,H1hchol_1,dΩ,R1_up,S,h₁,u₁,f,n,τ)
   # 1.4: assemble the momentum and continuity equation residuals
   assemble_residuals_downtrial!(duh₁, dΩ, dω, Y, q₁, q₁, ϕ, F, n)
 
@@ -64,7 +64,7 @@ function shallow_water_rosenbrock_time_step!(
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
   # 2.3: the potential vorticity
-  compute_potential_vorticity_downtrial!(q₂,H1h_2,H1hchol_2,dΩ,R2_up,S,h₂,u₂,f,n)
+  compute_potential_vorticity_downtrial!(q₂,H1h_2,H1hchol_2,dΩ,R2_up,S,h₂,u₂,f,n,τ)
   # 2.4: assemble the momentum and continuity equation residuals
   assemble_residuals_downtrial!(duh₂, dΩ, dω, Y, q₁, q₂, ϕ, F, n)
 

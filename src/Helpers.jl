@@ -46,6 +46,7 @@ end
 import Gridap.FESpaces: TrialBasis, SingleFieldFEBasis, SingleFieldFEFunction, ContraVariantPiolaMap
 import Gridap.Fields: linear_combination, ConstantField, GenericField
 import Gridap.CellData: GenericCellField
+import Gridap.Arrays: LazyArray
 
 """
  qh :: Trial functions potential vorticity space
