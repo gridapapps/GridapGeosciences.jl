@@ -19,11 +19,31 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v2
+      - name: Cache p4est
+        id: cache-p4est
+        uses: actions/cache@v2
+        with:
+         path: ${{env.P4EST_ROOT_DIR}}
+         key: ${{ runner.os }}-build-${{ env.P4EST_ROOT_DIR }}-
+         restore-keys: |
+           ${{ runner.os }}-build-${{ env.P4EST_ROOT_DIR }}-
+           ${{ runner.os }}-build-
+           ${{ runner.os }}-
+      #- name: Cache petsc
+      #  id: cache-petsc
+      #  uses: actions/cache@v2
+      #  with:
+      #   path: ${{env.JULIA_PETSC_LIBRARY}}
+      #   key: ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
+      #   restore-keys: |
+      #     ${{ runner.os }}-build-${{ env.JULIA_PETSC_LIBRARY }}-
+      #     ${{ runner.os }}-build-
+      #     ${{ runner.os }}-  
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-            - name: Install p4est/petsc dependencies
+      - name: Install p4est/petsc dependencies
         run: |
            sudo apt-get update 
            sudo apt-get install -y wget gfortran g++ openmpi-bin libopenmpi-dev 
