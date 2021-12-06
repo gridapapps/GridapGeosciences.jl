@@ -12,11 +12,12 @@ function jobdict(params)
   k = params[:k]
   degree = params[:degree]
   mumps_relaxation = params[:mumps_relaxation]
+  nstep = params[:nstep]
   d=Dict(
   "q" => "normal",
   "o" => datadir(jobname(params,"o.txt")),
   "e" => datadir(jobname(params,"e.txt")),
-  "walltime" => "24:00:00",
+  "walltime" => "48:00:00",
   "ncpus" => np,
   "mem" => "$(prod(np)*4)gb",
   "name" => jobname(params),
@@ -28,6 +29,7 @@ function jobdict(params)
   "k" => k,
   "degree" => degree,
   "mumps_relaxation" => mumps_relaxation,
+  "nstep" => nstep,
   "projectdir" => driverdir(),
   "modules" => driverdir("modules.sh"),
   "title" => datadir(jobname(params)),
@@ -39,14 +41,15 @@ end
 
 
 allparams = Dict(
- :np => 8,
- :numrefs => 2,
+ :np => [48,96,144,192,240],
+ :numrefs => 5,
  :write_solution => false,
  :write_solution_freq => 4,
  :dt => 600.0,
  :k => 1,
  :degree => 4,
- :mumps_relaxation => 1000,
+ :mumps_relaxation => 50000,
+ :nstep => 10,
  )
 
 template = read(projectdir("jobtemplate.sh"),String)

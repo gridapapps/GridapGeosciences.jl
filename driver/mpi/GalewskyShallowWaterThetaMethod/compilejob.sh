@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q normal
-#PBS -l walltime=00:20:00
+#PBS -l walltime=01:00:00
 #PBS -l ncpus=1
 #PBS -l mem=6gb
 #PBS -N makejl

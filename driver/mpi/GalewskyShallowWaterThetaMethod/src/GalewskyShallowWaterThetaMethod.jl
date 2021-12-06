@@ -48,7 +48,7 @@ options = """
   function main_galewsky(parts,
                         np,numrefs,dt,τ,
                         write_solution,write_solution_freq,title,order,degree,
-                        verbose,mumps_relaxation)
+                        verbose,mumps_relaxation,nstep)
 
     function mysnessetup(snes)
       ksp      = Ref{GridapPETSc.PETSC.KSP}()
@@ -82,7 +82,7 @@ options = """
     PArrays.tic!(t,barrier=true)
     ngcells, ngdofs = galewsky(parts,numrefs,dt,τ,
                               write_solution,write_solution_freq,title,order,degree,
-                              verbose,mumps_relaxation,mysnessetup,set_ksp_mm)
+                              verbose,mumps_relaxation,mysnessetup,set_ksp_mm,nstep)
     PArrays.toc!(t,"Simulation")
     display(t)
     map_main(t.data) do data
@@ -112,7 +112,8 @@ options = """
     k::Integer=1,
     degree::Integer=4,
     verbose::Bool=true,
-    mumps_relaxation=1000)
+    mumps_relaxation=1000,
+    nstep::Integer=Int(24*60^2*20/dt)) # 20 days
 
     numrefs>=1 || throw(ArgumentError("numrefs should be larger or equal than 1"))
 
@@ -121,7 +122,7 @@ options = """
           main_galewsky(parts,np,numrefs,dt,τ,
               write_solution,write_solution_freq,title,
               k,degree,
-              verbose,mumps_relaxation)
+              verbose,mumps_relaxation,nstep)
         end
     end
   end
@@ -130,9 +131,7 @@ options = """
 
   function galewsky(parts,numrefs,dt,τ,
                     write_solution,write_solution_freq,title,order,degree,
-                    verbose,mumps_relaxation,mysnessetup,set_ksp_mm)
-
-      nstep  = Int(24*60^2*20/dt) # 20 days
+                    verbose,mumps_relaxation,mysnessetup,set_ksp_mm,nstep)
       T      = dt*nstep
       θ      = 0.5
       model  = CubedSphereDiscreteModel(parts, numrefs; radius=rₑ)
