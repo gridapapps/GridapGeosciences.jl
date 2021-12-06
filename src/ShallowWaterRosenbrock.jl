@@ -14,7 +14,7 @@ end
 
 function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R_up,S,h,u,f,n,τ)
   qh = get_trial_fe_basis(R_up)
-  qh_upwinded=upwind_trial_functions(qh,u,τ)
+  get_fe_basis(R_up) = upwind_trial_functions(qh,u,τ)
 
   a(r,s) = ∫(s*h*r)dΩ
   c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
@@ -96,7 +96,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
                         dump_diagnostics_on_screen=true,
                         write_solution=false,
                         write_solution_freq=N/10,
-                        output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
+                        output_dir="nswe_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
 
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
@@ -164,7 +164,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
   H1hchol_2  = lu(H1h_2)
 
   function run_simulation(pvd=nothing)
-    diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
+    diagnostics_file = joinpath(output_dir,"nswe_rosenbrock_diagnostics.csv")
 
     ϕ      = clone_fe_function(Q,hn)
     F      = clone_fe_function(V,un)
@@ -231,7 +231,7 @@ function shallow_water_rosenbrock_time_stepper(model, order, degree,
     mkdir(output_dir)
   end
   if (write_solution)
-    pvdfile=joinpath(output_dir,"nswe_eq_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
+    pvdfile=joinpath(output_dir,"nswe_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
     paraview_collection(run_simulation,pvdfile)
   else
     run_simulation()
