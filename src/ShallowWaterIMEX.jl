@@ -83,7 +83,8 @@ function shallow_water_imex_time_step!(
      h₂, u₂, uₚ, ϕ, F, q₁, q₂,                               # in/out args
      H1h, H1hchol, h_wrk, u_wrk, A, B, Bchol,                # more in/out args
      model, dΩ, dω, U, V, P, Q, R, S, f, g, h₁, u₁, u₀,         # in args
-     RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, leap_frog)   # more in args
+     RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, leap_frog,
+     assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))   # more in args
 
   # energetically balanced implicit-explicit second order shallow water solver
   # reference: eqns (31-33) of
@@ -103,7 +104,7 @@ function shallow_water_imex_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
   # 1.4: solve for the provisional velocity
   compute_velocity!(uₚ,dΩ,dω,V,RTMMchol,u₀,q₁-τ*u₁⋅∇(q₁),F,ϕ,n,dt1,dt1)
 
@@ -128,7 +129,7 @@ function shallow_water_imex_time_step!(
   # 3.1: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + h₂),g)
   # 3.2: the potential vorticity
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,uₚ,f,n)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,uₚ,f,n,assem)
   # 3.3: solve for the final velocity
   compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),F,ϕ,n,0.5*dt,dt)
 end

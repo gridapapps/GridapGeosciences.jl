@@ -130,7 +130,11 @@ function shallow_water_theta_method_full_newton_time_stepper(
        assem = SparseMatrixAssembler(matrix_type,Vector{Float64},X,Y)
        op=FEOperator(residual,jacobian,X,Y,assem)
        solver=FESolver(nls)
-       solve!(ΔuΔhqF,solver,op)
+       if (am_i_root)
+          @time solve!(ΔuΔhqF,solver,op)
+       else
+          solve!(ΔuΔhqF,solver,op)
+       end
 
        # Update current solution
        unv .= unv .+ get_free_dof_values(Δu)

@@ -26,7 +26,8 @@ end
 function thermal_shallow_water_explicit_time_step!(
      h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,  # in/out args
      model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ,            # in args
-     RTMMchol, L2MMchol, dt, τ, leap_frog)                            # more in args
+     RTMMchol, L2MMchol, dt, τ, leap_frog,
+     assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))                            # more in args
 
   # energetically balanced explicit second order thermal shallow water solver.
   # extends the explicit shallow water solver with the an additional buoyancy
@@ -45,7 +46,7 @@ function thermal_shallow_water_explicit_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,E₁,0.5)
   # 1.3: materially advected quantities (potential vorticity and buoyancy)
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
   compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
@@ -61,7 +62,7 @@ function thermal_shallow_water_explicit_time_step!(
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(E₁ + Eₚ),0.5)
   # 2.3: materially advected quantities (potential vorticity and buoyancy)
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n,assem)
   compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
