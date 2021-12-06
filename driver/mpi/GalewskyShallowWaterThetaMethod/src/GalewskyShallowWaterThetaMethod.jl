@@ -45,7 +45,7 @@ options = """
           """
 
 
-  function main_galewsky(parts,
+  function main_galewsky(parts,ir,
                         np,numrefs,dt,τ,
                         write_solution,write_solution_freq,title,order,degree,
                         verbose,mumps_relaxation,nstep)
@@ -95,6 +95,7 @@ options = """
       out["dt"] = dt
       out["τ"] = τ
       out["degree"] = degree
+      out["ir"] = ir
       save("$title.bson",out)
     end
   end
@@ -103,6 +104,7 @@ options = """
 
   function main(;
     np::Integer,
+    nr::Integer,
     numrefs::Integer,
     dt::Float64,
     τ::Float64=dt/4,
@@ -118,12 +120,16 @@ options = """
     numrefs>=1 || throw(ArgumentError("numrefs should be larger or equal than 1"))
 
     prun(mpi,np) do parts
+      for ir=1:nr
         GridapPETSc.with(args=split(options)) do
-          main_galewsky(parts,np,numrefs,dt,τ,
-              write_solution,write_solution_freq,title,
+          str_r   = lpad(ir,ceil(Int,log10(nr)),'0')
+          title_r = "$(title)_ir$(str_r)"
+          main_galewsky(parts,ir,np,numrefs,dt,τ,
+              write_solution,write_solution_freq,title_r,
               k,degree,
               verbose,mumps_relaxation,nstep)
         end
+      end
     end
   end
 

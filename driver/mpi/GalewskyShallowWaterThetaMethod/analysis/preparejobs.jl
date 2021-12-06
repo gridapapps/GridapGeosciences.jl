@@ -5,6 +5,7 @@ jobname(args...) = replace(savename(args...;connector="_"),"="=>"_")
 driverdir(args...) = normpath(projectdir("..",args...))
 
 function jobdict(params)
+  nr = params[:nr]
   np = params[:np]
   dt = params[:dt]
   write_solution = params[:write_solution]
@@ -27,6 +28,7 @@ function jobdict(params)
   "ws" => write_solution,
   "write_solution_freq" => write_solution_freq,
   "k" => k,
+  "nr" => nr,
   "degree" => degree,
   "mumps_relaxation" => mumps_relaxation,
   "nstep" => nstep,
@@ -45,11 +47,12 @@ allparams = Dict(
  :numrefs => 5,
  :write_solution => false,
  :write_solution_freq => 4,
- :dt => 600.0,
+ :dt => 480,
  :k => 1,
  :degree => 4,
  :mumps_relaxation => 50000,
  :nstep => 10,
+ :nr => 5,
  )
 
 template = read(projectdir("jobtemplate.sh"),String)
