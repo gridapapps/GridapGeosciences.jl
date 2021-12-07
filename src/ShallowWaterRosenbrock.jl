@@ -12,15 +12,29 @@ function assemble_residuals_downtrial!(duh, dΩ, dω, Y, q₁, q₂, ϕ, F, n)
   Gridap.FESpaces.assemble_vector!(bₕᵤ, duh, Y)
 end
 
-function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R_up,S,h,u,f,n,τ)
-  qh = get_trial_fe_basis(R_up)
-  get_fe_basis(R_up) = upwind_trial_functions(qh,u,τ)
+function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R,R_up,S,h,u,f,n,τ)
+  rh = get_trial_fe_basis(R)
+  rh_up = upwind_trial_functions(rh,u,τ)
+  sh = get_fe_basis(S)
 
   a(r,s) = ∫(s*h*r)dΩ
   c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
-  Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), R_up, S)
+
+  mat_contrib = a(rh_up,sh)
+
+  #Gridap.FESpaces.assemble_matrix_and_vector!(a, c, H1h, get_free_dof_values(q), R_up, S)
+
+  assem = SparseMatrixAssembler(R_up,S)
+  data = Gridap.FESpaces.collect_cell_matrix(R_up,S,mat_contrib)
+  Gridap.FESpaces.assemble_matrix!(H1h,assem,data)
+  Gridap.FESpaces.assemble_vector!(c,get_free_dof_values(q),S)
+
   lu!(H1hchol, H1h)
   ldiv!(H1hchol, get_free_dof_values(q))
+
+  #q_interp = lazy_map(Broadcasting(*),rh_up,Gridap.CellData.get_data(q))
+  q_interp = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(*),rh_up,Gridap.CellData.get_data(q))
+  q_interp
 end
 
 function shallow_water_rosenbrock_time_step!(
@@ -48,9 +62,9 @@ function shallow_water_rosenbrock_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
-  compute_potential_vorticity_downtrial!(q₁,H1h_1,H1hchol_1,dΩ,R1_up,S,h₁,u₁,f,n,τ)
+  q₁_interp = compute_potential_vorticity_downtrial!(q₁,H1h_1,H1hchol_1,dΩ,R,R1_up,S,h₁,u₁,f,n,τ)
   # 1.4: assemble the momentum and continuity equation residuals
-  assemble_residuals_downtrial!(duh₁, dΩ, dω, Y, q₁, q₁, ϕ, F, n)
+  assemble_residuals_downtrial!(duh₁, dΩ, dω, Y, q₁_interp, q₁_interp, ϕ, F, n)
 
   # Solve for du₁, dh₁ over a MultiFieldFESpace
   ldiv!(Blfchol, duh₁)
@@ -64,9 +78,9 @@ function shallow_water_rosenbrock_time_step!(
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
   # 2.3: the potential vorticity
-  compute_potential_vorticity_downtrial!(q₂,H1h_2,H1hchol_2,dΩ,R2_up,S,h₂,u₂,f,n,τ)
+  q₂_interp = compute_potential_vorticity_downtrial!(q₂,H1h_2,H1hchol_2,dΩ,R,R2_up,S,h₂,u₂,f,n,τ)
   # 2.4: assemble the momentum and continuity equation residuals
-  assemble_residuals_downtrial!(duh₂, dΩ, dω, Y, q₁, q₂, ϕ, F, n)
+  assemble_residuals_downtrial!(duh₂, dΩ, dω, Y, q₁_interp, q₂_interp, ϕ, F, n)
 
   # subtract A*[du₁,dh₁] from [du₂,dh₂] vector
   mul!(y_wrk, Amat, duh₁)
