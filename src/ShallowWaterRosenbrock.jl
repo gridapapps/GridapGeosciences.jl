@@ -33,8 +33,10 @@ function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R,R_up,S,h,u,f
   ldiv!(H1hchol, get_free_dof_values(q))
 
   #q_interp = lazy_map(Broadcasting(*),rh_up,Gridap.CellData.get_data(q))
-  q_interp = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(*),rh_up,Gridap.CellData.get_data(q))
-  q_interp
+  #q_interp = lazy_map(Gridap.Fields.BroadcastingFieldOpMap(*),rh_up,Gridap.CellData.get_data(q))
+  q_data = Gridap.CellData.get_data(q)
+  r_data = Gridap.CellData.get_data(rh_up)
+  lazy_map(linear_combination,q_data.args[1],r_data.args)
 end
 
 function shallow_water_rosenbrock_time_step!(
