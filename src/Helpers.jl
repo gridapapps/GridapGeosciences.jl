@@ -67,7 +67,6 @@ function upwind_trial_functions(
   qh_data=Gridap.CellData.get_data(qh)
   rt_trial_ref=_undo_piola_map(uh_data.args[2])
   uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
-  uh_ref = GenericCellField(uh_data_ref,get_triangulation(uh),ReferenceDomain())
 
   cfτ=Fill(ConstantField(τ),length(uh_data))                       # tau
   m=Broadcasting(Operation(*))
@@ -87,7 +86,6 @@ function upwind_test_functions(
   qh_data=Gridap.CellData.get_data(qh)
   rt_trial_ref=_undo_piola_map(uh_data.args[2])
   uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
-  uh_ref = GenericCellField(uh_data_ref,get_triangulation(uh),ReferenceDomain())
 
   cfτ=Fill(ConstantField(τ),length(uh_data))                       # tau
   m=Broadcasting(Operation(*))
