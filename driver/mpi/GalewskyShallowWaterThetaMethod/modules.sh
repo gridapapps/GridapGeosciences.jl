@@ -6,7 +6,7 @@ module load python3-as-python
 export HCOLL_ML_DISABLE_SCATTERV=1; export HCOLL_ML_DISABLE_BCAST=1
 MKLDIRPATH=$MKLROOT/lib/intel64_lin/
 #export LD_PRELOAD=$MKLDIRPATH/libmkl_avx2.so:$MKLDIRPATH/libmkl_def.so:$MKLDIRPATH/libmkl_sequential.so:$MKLDIRPATH/libmkl_core.so
-export PATH=~/julia-1.6.4/bin:$PATH
+export PATH=~/julia-1.7.0/bin:$PATH
 alias cd_scratch="cd /scratch/bt62/am6349/"
 alias interactive="qsub -I -X -lwalltime=1:00:00,mem=180GB,ncpus=48,jobfs=1GB"
 export GRIDAP_PARDISO_LIBGOMP_DIR=/half-root/lib/gcc/x86_64-redhat-linux/8/
