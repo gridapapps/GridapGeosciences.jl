@@ -14,5 +14,5 @@ export P4EST_ROOT_DIR=/home/565/am6349/p4est-install/
 export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 export JULIA_MPI_BINARY="system"
 export JULIA_MPI_PATH=/apps/openmpi/4.1.0
-export JULIA_PETSC_LIBRARY="/home/565/am6349/petsc-install/lib/libpetsc"
+export JULIA_PETSC_LIBRARY="/scratch/bt62/am6349/petsc-install/lib/libpetsc"
 export PATH=$PATH:/home/565/am6349/.julia/bin

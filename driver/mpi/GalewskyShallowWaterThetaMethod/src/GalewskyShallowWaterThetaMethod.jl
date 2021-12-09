@@ -63,7 +63,7 @@ options = """
       @check_error_code GridapPETSc.PETSC.PCFactorSetMatSolverType(pc[],GridapPETSc.PETSC.MATSOLVERMUMPS)
       @check_error_code GridapPETSc.PETSC.PCFactorSetUpMatSolverType(pc[])
       @check_error_code GridapPETSc.PETSC.PCFactorGetMatrix(pc[],mumpsmat)
-      @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  4, 1)
+      @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  4, 4)
       # percentage increase in the estimated working space
       @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[],  14, mumps_relaxation)
       @check_error_code GridapPETSc.PETSC.MatMumpsSetIcntl(mumpsmat[], 28, 2)
