@@ -9,14 +9,17 @@ module LaplaceBeltramiCubedSphereTestsMPI
   include("../ConvergenceAnalysisTools.jl")
   include("../LaplaceBeltramiCubedSphereTests.jl")
 
-  function petsc_mumps_options()
+  function petsc_options()
     """
-      -ksp_type preonly -ksp_error_if_not_converged true
-      -pc_type cholesky -pc_factor_mat_solver_type mumps
+    -ksp_type cg -ksp_rtol 1.0e-06 -ksp_atol 0.0
+    -ksp_monitor -pc_type gamg -pc_gamg_type agg
+    -mg_levels_esteig_ksp_type cg -mg_coarse_sub_pc_type cholesky
+    -mg_coarse_sub_pc_factor_mat_ordering_type nd -pc_gamg_process_eq_limit 50
+    -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
     """
   end
   function main(parts)
-    GridapPETSc.with(args=split(petsc_mumps_options())) do
+    GridapPETSc.with(args=split(petsc_options())) do
        num_refs=[2,3,4,5]
        hs=[2.0/2^n for n in num_refs]
        model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
