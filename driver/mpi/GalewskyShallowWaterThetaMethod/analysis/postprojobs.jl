@@ -23,9 +23,9 @@ dfmax = DataFrame(vals,keys(cols))
 sort!(dfmax,[:np,:ir])
 
 rows = eachrow(copy(dfmax))
-dict = Dict{Tuple{Int,Int,String,String}}{Any}()
+dict = Dict{Tuple{Int,Int}}{Any}()
 for row in rows
-  key = (row.nc,row.np,row.mesh,row.solver)
+  key = (row.ngdofs,row.np)
   if haskey(dict,key)
     prevrow = dict[key]
     for (k,v) in pairs(row)
@@ -39,9 +39,10 @@ for row in rows
 end
 
 df = DataFrame(collect(values(dict)))
-sort!(df,[order(:mesh,rev=false),order(:ls,rev=false),order(:np,rev=false)])
+sort!(df,[order(:ngdofs,rev=false),order(:np,rev=false)])
 
 mkpath(plotsdir())
 fn = plotsdir("summary.csv")
 CSV.write(fn,df)
+println(df)
 df

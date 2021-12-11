@@ -19,7 +19,7 @@ function jobdict(params)
   "q" => "normal",
   "o" => datadir(jobname(params,"o.txt")),
   "e" => datadir(jobname(params,"e.txt")),
-  "walltime" => "00:30:00",
+  "walltime" => "04:00:00",
   "ncpus" => nnodes*48,
   "tpn" => tpn,
   "mem" => "$(nnodes*48*4)gb",

@@ -44,6 +44,28 @@ options = """
           -mm_pc_type jacobi
           """
 
+  options_pcasm = """
+          -snes_type newtonls
+          -snes_linesearch_type basic
+          -snes_linesearch_damping 1.0
+          -snes_rtol 1.0e-6
+          -snes_atol 1.0e-9
+          -snes_monitor
+          -snes_converged_reason
+          -ksp_type gmres
+          -ksp_rtol 1.0e-4
+          -ksp_rtol 1.0e-14
+          -ksp_gmres_restart 30
+          -ksp_monitor
+          -pc_type asm
+          -sub_ksp_type preonly
+          -sub_pc_type lu
+          -mm_ksp_type cg
+          -mm_ksp_monitor
+          -mm_ksp_rtol 1.0e-4
+          -mm_pc_type jacobi
+          """
+
 
   function main_galewsky(parts,ir,
                         np,numrefs,dt,τ,

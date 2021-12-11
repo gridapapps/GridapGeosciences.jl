@@ -131,7 +131,7 @@ function shallow_water_theta_method_full_newton_time_stepper(
        op=FEOperator(residual,jacobian,X,Y,assem)
        solver=FESolver(nls)
 
-       @time solve!(ΔuΔhqF,solver,op)
+       solve!(ΔuΔhqF,solver,op)
 
        # Update current solution
        unv .= unv .+ get_free_dof_values(Δu)
