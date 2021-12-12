@@ -62,37 +62,53 @@ end
 function upwind_trial_functions(
   qh::SingleFieldFEBasis{<:TrialBasis},
   uh::SingleFieldFEFunction,
-  τ::Real)
+  τ::Real,model)
   uh_data=Gridap.CellData.get_data(uh)
   qh_data=Gridap.CellData.get_data(qh)
   rt_trial_ref=_undo_piola_map(uh_data.args[2])
   uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
 
-  cfτ=Fill(ConstantField(τ),length(uh_data))                       # tau
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  cfτ=Fill(ConstantField(τ),length(uh_data))                                 # τ
   m=Broadcasting(Operation(*))
-  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                  # tau*u
-  xi = Fill(GenericField(identity),length(uh_data))                # xi
+  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                            # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
   m=Broadcasting(Operation(-))
-  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref)  # xi - tau*u
-  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)      # qh ∘ (xi - tau*u)
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
   GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
 end
 
 function upwind_test_functions(
   qh::SingleFieldFEBasis,
   uh::SingleFieldFEFunction,
-  τ::Real)
+  τ::Real,model)
   uh_data=Gridap.CellData.get_data(uh)
   qh_data=Gridap.CellData.get_data(qh)
   rt_trial_ref=_undo_piola_map(uh_data.args[2])
   uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
 
-  cfτ=Fill(ConstantField(τ),length(uh_data))                       # tau
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  cfτ=Fill(ConstantField(τ),length(uh_data))                                 # τ
   m=Broadcasting(Operation(*))
-  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                  # tau*u
-  xi = Fill(GenericField(identity),length(uh_data))                # xi
+  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                            # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
   m=Broadcasting(Operation(-))
-  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref)  # xi - tau*u
-  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)      # qh ∘ (xi - tau*u)
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
   GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
 end
