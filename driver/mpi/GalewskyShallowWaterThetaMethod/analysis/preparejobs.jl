@@ -46,18 +46,18 @@ function jobdict(params)
 end
 
 allparams = Dict(
- :nnodes => [1],
- :numrefs => 5,
+ :nnodes => [32,40,56,64,80,88],
+ :numrefs => 10,
  :write_solution => false,
  :write_solution_freq => 4,
  :dt => 480.0,
  :k => 1,
  :degree => 4,
- :mrelax => 50000,
+ :mrelax => 5000,
  :nstep => 10,
  :nr => 5,
- :nthreads => 24,
- :tpn=>2,
+ :nthreads => 1,
+ :tpn=>48,
  )
 
 template = read(projectdir("jobtemplate.sh"),String)

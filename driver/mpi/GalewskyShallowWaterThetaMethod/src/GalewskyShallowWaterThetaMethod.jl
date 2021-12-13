@@ -54,8 +54,8 @@ options = """
           -snes_converged_reason
           -ksp_type gmres
           -ksp_rtol 1.0e-4
-          -ksp_rtol 1.0e-14
-          -ksp_gmres_restart 30
+          -ksp_atol 1.0e-14
+          -ksp_gmres_restart 5000
           -ksp_monitor
           -pc_type asm
           -sub_ksp_type preonly
@@ -65,6 +65,21 @@ options = """
           -mm_ksp_rtol 1.0e-4
           -mm_pc_type jacobi
           """
+
+    options_fas =
+      """
+      -snes_view
+      -snes_monitor
+      -snes_converged_reason
+      -snes_type ngmres
+      -npc_snes_type fas
+      -npc_snes_fas_levels 3
+      -npc_snes_max_it 1
+      -npc_fas_levels_snes_type gs
+      -npc_fas_levels_snes_gs_sweeps 3
+      -npc_snes_fas_smoothup 6
+      -npc_snes_fas_smoothdown 6
+     """
 
 
   function main_galewsky(parts,ir,
@@ -143,7 +158,7 @@ options = """
 
     prun(mpi,np) do parts
       for ir=1:nr
-        GridapPETSc.with(args=split(options)) do
+        GridapPETSc.with(args=split(options_pcasm)) do
           str_r   = lpad(ir,ceil(Int,log10(nr)),'0')
           title_r = "$(title)_ir$(str_r)"
           main_galewsky(parts,ir,np,numrefs,dt,τ,
@@ -164,7 +179,7 @@ options = """
       θ      = 0.5
       model  = CubedSphereDiscreteModel(parts, numrefs; radius=rₑ)
 
-      nls    = PETScNonlinearSolver(mysnessetup)
+      nls    = PETScNonlinearSolver()
       mmls   = PETScLinearSolver(set_ksp_mm)
 
       function ts()
@@ -181,7 +196,7 @@ options = """
       end
 
       if (PArrays.get_part_id(parts)==1)
-        @time _,_,ndofs = ts()
+        _,_,ndofs = ts()
       else
         _,_,ndofs = ts()
       end

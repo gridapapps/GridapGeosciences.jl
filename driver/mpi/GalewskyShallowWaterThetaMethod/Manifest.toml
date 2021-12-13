@@ -349,11 +349,9 @@ version = "0.17.7"
 
 [[deps.GridapDistributed]]
 deps = ["FillArrays", "Gridap", "LinearAlgebra", "MPI", "PartitionedArrays", "SparseArrays", "SparseMatricesCSR", "WriteVTK"]
-git-tree-sha1 = "2d0b0fb1a8aa486c74b959ffd4763f7b5d4ec6e9"
-repo-rev = "bug_fix_global_dof_numbering"
-repo-url = "https://github.com/gridap/GridapDistributed.jl/"
+git-tree-sha1 = "426dcfc4c4c33189bd69b3c6e51965a9dd279e9d"
 uuid = "f9701e48-63b3-45aa-9a63-9bc6c271f355"
-version = "0.2.3"
+version = "0.2.4"
 
 [[deps.GridapGeosciences]]
 deps = ["CSV", "DataFrames", "FillArrays", "Gridap", "GridapDistributed", "GridapP4est", "GridapPETSc", "GridapPardiso", "LineSearches", "LinearAlgebra", "MPI", "P4est_wrapper", "PackageCompiler", "PartitionedArrays", "Plots", "Printf", "SparseArrays", "SparseMatricesCSR", "Test", "WriteVTK"]

@@ -35,7 +35,7 @@ do
 done
 
 $HOME/.julia/bin/mpiexecjl --project={{{projectdir}}} --report-bindings -x OMP_NUM_THREADS  -x OMP_PROC_BIND -x OMP_PLACES -x OMP_DISPLAY_ENV --hostfile {{{title}}}.machinefile\
- -n {{n}} --map-by ppr:1:socket:PE={{nthreads}}\
-    julia -J {{{sysimage}}} -O3 --check-bounds=no -e\
+ -n {{n}} \
+    julia -O3 --check-bounds=no -e\
       'using GalewskyShallowWaterThetaMethod; GalewskyShallowWaterThetaMethod.main(np={{n}},numrefs={{numrefs}},nr={{nr}},dt={{dt}},write_solution=false,write_solution_freq={{write_solution_freq}},title="{{{title}}}",k={{k}},degree={{degree}},mumps_relaxation={{mrelax}},nstep={{nstep}})' > {{{title}}}.stdout
 
