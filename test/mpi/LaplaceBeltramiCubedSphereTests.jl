@@ -12,12 +12,11 @@ module LaplaceBeltramiCubedSphereTestsMPI
   function petsc_options()
     """
     -ksp_type cg -ksp_rtol 1.0e-06 -ksp_atol 0.0
-    -ksp_monitor -pc_type gamg -pc_gamg_type agg
-    -mg_levels_esteig_ksp_type cg -mg_coarse_sub_pc_type cholesky
-    -mg_coarse_sub_pc_factor_mat_ordering_type nd -pc_gamg_process_eq_limit 50
-    -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
+    -ksp_monitor -pc_type asm -sub_ksp_type preonly
+    -sub_pc_type lu
     """
   end
+
   function main(parts)
     GridapPETSc.with(args=split(petsc_options())) do
        num_refs=[2,3,4,5]
