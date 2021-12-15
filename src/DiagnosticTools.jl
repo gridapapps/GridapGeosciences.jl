@@ -72,30 +72,31 @@ function get_scalar_field_from_csv(csv_file_path, fieldname)
 end
 
 """
-  Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power)
+  Full diagnostics for the shallow water equations (mass, vorticity, kinetic energy, potential energy, power, potential enstrophy)
 """
 
 function compute_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
-					 h, u, w, ϕ, F, h2, c)
+					 h, u, w, q, ϕ, F, h2, c)
   mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
   vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
   kin_i  = Eₖ(u,h,dΩ)
   pot_i  = Eₚ(h,h2,c,dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
+  enst_i = sum(∫(q*q*h)dΩ)
 
-  mass_i, vort_i, kin_i, pot_i, pow_i
+  mass_i, vort_i, kin_i, pot_i, pow_i, enst_i
 end
 
 function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
-                                         h, u, w, ϕ, F, g, step, dt,
+                                         h, u, w, q, ϕ, F, g, step, dt,
                                          output_file, dump_on_screen)
 
-  mass_i, vort_i, kin_i, pot_i, pow_i = compute_diagnostics_shallow_water!(
+  mass_i, vort_i, kin_i, pot_i, pow_i, enst_i = compute_diagnostics_shallow_water!(
                                           h_tmp, w_tmp,
                                           model, dΩ, dω, S, L2MM, H1MM,
-                                          h, u, w, ϕ, F, h, 0.5*g)
+                                          h, u, w, q, ϕ, F, h, 0.5*g)
 
   append_to_csv(output_file;
                 time       = step*dt/24/60/60,
@@ -103,7 +104,8 @@ function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                 vorticity  = vort_i,
                 kinetic    = kin_i,
                 potential  = pot_i,
-                power      = pow_i)
+                power      = pow_i,
+                pot_enst   = enst_i)
 
   if dump_on_screen
     @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",

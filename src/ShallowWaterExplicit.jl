@@ -36,7 +36,7 @@ function compute_diagnostic_vorticity!(w,dΩ,S,H1MMchol,u,n)
   ldiv!(H1MMchol, get_free_dof_values(w))
 end
 
-function solve_potential_vorticity!(q,H1h,H1hchol,dΩ,R,S_up,q0,qh,F,dt,τ,model)
+function solve_potential_vorticity!(q,H1h,H1hchol,dΩ,R,S,S_up,q0,qh,F,dt,τ,model)
   rh_trial    = get_trial_fe_basis(R)
   sh_test     = get_fe_basis(S)
   sh_test_up  = upwind_test_functions(sh_test,F,τ,model)
@@ -77,7 +77,7 @@ function shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
   #compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
-  solve_potential_vorticity!(qₚ,H1h,H1hchol,dΩ,R,S_up,qₘ,q₁,F,dt1,τ,model)
+  solve_potential_vorticity!(qₚ,H1h,H1hchol,dΩ,R,S,S_up,qₘ,q₁,F,dt1,τ,model)
   # 1.4: solve for the provisional velocity
   #compute_velocity!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁-τ*u₁⋅∇(q₁),F,ϕ,n,dt1,dt1)
   compute_velocity!(uₚ,dΩ,dω,V,RTMMchol,uₘ,q₁,F,ϕ,n,dt1,dt1)
@@ -91,7 +91,7 @@ function shallow_water_explicit_time_step!(
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + hₚ),g)
   # 2.3: the potential vorticity
   #compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
-  solve_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S_up,q₁,0.5*(q₁+qₚ),F,dt,τ,model)
+  solve_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,S_up,q₁,0.5*(q₁+qₚ),F,dt,τ,model)
   # 2.4: solve for the final velocity
   #compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),F,ϕ,n,0.5*dt,dt)
   compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁+qₚ,F,ϕ,n,0.5*dt,dt)
