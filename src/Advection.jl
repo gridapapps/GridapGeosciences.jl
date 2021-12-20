@@ -1,37 +1,37 @@
-function advect!(q,H1h,H1hchol,dΩ,R,S,S_up,q0,qh,u,dt,τ,model)
+function advect!(q,H1MM,H1MMchol,dΩ,R,S_up,q0,qh,u,dt,τ,model)
   rh_trial    = get_trial_fe_basis(R)
-  sh_test     = get_fe_basis(S)
+  sh_test     = get_fe_basis(S_up)
   sh_test_up  = upwind_test_functions(sh_test,u,τ,model)
 
   # step 1
   a1(r,s) = ∫(s*r)dΩ
   c1(s)   = ∫(s*q0 - dt*s*(u⋅∇(q0)))dΩ
 
-  mat_contrib = a1(rh_trial,sh_test_up)
-  vec_contrib = c1(sh_test_up)
+  mat_contrib1 = a1(rh_trial,sh_test_up)
+  vec_contrib1 = c1(sh_test_up)
 
   assem = SparseMatrixAssembler(R,S_up)
-  data  = Gridap.FESpaces.collect_cell_matrix_and_vector(R,S_up,mat_contrib,vec_contrib)
+  data  = Gridap.FESpaces.collect_cell_matrix_and_vector(R,S_up,mat_contrib1,vec_contrib1)
 
-  Gridap.FESpaces.assemble_matrix_and_vector!(H1h,get_free_dof_values(q),assem,data)
+  Gridap.FESpaces.assemble_matrix_and_vector!(H1MM,get_free_dof_values(qh),assem,data)
 
-  lu!(H1hchol, H1h)
-  ldiv!(H1hchol, get_free_dof_values(qh))
+  lu!(H1MMchol, H1MM)
+  ldiv!(H1MMchol, get_free_dof_values(qh))
 
   # step 2
   a2(r,s) = ∫(s*r)dΩ
   c2(s)   = ∫(s*q0 - 0.5*dt*s*(u⋅∇(q0)) - 0.5*dt*s*(u⋅∇(qh)))dΩ
 
-  mat_contrib = a2(rh_trial,sh_test_up)
-  vec_contrib = c2(sh_test_up)
+  mat_contrib2 = a2(rh_trial,sh_test_up)
+  vec_contrib2 = c2(sh_test_up)
 
   assem = SparseMatrixAssembler(R,S_up)
-  data  = Gridap.FESpaces.collect_cell_matrix_and_vector(R,S_up,mat_contrib,vec_contrib)
+  data  = Gridap.FESpaces.collect_cell_matrix_and_vector(R,S_up,mat_contrib2,vec_contrib2)
 
-  Gridap.FESpaces.assemble_matrix_and_vector!(H1h,get_free_dof_values(q),assem,data)
+  Gridap.FESpaces.assemble_matrix_and_vector!(H1MM,get_free_dof_values(q),assem,data)
 
-  lu!(H1hchol, H1h)
-  ldiv!(H1hchol, get_free_dof_values(q))
+  lu!(H1MMchol, H1MM)
+  ldiv!(H1MMchol, get_free_dof_values(q))
 end
 
 function advect_solid_body(model, order, degree,
@@ -56,10 +56,12 @@ function advect_solid_body(model, order, degree,
 
   # assemble the mass matrices
   amm(a,b) = ∫(a⋅b)dΩ
-  H1MM = assemble_matrix(amm, R, S)
-  RTMM = assemble_matrix(amm, U, V)
-  H1MMchol = lu(H1MM)
+  RTMM     = assemble_matrix(amm, U, V)
+  H1MM     = assemble_matrix(amm, R, S)
+  H1MM_up  = assemble_matrix(amm, R, S_up)
   RTMMchol = lu(RTMM)
+  H1MMchol = lu(H1MM)
+  H1MMchol_up = lu(H1MM_up)
 
   # Project the initial conditions onto the trial spaces
   b₂(v)   = ∫(v⋅u₀)dΩ
@@ -87,9 +89,9 @@ function advect_solid_body(model, order, degree,
       qm    = qn
       qn    = q_aux
 
-      advect!(qn,H1h,H1hchol,dΩ,R,S,S_up,qm,qp,un,dt,τ,model)
+      advect!(qn,H1MM_up,H1MMchol_up,dΩ,R,S_up,qm,qp,un,dt,τ,model)
 
-      mul!(q_tmp,L2MM,get_free_dof_values(qn))
+      mul!(q_tmp,H1MM,get_free_dof_values(qn))
       mass_i    = sum(q_tmp)
       mass_sq_i = q_tmp⋅get_free_dof_values(qn)
       append_to_csv(diagnostics_file;
