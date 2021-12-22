@@ -78,8 +78,8 @@ function advect_solid_body(model, order, degree,
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"advection_diagnostics.csv")
 
-    qp     = clone_fe_function(S,f)
-    qm     = clone_fe_function(S,f)
+    qp     = clone_fe_function(S,qn)
+    qm     = clone_fe_function(S,qn)
     get_free_dof_values(qm) .= get_free_dof_values(qn)
 
     initialize_csv(diagnostics_file,"time", "mass", "mass_sq")
@@ -95,10 +95,10 @@ function advect_solid_body(model, order, degree,
       mass_i    = sum(q_tmp)
       mass_sq_i = q_tmp⋅get_free_dof_values(qn)
       append_to_csv(diagnostics_file;
-                time     = step*dt/24/60/60,
+                time     = istep*dt/24/60/60,
                 mass     = mass_i,
 		mass_sq  = mass_sq_i)
-      @printf("%5d %14.9e %14.9e\n", step, mass_i, mass_sq_i)
+      @printf("%5d %14.9e %14.9e\n", istep, mass_i, mass_sq_i)
 
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["qn"=>qn])
