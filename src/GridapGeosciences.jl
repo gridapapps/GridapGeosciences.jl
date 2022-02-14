@@ -17,6 +17,7 @@ module GridapGeosciences
   include("ShallowWaterRosenbrock.jl")
   include("ShallowWaterIMEX.jl")
   include("ThermalShallowWaterExplicit.jl")
+  include("ThermalShallowWaterExplicit_MatAdv.jl")
   include("ShallowWaterThetaMethodFullNewton.jl")
   include("Helpers.jl")
   export rₑ, Ωₑ, g, f
@@ -39,6 +40,7 @@ module GridapGeosciences
   export shallow_water_rosenbrock_time_stepper
   export shallow_water_imex_time_stepper
   export thermal_shallow_water_explicit_time_stepper
+  export thermal_shallow_water_mat_adv_explicit_time_stepper
   export shallow_water_theta_method_full_newton_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
   export clone_fe_function, setup_mixed_spaces, setup_and_factorize_mass_matrices, new_vtk_step
