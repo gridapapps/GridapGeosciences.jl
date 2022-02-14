@@ -26,7 +26,13 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
-GridapDistributed = "0.2.3"
+GridapDistributed = "0.2.4"
+Gridap = "0.17.7"
+GridapP4est = "0.1.2"
+GridapPETSc = "0.4.1"
+PartitionedArrays = "0.2.9"
+MPI = "0.19"
+WriteVTK = "1.14.0"
 SparseMatricesCSR = "0.6.6"
 julia = "1.5"
 
