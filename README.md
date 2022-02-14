@@ -15,7 +15,10 @@ The goal of this repository is to showcase the suitability of the [Gridap](https
 
 * [[click here]](https://github.com/gridapapps/GridapGeosciences.jl/blob/master/src/ShallowWaterThetaMethodFullNewton.jl) Numerical solution of the Nonlinear Rotating Shallow Water Equations on the cubed sphere using a fully implicit theta-method for time integration, full Newton nonlinear solves, and compatible mixed finite elements for spatial discretization.
 
-* [[click here]] Much more to come ...
+* [[click here]](https://github.com/gridapapps/GridapGeosciences.jl/tree/master/test/mpi) MPI-parallelization of all the above using [GridapDistributed.jl](https://github.com/gridap/GridapDistributed.jl) and its satellite packages [GridapPETSc.jl](https://github.com/gridap/GridapPETSc.jl) and [GridapP4est.jl](https://github.com/gridap/GridapP4est.jl).
+
+* [[click here]] More to come ...
+ 
 
 <p align="center">
   <img src="_readme/NSWE_48x48_1_trapezoidal_dt_480_tau_dtdiv2.gif">
