@@ -1,4 +1,4 @@
-module Williamsom2ThetaMethodFullNewtonTests
+module Williamsom2ThetaMethodFullNewtonTestsSeq
 
 using Test
 using Gridap
@@ -28,7 +28,12 @@ for i in 1:2
   T      = dt*nstep
   τ      = dt/2
   model = CubedSphereDiscreteModel(n; radius=rₑ)
-  hf, uf = shallow_water_theta_method_full_newton_time_stepper(model, order, degree,
+  nls=NLSolver(Gridap.Algebra.BackslashSolver();
+               show_trace=true,
+               method=:newton,
+               ftol=1.0e-12,
+               xtol=1.0e-02)
+  hf, uf, _ = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
                                                                h₀, u₀, f₀, topography, g, θ, T, nstep, τ;
                                                                write_solution=false,
                                                                write_solution_freq=5,

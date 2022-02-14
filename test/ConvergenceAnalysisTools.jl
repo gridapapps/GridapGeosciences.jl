@@ -33,26 +33,12 @@ end
      [2] Relative errors.
      [3] Slope of the log(h)-log(err) relative error convergence curve.
 """
-function convergence_study(f,n_values,geo_order,order,degree)
-   hs=Float64[]
+function convergence_study(f,hs,model_args_series,order,degree,fargs...)
    errors=Float64[]
-   for n in n_values
-     model=CubedSphereDiscreteModel(n,geo_order)
-     err=f(model,order,degree)
+   for args in model_args_series
+     model=CubedSphereDiscreteModel(args...)
+     err=f(model,order,degree,fargs...)
      append!(errors,err)
    end
-   hs=[2.0/n for n in n_values]
    return hs,errors,slope(hs,errors)
-end
-
-function convergence_study(f,n_values,order,degree)
-  hs=Float64[]
-  errors=Float64[]
-  for n in n_values
-     model=CubedSphereDiscreteModel(n)
-     err=f(model,order,degree)
-     append!(errors,err)
-  end
-  hs=[2.0/n for n in n_values]
-  return hs,errors,slope(hs,errors)
 end

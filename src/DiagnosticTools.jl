@@ -78,8 +78,14 @@ end
 function compute_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
 					 h, u, w, ϕ, F, h2, c)
-  mass_i = compute_total_mass!(h_tmp, L2MM, get_free_dof_values(h))
-  vort_i = compute_total_mass!(w_tmp, H1MM, get_free_dof_values(w))
+
+  H = similar(get_free_dof_values(h),(axes(L2MM)[2],))
+  copy!(H,get_free_dof_values(h))
+  W = similar(get_free_dof_values(w),(axes(H1MM)[2],))
+  copy!(W,get_free_dof_values(w))
+
+  mass_i = compute_total_mass!(h_tmp, L2MM, H)
+  vort_i = compute_total_mass!(w_tmp, H1MM, W)
   kin_i  = Eₖ(u,h,dΩ)
   pot_i  = Eₚ(h,h2,c,dΩ)
   pow_i  = sum(∫(ϕ*DIV(F))dω)
@@ -90,24 +96,26 @@ end
 function dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                          model, dΩ, dω, S, L2MM, H1MM,
                                          h, u, w, ϕ, F, g, step, dt,
-                                         output_file, dump_on_screen)
+                                         output_file, dump_on_screen,
+                                         am_i_root=true)
 
   mass_i, vort_i, kin_i, pot_i, pow_i = compute_diagnostics_shallow_water!(
                                           h_tmp, w_tmp,
                                           model, dΩ, dω, S, L2MM, H1MM,
                                           h, u, w, ϕ, F, h, 0.5*g)
 
-  append_to_csv(output_file;
-                time       = step*dt/24/60/60,
-                mass       = mass_i,
-                vorticity  = vort_i,
-                kinetic    = kin_i,
-                potential  = pot_i,
-                power      = pow_i)
-
-  if dump_on_screen
-    @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
+  if (am_i_root)
+     append_to_csv(output_file;
+                   time       = step*dt/24/60/60,
+                   mass       = mass_i,
+                   vorticity  = vort_i,
+                   kinetic    = kin_i,
+                   potential  = pot_i,
+                   power      = pow_i)
+    if dump_on_screen
+      @printf("%5d %14.9e %14.9e %14.9e %14.9e %14.9e %14.9e\n",
              step, mass_i, vort_i, kin_i, pot_i, kin_i+pot_i, pow_i)
+    end
   end
 end
 

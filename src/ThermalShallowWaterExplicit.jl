@@ -1,32 +1,33 @@
 function compute_temperature_gradient!(dT,dω,V,RTMMchol,T)
   b(v) = ∫(-1.0*DIV(v)*T)dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(dT), V)
-  ldiv!(RTMMchol, get_free_dof_values(dT))
+  solve!(get_free_dof_values(dT),RTMMchol,get_free_dof_values(dT))
 end
 
 function compute_buoyancy_flux!(eF,dΩ,V,RTMMchol,e,F)
   b(v) = ∫((v⋅F)*e)dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(eF), V)
-  ldiv!(RTMMchol, get_free_dof_values(eF))
+  solve!(get_free_dof_values(eF),RTMMchol,get_free_dof_values(eF))
 end
 
 # assume that H1chol factorization has already been performed
 function compute_buoyancy!(e,dΩ,S,H1chol,E)
   b(s) = ∫(s*E)dΩ
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(e), S)
-  ldiv!(H1chol, get_free_dof_values(e))
+  solve!(get_free_dof_values(e),H1chol,get_free_dof_values(e))
 end
 
 function compute_velocity_tswe!(u1,dΩ,dω,V,RTMMchol,u2,qAPVM,eAPVM,F,ϕ,dT,n,dt1,dt2)
   b(v) = ∫(v⋅u2 - dt1*(qAPVM)*(v⋅⟂(F,n)) - dt1*(eAPVM)*v⋅dT)dΩ + ∫(dt2*DIV(v)*ϕ)dω
   Gridap.FESpaces.assemble_vector!(b, get_free_dof_values(u1), V)
-  ldiv!(RTMMchol, get_free_dof_values(u1))
+  solve!(get_free_dof_values(u1),RTMMchol,get_free_dof_values(u1))
 end
 
 function thermal_shallow_water_explicit_time_step!(
      h₂, u₂, E₂, hₚ, uₚ, Eₚ, ϕ, F, q₁, q₂, e₁, e₂, H1h, H1hchol, dT,  # in/out args
      model, dΩ, dω, V, Q, R, S, f, h₁, u₁, E₁, hₘ, uₘ, Eₘ,            # in args
-     RTMMchol, L2MMchol, dt, τ, leap_frog)                            # more in args
+     RTMMchol, L2MMchol, dt, τ, leap_frog,
+     assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))                            # more in args
 
   # energetically balanced explicit second order thermal shallow water solver.
   # extends the explicit shallow water solver with the an additional buoyancy
@@ -45,7 +46,7 @@ function thermal_shallow_water_explicit_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,E₁,0.5)
   # 1.3: materially advected quantities (potential vorticity and buoyancy)
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
   compute_buoyancy!(e₁,dΩ,S,H1hchol,E₁)
   # 1.4: solve for the provisional velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.5*h₁)
@@ -61,7 +62,7 @@ function thermal_shallow_water_explicit_time_step!(
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(E₁ + Eₚ),0.5)
   # 2.3: materially advected quantities (potential vorticity and buoyancy)
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,hₚ,uₚ,f,n,assem)
   compute_buoyancy!(e₂,dΩ,S,H1hchol,Eₚ)
   # 2.4: solve for the final velocity
   compute_temperature_gradient!(dT,dω,V,RTMMchol,0.25*(h₁+hₚ))
@@ -73,15 +74,17 @@ function thermal_shallow_water_explicit_time_step!(
   compute_depth!(E₂,dΩ,dω,Q,L2MMchol,E₁,dT,dt)
 end
 
-function thermal_shallow_water_explicit_time_stepper(model, order, degree,
-                        h₀, u₀, E₀, f₀,
-                        dt, τ, N;
-                        write_diagnostics=true,
-                        write_diagnostics_freq=1,
-                        dump_diagnostics_on_screen=true,
-                        write_solution=false,
-                        write_solution_freq=N/10,
-                        output_dir="tswe_ncells_$(num_cells(model))_order_$(order)_explicit")
+function thermal_shallow_water_explicit_time_stepper(
+    model, order, degree,
+    h₀, u₀, E₀, f₀,
+    dt, τ, N;
+    mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+    write_diagnostics=true,
+    write_diagnostics_freq=1,
+    dump_diagnostics_on_screen=true,
+    write_solution=false,
+    write_solution_freq=N/10,
+    output_dir="tswe_ncells_$(num_cells(model))_order_$(order)_explicit")
 
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
@@ -92,7 +95,8 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
   R, S, U, V, P, Q = setup_mixed_spaces(model, order)
 
   # assemble the mass matrices
-  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
+    setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q, mass_matrix_solver=mass_matrix_solver)
 
   # Project the initial conditions onto the trial spaces
   hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S,
@@ -101,7 +105,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
   b₄(q)   = ∫(q*E₀)dΩ
   rhs4    = assemble_vector(b₄, Q)
   En      = FEFunction(Q, copy(rhs4))
-  ldiv!(L2MMchol, get_free_dof_values(En))
+  solve!(get_free_dof_values(En), L2MMchol, get_free_dof_values(En))
 
   # work arrays
   h_tmp = copy(get_free_dof_values(hn))
@@ -109,7 +113,7 @@ function thermal_shallow_water_explicit_time_stepper(model, order, degree,
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = lu(H1h)
+  H1hchol  = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"tswe_diagnostics.csv")
