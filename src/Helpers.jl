@@ -23,24 +23,16 @@ function setup_mixed_spaces(model, order)
   R, S, U, V, P, Q
 end
 
-function setup_and_factorize_mass_matrices(dΩ,
-                                           R, S, U, V, P, Q;
-                                           mass_matrix_solver=BackslashSolver())
+function setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
   amm(a,b) = ∫(a⋅b)dΩ
-  H1MM   = assemble_matrix(amm, R, S)
-  RTMM   = assemble_matrix(amm, U, V)
-  L2MM   = assemble_matrix(amm, P, Q)
+  H1MM = assemble_matrix(amm, R, S)
+  RTMM = assemble_matrix(amm, U, V)
+  L2MM = assemble_matrix(amm, P, Q)
+  H1MMchol = lu(H1MM)
+  RTMMchol = lu(RTMM)
+  L2MMchol = lu(L2MM)
 
-  ssH1MM = symbolic_setup(mass_matrix_solver,H1MM)
-  nsH1MM = numerical_setup(ssH1MM,H1MM)
-
-  ssRTMM = symbolic_setup(mass_matrix_solver,RTMM)
-  nsRTMM = numerical_setup(ssRTMM,RTMM)
-
-  ssL2MM = symbolic_setup(mass_matrix_solver,L2MM)
-  nsL2MM = numerical_setup(ssL2MM,L2MM)
-
-  H1MM, RTMM, L2MM, nsH1MM, nsRTMM, nsL2MM
+  H1MM, RTMM, L2MM, H1MMchol, RTMMchol, L2MMchol
 end
 
 function new_vtk_step(Ω,file,_cellfields)
@@ -49,4 +41,159 @@ function new_vtk_step(Ω,file,_cellfields)
             file,
             cellfields=_cellfields,
             nsubcells=n)
+end
+
+import Gridap.FESpaces: TrialBasis, SingleFieldFEBasis, SingleFieldFEFunction, ContraVariantPiolaMap
+import Gridap.Fields: linear_combination, ConstantField, GenericField
+import Gridap.CellData: GenericCellField
+import Gridap.Arrays: LazyArray
+
+function _undo_piola_map(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ       = f.args[1]
+  fsign_flip = f.args[4]
+  fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
+  lazy_map(Broadcasting(Operation(*)),fsign_flip,ϕrgₖ)
+end
+
+"""
+ qh :: Trial functions potential vorticity space
+ u  :: RT space FE Function
+"""
+function upwind_trial_functions(
+  qh::SingleFieldFEBasis{<:TrialBasis},
+  uh::SingleFieldFEFunction,
+  τ::Real,model)
+  uh_data=Gridap.CellData.get_data(uh)
+  qh_data=Gridap.CellData.get_data(qh)
+  rt_trial_ref=_undo_piola_map(uh_data.args[2])
+  uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  cfτ=Fill(ConstantField(τ),length(uh_data))                                 # τ
+  m=Broadcasting(Operation(*))
+  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                            # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
+  m=Broadcasting(Operation(-))
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
+  GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
+end
+
+function upwind_test_functions(
+  qh::SingleFieldFEBasis,
+  uh::SingleFieldFEFunction,
+  τ::Real,model)
+  uh_data=Gridap.CellData.get_data(uh)
+  qh_data=Gridap.CellData.get_data(qh)
+  rt_trial_ref=_undo_piola_map(uh_data.args[2])
+  uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  cfτ=Fill(ConstantField(τ),length(uh_data))                                 # τ
+  m=Broadcasting(Operation(*))
+  cfτ_mul_uh_data_ref=lazy_map(m,cfτ,uh_data_ref)                            # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
+  m=Broadcasting(Operation(-))
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
+  GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
+end
+
+function var_τ(
+  qh::SingleFieldFEBasis{<:TrialBasis},
+  uh::SingleFieldFEFunction,
+  τ::Real, model)
+  qh_data      = Gridap.CellData.get_data(qh)
+  uh_data      = Gridap.CellData.get_data(uh)
+  rt_trial_ref = _undo_piola_map(uh_data.args[2])
+  uh_data_ref  = lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  ξₖ            = get_cell_map(model)
+  Jt            = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  m   = Broadcasting(Operation(*))
+  p   = Broadcasting(Operation(+))
+  d   = Broadcasting(Operation(/))
+  dot = Broadcasting(Operation(⋅))
+  sqt = Broadcasting(Operation(sqrt))
+
+  cfτ                = Fill(ConstantField(τ), length(qh_data))       # τ
+  cf1                = Fill(ConstantField(1.0), length(qh_data))     # 1
+  cf2                = Fill(ConstantField(2.0), length(qh_data))     # 2
+  div_cfτ            = lazy_map(d, cf1, cfτ)                         # 1/τ
+  usq                = lazy_map(dot, uh_data, uh_data)               # u⋅u
+  usq_div_J          = lazy_map(d, usq, sqrt_det_JtxJ)               # u⋅u/sqrt(JᵀJ)
+  sqrt_usq_div_J     = lazy_map(sqt, usq_div_J)                      # |u|/sqrt(J)
+  two_sqrt_usq_div_J = lazy_map(m, cf2, sqrt_usq_div_J)              # 2|u|/sqrt(J)
+  τ_inv              = lazy_map(p, div_cfτ, two_sqrt_usq_div_J)      # 1/τ + 2|u|/sqrt(J)
+
+  #evaluate(d, cf1, τ_inv)                               # (1/τ + 2|u|/sqrt(J))^{-1}
+  lazy_map(d, cf1, τ_inv)                               # (1/τ + 2|u|/sqrt(J))^{-1}
+end
+
+function upwind_trial_functions_var_τ(
+  qh::SingleFieldFEBasis{<:TrialBasis},
+  uh::SingleFieldFEFunction,
+  τh_data, model)
+  uh_data=Gridap.CellData.get_data(uh)
+  qh_data=Gridap.CellData.get_data(qh)
+  rt_trial_ref=_undo_piola_map(uh_data.args[2])
+  uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  m=Broadcasting(Operation(*))
+  cfτ_mul_uh_data_ref=lazy_map(m, τh_data, uh_data_ref)                      # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
+  m=Broadcasting(Operation(-))
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
+  GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
+end
+
+function upwind_test_functions_var_τ(
+  qh::SingleFieldFEBasis,
+  uh::SingleFieldFEFunction,
+  τh_data, model)
+  uh_data=Gridap.CellData.get_data(uh)
+  qh_data=Gridap.CellData.get_data(qh)
+  rt_trial_ref=_undo_piola_map(uh_data.args[2])
+  uh_data_ref=lazy_map(linear_combination,uh_data.args[1],rt_trial_ref)
+
+  ξₖ = get_cell_map(model)
+  Jt = lazy_map(Broadcasting(∇), ξₖ)
+  sqrt_det_JtxJ = lazy_map(Operation(Gridap.TensorValues.meas), Jt)
+
+  m=Broadcasting(Operation(*))
+  cfτ_mul_uh_data_ref=lazy_map(m, τh_data, uh_data_ref)                      # τ*u
+
+  d=Broadcasting(Operation(/))
+  cfτ_mul_uh_data_ref_div_meas=lazy_map(d,cfτ_mul_uh_data_ref,sqrt_det_JtxJ) # τ*u/sqrt(JᵀJ)
+
+  xi = Fill(GenericField(identity),length(uh_data))                          # ξ
+  m=Broadcasting(Operation(-))
+  xi_minus_cfτ_mul_uh_data_ref=lazy_map(m,xi,cfτ_mul_uh_data_ref_div_meas)   # ξ - τ*u/sqrt(JᵀJ)
+  cell_field=lazy_map(Broadcasting(∘),qh_data,xi_minus_cfτ_mul_uh_data_ref)  # qh ∘ (ξ - τ*u/sqrt(JᵀJ))
+  GenericCellField(cell_field,get_triangulation(qh),ReferenceDomain())
 end

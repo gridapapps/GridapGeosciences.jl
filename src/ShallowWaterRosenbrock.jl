@@ -5,23 +5,57 @@ function assemble_residuals!(duh, dΩ, dω, Y, qAPVM, ϕ, F, n)
   Gridap.FESpaces.assemble_vector!(bₕᵤ, duh, Y)
 end
 
+function assemble_residuals_downtrial!(duh, dΩ, dω, Y, q₁, q₂, ϕ, F, n)
+  bᵤ(v) = ∫(-0.5*(q₁ + q₂)*(v⋅⟂(F,n)))dΩ + ∫(DIV(v)*ϕ)dω
+  bₕ(q) = ∫(-q*DIV(F))dω
+  bₕᵤ((v,q)) = bᵤ(v) + bₕ(q)
+  Gridap.FESpaces.assemble_vector!(bₕᵤ, duh, Y)
+end
+
+function compute_potential_vorticity_downtrial!(q,H1h,H1hchol,dΩ,R,R_up,S,h,u,f,n,τ,model)
+  #rh_trial    = get_trial_fe_basis(R)
+  #rh_trial_up = upwind_trial_functions(rh_trial,u,τ,model)
+  #rh_test     = get_fe_basis(R)
+  #rh_test_up  = upwind_test_functions(rh_test,u,τ,model)
+  #sh          = get_fe_basis(S)
+
+  rh_trial    = get_trial_fe_basis(R)
+  τh          = var_τ(rh_trial, u, τ, model)
+  rh_trial_up = upwind_trial_functions_var_τ(rh_trial, u, τh, model)
+  rh_test     = get_fe_basis(R)
+  rh_test_up  = upwind_test_functions_var_τ(rh_test, u, τh, model)
+  sh          = get_fe_basis(S)
+
+  a(r,s) = ∫(s*h*r)dΩ
+  c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
+
+  mat_contrib = a(rh_trial_up,sh)
+
+  assem = SparseMatrixAssembler(R_up,S)
+  data  = Gridap.FESpaces.collect_cell_matrix(R_up,S,mat_contrib)
+  Gridap.FESpaces.assemble_matrix!(H1h,assem,data)
+  Gridap.FESpaces.assemble_vector!(c,get_free_dof_values(q),S)
+
+  lu!(H1hchol, H1h)
+  ldiv!(H1hchol, get_free_dof_values(q))
+
+  q_data = Gridap.CellData.get_data(q)
+  r_data = Gridap.CellData.get_data(rh_test_up)
+  q_up = lazy_map(linear_combination,q_data.args[1],r_data)
+  GenericCellField(q_up,get_triangulation(rh_test),DomainStyle(rh_test))
+end
+
 function shallow_water_rosenbrock_time_step!(
-  y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
-  model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,         # in args
-  RTMMchol, L2MMchol, Amat, Bchol, Blfchol,           # more in args
-  dt, τ, leap_frog,
-  assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))                                   # ...yet more in args
+     y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1h_1, H1h_2, H1hchol, H1hchol_1, H1hchol_2, y_wrk,  # in/out args
+     model, dΩ, dω, Y, V, Q, R, S, R1_up, R2_up, f, g, y₁,             # in args
+     RTMMchol, L2MMchol, Amat, Bchol, dt, τ, y_tmp)      # more in args
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
 
   n = get_normal_vector(Triangulation(model))
-  dt₁ = dt
-  if leap_frog
-    dt₁ = 2.0*dt
-  end
 
-  y₀v, y₁v, y₂v = get_free_dof_values(y₀,y₁,y₂)
+  y₁v, y₂v = get_free_dof_values(y₁,y₂)
 
   # multifield terms
   u₁, h₁ = y₁
@@ -30,36 +64,51 @@ function shallow_water_rosenbrock_time_step!(
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
+      # 1.3: the potential vorticity
+      #compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
+      # 1.4: assemble the momentum and continuity equation residuals
+      #assemble_residuals!(duh₁, dΩ, dω, Y, q₁ - τ*u₁⋅∇(q₁), ϕ, F, n)
   # 1.3: the potential vorticity
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
+  q₁_up = compute_potential_vorticity_downtrial!(q₁,H1h_1,H1hchol_1,dΩ,R,R1_up,S,h₁,u₁,f,n,τ,model)
   # 1.4: assemble the momentum and continuity equation residuals
-  assemble_residuals!(duh₁, dΩ, dω, Y, q₁ - τ*u₁⋅∇(q₁), ϕ, F, n)
+  assemble_residuals_downtrial!(duh₁, dΩ, dω, Y, q₁_up, q₁_up, ϕ, F, n)
 
   # Solve for du₁, dh₁ over a MultiFieldFESpace
-  solve!(duh₁, Blfchol, duh₁)
+  ldiv!(Bchol, duh₁)
 
   # update
-  y₂v .=  y₀v .+ dt₁ .* duh₁
+  y₂v .=  y₁v .+ dt .* duh₁
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
   # 2.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
+      # 2.3: the potential vorticity
+      #compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n)
+      # 2.4: assemble the momentum and continuity equation residuals
+      #assemble_residuals!(duh₂, dΩ, dω, Y, 0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂)) - τ*(q₂ - q₁)/dt, ϕ, F, n)
   # 2.3: the potential vorticity
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n,assem)
+  q₂_up = compute_potential_vorticity_downtrial!(q₂,H1h_2,H1hchol_2,dΩ,R,R2_up,S,h₂,u₂,f,n,τ,model)
   # 2.4: assemble the momentum and continuity equation residuals
-  assemble_residuals!(duh₂, dΩ, dω, Y, 0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂)), ϕ, F, n)
+  assemble_residuals_downtrial!(duh₂, dΩ, dω, Y, q₁_up, q₂_up, ϕ, F, n)
 
   # subtract A*[du₁,dh₁] from [du₂,dh₂] vector
   mul!(y_wrk, Amat, duh₁)
   duh₂ .= duh₂ .- y_wrk
 
   # solve for du₂, dh₂
-  solve!(duh₂, Bchol, duh₂)
+  ldiv!(Bchol, duh₂)
 
   # update yⁿ⁺¹
   y₂v .= y₁v .+ dt .* duh₂
+
+  # print the residual error to stdout
+  y_tmp .= duh₂ .- duh₁
+  norm_dy = dt*sqrt(dot(y_tmp,y_tmp))
+  norm_y = sqrt(dot(y₂v,y₂v))
+  norm = norm_dy/norm_y
+  @printf("residual: %14.9e\t%14.9e\t%14.9e\n", norm_dy, norm_y, norm)
 end
 
 function compute_mean_depth!(wrk, L2MM, h)
@@ -71,19 +120,15 @@ function compute_mean_depth!(wrk, L2MM, h)
   h_avg
 end
 
-function shallow_water_rosenbrock_time_stepper(
-  model, order, degree,
-  h₀, u₀, f₀, g, H₀,
-  λ, dt, τ, N;
-  mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  leap_frog=false,
-  write_diagnostics=true,
-  write_diagnostics_freq=1,
-  dump_diagnostics_on_screen=true,
-  write_solution=false,
-  write_solution_freq=N/10,
-  output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
+function shallow_water_rosenbrock_time_stepper(model, order, degree,
+                        h₀, u₀, f₀, g, H₀,
+                        λ, dt, τ, N;
+                        write_diagnostics=true,
+                        write_diagnostics_freq=1,
+                        dump_diagnostics_on_screen=true,
+                        write_solution=false,
+                        write_solution_freq=N/10,
+                        output_dir="nswe_nc_$(num_cells(model))_ord_$(order)")
 
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
@@ -97,9 +142,7 @@ function shallow_water_rosenbrock_time_stepper(
   X = MultiFieldFESpace([U, P])
 
   # assemble the mass matrices (RTMM mass matrix not needed)
-  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
-    setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
-                                      mass_matrix_solver=mass_matrix_solver)
+  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -107,7 +150,7 @@ function shallow_water_rosenbrock_time_stepper(
   b₃(s)   = ∫(s*f₀)*dΩ
   rhs1    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs1))
-  solve!(get_free_dof_values(f),H1MMchol,get_free_dof_values(f))
+  ldiv!(H1MMchol, get_free_dof_values(f))
 
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(Ω)
@@ -117,21 +160,13 @@ function shallow_water_rosenbrock_time_stepper(
   A = assemble_matrix(Amat, X,Y)
   M = assemble_matrix(Mmat, X,Y)
   B = M - A
-
-  Bchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
-  Mchol = numerical_setup(symbolic_setup(mass_matrix_solver,M),M)
-  # leap frog matrices, using 2×dt
-  lf = 1.0
-  if leap_frog
-    lf = 2.0
-  end
-  Blf = M - lf*A
-  Blfchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,Blf),Blf)
+  Bchol = lu(B)
+  Mchol = lu(M)
 
   # multifield initial condtions
   b₄((v,q)) = b₁(q) + b₂(v)
   rhs2  = assemble_vector(b₄, Y)
-  solve!(rhs2, Mchol, rhs2)
+  ldiv!(Mchol, rhs2)
   yn  = FEFunction(Y, rhs2)
 
   un, hn = yn
@@ -142,13 +177,21 @@ function shallow_water_rosenbrock_time_stepper(
   h_tmp = copy(hnv)
   w_tmp = copy(fv)
 
+  # upwinded trial function spaces
+  R1_up = TrialFESpace(S)
+  R2_up = TrialFESpace(S)
+
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
+  H1hchol  = lu(H1h)
+  H1h_1      = assemble_matrix(bmm, R1_up, S)
+  H1hchol_1  = lu(H1h_1)
+  H1h_2      = assemble_matrix(bmm, R2_up, S)
+  H1hchol_2  = lu(H1h_2)
 
   function run_simulation(pvd=nothing)
-    diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
+    diagnostics_file = joinpath(output_dir,"nswe_diag.csv")
 
     ϕ      = clone_fe_function(Q,hn)
     F      = clone_fe_function(V,un)
@@ -158,38 +201,23 @@ function shallow_water_rosenbrock_time_stepper(
 
     # mulifield fe functions
     ym1     = clone_fe_function(Y,yn)
-    ym2     = clone_fe_function(Y,yn)
     duh1    = copy(ynv)
     duh2    = copy(ynv)
     y_wrk   = copy(ynv)
+    y_tmp   = copy(ynv)
 
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
+      initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power", "enstrophy")
     end
 
-    # first step, no leap frog
-    istep = 1
-    shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
-                                        model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false)
-
-    if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
-      dump_diagnostics_shallow_water!(h_tmp, w_tmp,
-                                      model, dΩ, dω, S, L2MM, H1MM,
-                                      hn, un, wn, ϕ, F, g, istep, dt,
-                                      diagnostics_file,
-                                      dump_diagnostics_on_screen)
-    end
     # time step iteration loop
-    for istep in 2:N
-      aux=ym2
-      ym2=ym1
+    for istep in 1:N
+      aux=ym1
       ym1=yn
       yn=aux
-      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
-                                          model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog)
+      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1h_1, H1h_2, H1hchol, H1hchol_1, H1hchol_2, y_wrk,
+                                          model, dΩ, dω, Y, V, Q, R, S, R1_up, R2_up, f, g, ym1,
+                                          RTMMchol, L2MMchol, A, Bchol, dt, τ, y_tmp)
 
       # IMPORTANT NOTE: We need to extract un, hn out of yn at each iteration because
       #                 the association of yn with its object instance changes at the beginning of
@@ -197,9 +225,10 @@ function shallow_water_rosenbrock_time_stepper(
       un, hn = yn
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
+        compute_potential_vorticity!(q1, H1h, H1hchol, dΩ, R, S, hn, un, f, n)
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                         model, dΩ, dω, S, L2MM, H1MM,
-                                        hn, un, wn, ϕ, F, g, istep, dt,
+                                        hn, un, wn, ϕ, F, q1, g, istep, dt,
                                         diagnostics_file,
                                         dump_diagnostics_on_screen)
       end
@@ -215,7 +244,7 @@ function shallow_water_rosenbrock_time_stepper(
     mkdir(output_dir)
   end
   if (write_solution)
-    pvdfile=joinpath(output_dir,"nswe_eq_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
+    pvdfile=joinpath(output_dir,"nswe_nc_$(num_cells(model))_ord_$(order)")
     paraview_collection(run_simulation,pvdfile)
   else
     run_simulation()

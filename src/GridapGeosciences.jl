@@ -44,12 +44,4 @@ module GridapGeosciences
   export shallow_water_theta_method_full_newton_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
   export clone_fe_function, setup_mixed_spaces, setup_and_factorize_mass_matrices, new_vtk_step
-
-  # MPI-parallel part
-  using PartitionedArrays
-  using GridapDistributed
-  using GridapP4est
-  using GridapPETSc
-  using P4est_wrapper
-  include("mpi/CubedSphereDistributedDiscreteModels.jl")
 end # module

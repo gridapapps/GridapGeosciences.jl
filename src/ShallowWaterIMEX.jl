@@ -83,8 +83,7 @@ function shallow_water_imex_time_step!(
      h₂, u₂, uₚ, ϕ, F, q₁, q₂,                               # in/out args
      H1h, H1hchol, h_wrk, u_wrk, A, B, Bchol,                # more in/out args
      model, dΩ, dω, U, V, P, Q, R, S, f, g, h₁, u₁, u₀,         # in args
-     RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, leap_frog,
-     assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))   # more in args
+     RTMMchol, L2MMchol, RTMM, L2MMinvD, dt, τ, leap_frog)   # more in args
 
   # energetically balanced implicit-explicit second order shallow water solver
   # reference: eqns (31-33) of
@@ -104,7 +103,7 @@ function shallow_water_imex_time_step!(
   # 1.2: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
   # 1.3: the potential vorticity
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
+  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n)
   # 1.4: solve for the provisional velocity
   compute_velocity!(uₚ,dΩ,dω,V,RTMMchol,u₀,q₁-τ*u₁⋅∇(q₁),F,ϕ,n,dt1,dt1)
 
@@ -117,8 +116,8 @@ function shallow_water_imex_time_step!(
   assemble_Asub_mul_u!(h_wrk,U,P,dΩ,L2MMinvD,Fv)                  # h_wrk = L2MMinvD * Fv
   h_wrk .= h₁v .- dt .* h_wrk
   assemble_Asub_mul_u!(u_wrk, P, U, dΩ, A, h_wrk)                        # u_wrk = A * h_wrk
-  numerical_setup!(Bchol, B)
-  solve!(u_wrk, Bchol, u_wrk)
+  lu!(Bchol, B)
+  ldiv!(Bchol, u_wrk)
   # 2.3: combine the two mass flux components
   Fv .= Fv .+ u_wrk
   # 2.4: compute the divergence of the total mass flux
@@ -129,25 +128,22 @@ function shallow_water_imex_time_step!(
   # 3.1: the bernoulli function
   compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅uₚ + uₚ⋅uₚ)/3.0,0.5*(h₁ + h₂),g)
   # 3.2: the potential vorticity
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,uₚ,f,n,assem)
+  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,uₚ,f,n)
   # 3.3: solve for the final velocity
   compute_velocity!(u₂,dΩ,dω,V,RTMMchol,u₁,q₁-τ*u₁⋅∇(q₁)+q₂-τ*uₚ⋅∇(q₂),F,ϕ,n,0.5*dt,dt)
 end
 
 
 
-function shallow_water_imex_time_stepper(
-  model, order, degree,
-  h₀, u₀, f₀, g,
-  dt, τ, N;
-  mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  write_diagnostics=true,
-  write_diagnostics_freq=1,
-  dump_diagnostics_on_screen=true,
-  write_solution=false,
-  write_solution_freq=N/10,
-  output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_imex")
+function shallow_water_imex_time_stepper(model, order, degree,
+                        h₀, u₀, f₀, g,
+                        dt, τ, N;
+                        write_diagnostics=true,
+                        write_diagnostics_freq=1,
+                        dump_diagnostics_on_screen=true,
+                        write_solution=false,
+                        write_solution_freq=N/10,
+                        output_dir="nswe_eq_ncells_$(num_cells(model))_order_$(order)_imex")
 
   # Forward integration of the shallow water equations
   Ω = Triangulation(model)
@@ -159,8 +155,7 @@ function shallow_water_imex_time_stepper(
 
   # assemble the mass matrices (RTMM not actually needed in assembled form)
   H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
-      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
-                                        mass_matrix_solver=mass_matrix_solver)
+      setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q)
 
   # Project the initial conditions onto the trial spaces
   hn, un, f, hnv, unv, fv =  project_shallow_water_initial_conditions(dΩ, Q, V, S,
@@ -174,14 +169,14 @@ function shallow_water_imex_time_stepper(
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
+  H1hchol  = lu(H1h)
 
   A        = setup_subassembled_A(P,V,un,dΩ)
   RTMM     = setup_subassembled_RTMM(U,V,dΩ)
   invL2MMD = setup_subassembled_invL2MMD(U,P,Q,dΩ,dω)
 
   B        = assemble_implicit_compound_operator(P,U,V,dt,dΩ,A,RTMM,invL2MMD)
-  Bchol    = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
+  Bchol    = lu(B)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe_diagnostics.csv")
