@@ -16,6 +16,7 @@ module GridapGeosciences
   include("ShallowWaterExplicit.jl")
   include("ShallowWaterRosenbrock.jl")
   include("ShallowWaterIMEX.jl")
+  include("ShallowWaterImplicit.jl")
   include("ThermalShallowWaterExplicit.jl")
   include("ThermalShallowWaterExplicit_MatAdv.jl")
   include("ShallowWaterThetaMethodFullNewton.jl")
@@ -39,6 +40,7 @@ module GridapGeosciences
   export shallow_water_explicit_time_stepper
   export shallow_water_rosenbrock_time_stepper
   export shallow_water_imex_time_stepper
+  export shallow_water_implicit_time_stepper
   export thermal_shallow_water_explicit_time_stepper
   export thermal_shallow_water_mat_adv_explicit_time_stepper
   export shallow_water_theta_method_full_newton_time_stepper
