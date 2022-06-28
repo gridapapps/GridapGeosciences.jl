@@ -1,17 +1,25 @@
 function advection_hdg_time_step!(
-     pn, pm, ph, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ,
+     pn, un, um, model, dΩ, ∂K, d∂K, X, Y, dt, τ,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
-  # Stiffly stable RK2 time integration
+  # Time centered second order advection
+  # For construction of hybridized fluxes see: Kang, Giraldo, Bui-Thanh, JCP, 2020
 
   n  = get_cell_normal_vector(∂K)
   nₒ = get_cell_owner_normal_vector(∂K)
 
-  # First stage
-  b(q,m) = ∫(q*pn + ∇q⋅un)dΩ - ∫(q*pn*(un⋅n))d∂K - ∫(τ*m*...)d∂K
+  b(q,m) = ∫(q*pn)dΩ + ∫(m*0)d∂K
+  a((p,l),(q,m)) = ∫(q*p + dt*(∇q⋅un)*p)dΩ + ∫(dt*q*(p*un⋅n + τ*p*n⋅n))d∂K - # [q,p] block
+                   ∫(dt*q*τ*l*n⋅n)d∂K +                                      # [q,l] block
+		   ∫(m*q*un⋅nₒ + τ*m*q*n⋅nₒ)d∂K -                            # [m,p] block
+                   ∫(τ*m*l*n⋅nₒ)d∂K                                          # [m,l] block
 
-  # Second stage
+  # Solve
+  op = HybridAffineFEOperator((u,v)->(a(u,v),b(v)), X, Y)
+  Xm = solve(op)
+  pm, _ = Xm
 
+  get_free_dof_values(pn) .= get_free_dof_values(pm)
 end
 
 function project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
@@ -49,7 +57,7 @@ function advection_hdg(
         dump_diagnostics_on_screen=true,
         write_solution=false,
         write_solution_freq=N/10,
-        output_dir="adv_eq_ncells_$(num_cells(model))_order_$(order)_explicit")
+        output_dir="adv_eq_ncells_$(num_cells(model))_order_$(order)")
 
   # Forward integration of the advection equation
   D = num_cell_dims(model)
@@ -91,15 +99,12 @@ function advection_hdg(
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"adv_diagnostics.csv")
-
-    ph  = clone_fe_function(Q,pn)
-    pm  = clone_fe_function(Q,pn)
-    pmv = get_free_dof_values(pm)
+    if (write_diagnostics)
+      initialize_csv(diagnostics_file,"step", "mass", "entropy")
+    end
 
     for istep in 1:N
-      pmv .= pnv
-
-      advection_hdg_time_step!(pn, pm, ph, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
+      advection_hdg_time_step!(pn, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and entropy conservation
@@ -108,19 +113,23 @@ function advection_hdg(
         pn2 = p_tmp⋅pnv
 	pn1 = (pn1 - p01)/p01
 	pn2 = (pn2 - p02)/p02
+	if dump_diagnostics_on_screen
+          @printf("%5d\t%14.9e\t%14.9e\n", istep, pn1, pn2)
+	end
+	append_to_csv(diagnostics_file; step=istep, mass=pn1, entropy=pn2)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
-        pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un])
+        pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["pn"=>pn,"un"=>un])
       end
     end
-    hn, un
+    pn
   end
   if (write_diagnostics || write_solution)
     rm(output_dir,force=true,recursive=true)
     mkdir(output_dir)
   end
   if (write_solution)
-    pvdfile=joinpath(output_dir,"adv_eq_ncells_$(num_cells(model))_order_$(order)_explicit")
+    pvdfile=joinpath(output_dir,"adv_eq_ncells_$(num_cells(model))_order_$(order)")
     paraview_collection(run_simulation,pvdfile)
   else
     run_simulation()
