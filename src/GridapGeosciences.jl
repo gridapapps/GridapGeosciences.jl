@@ -1,5 +1,6 @@
 module GridapGeosciences
   using Gridap
+  using GridapHybrid
   using FillArrays
   using SparseArrays
   using LinearAlgebra

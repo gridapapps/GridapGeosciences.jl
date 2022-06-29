@@ -1,23 +1,42 @@
 function advection_hdg_time_step!(
-     pn, un, um, model, dΩ, ∂K, d∂K, X, Y, dt, τ,
+     pn, um, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
   # Time centered second order advection
-  # For construction of hybridized fluxes see: Kang, Giraldo, Bui-Thanh, JCP, 2020
+  # References:
+  #   Muralikrishnan, Tran, Bui-Thanh, JCP, 2020 vol. 367
+  #   Kang, Giraldo, Bui-Thanh, JCP, 2020 vol. 401
+
+  dth = 0.5*dt
 
   n  = get_cell_normal_vector(∂K)
   nₒ = get_cell_owner_normal_vector(∂K)
 
-  b(q,m) = ∫(q*pn)dΩ + ∫(m*0)d∂K
-  a((p,l),(q,m)) = ∫(q*p + dt*(∇q⋅un)*p)dΩ + ∫(dt*q*(p*un⋅n + τ*p*n⋅n))d∂K - # [q,p] block
-                   ∫(dt*q*τ*l*n⋅n)d∂K +                                      # [q,l] block
-		   ∫(m*q*un⋅nₒ + τ*m*q*n⋅nₒ)d∂K -                            # [m,p] block
-                   ∫(τ*m*l*n⋅nₒ)d∂K                                          # [m,l] block
+  # First stage
+  b₁(q,m) = ∫(q*pn)dΩ - 
+            ∫(m*0)d∂K
 
-  # Solve
-  op = HybridAffineFEOperator((u,v)->(a(u,v),b(v)), X, Y)
-  Xm = solve(op)
-  pm, _ = Xm
+  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇q⋅un)*p)dΩ + ∫(dt*q*p*(un⋅n + τ*n⋅n))d∂K -   # [q,p] block
+                    ∫(dt*q*l*τ*n⋅n)d∂K +                                      # [q,l] block
+                    ∫(m*p*(un⋅nₒ + τ*n⋅nₒ))d∂K -                              # [m,p] block
+                    ∫(m*l*τ*n⋅nₒ)d∂K                                          # [m,l] block
+
+  op₁  = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y)
+  Xh   = solve(op₁)
+  ph,_ = Xh
+
+  # Second stage
+  b₂(q,m) = ∫(q*pn + dth*(∇q⋅un)*ph)dΩ - ∫(dth*q*ph*(un⋅n + τ*n⋅n))d∂K - 
+           ∫(0.5*m*q*(un⋅nₒ + τ*n⋅nₒ))d∂K
+
+  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇q⋅un)*p)dΩ + ∫(dth*q*p*(un⋅n + τ*n⋅n))d∂K - # [q,p] block
+                    ∫(dt*q*l*τ*n⋅n)d∂K +                                      # [q,l] block
+                    ∫(0.5*m*p*(un⋅nₒ + τ*n⋅nₒ))d∂K -                          # [m,p] block
+                    ∫(m*l*τ*n⋅nₒ)d∂K                                          # [m,l] block
+
+  op₂  = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y)
+  Xm   = solve(op₂)
+  pm,_ = Xm
 
   get_free_dof_values(pn) .= get_free_dof_values(pm)
 end
@@ -35,8 +54,8 @@ function project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_sol
   solve!(pnv, L2MMchol, pnv)
 
   # the velocity field
-  b₂(v)    = ∫(v*u₀)dΩ
-  a₂(u,v)  = ∫(v*u)dΩ
+  b₂(v)    = ∫(v⋅u₀)dΩ
+  a₂(u,v)  = ∫(v⋅u)dΩ
   rhs₂     = assemble_vector(b₂, V)
   MM       = assemble_matrix(a₂, U, V)
   MMchol   = numerical_setup(symbolic_setup(mass_matrix_solver,MM),MM)
@@ -63,6 +82,8 @@ function advection_hdg(
   D = num_cell_dims(model)
   Ω = Triangulation(ReferenceFE{D},model)
   Γ = Triangulation(ReferenceFE{D-1},model)
+  #Ω = Triangulation(model)
+  #Γ = SkeletonTriangulation(model)
   ∂K = GridapHybrid.Skeleton(model)
 
   reffeᵤ = ReferenceFE(lagrangian,VectorValue{D,Float64},order;space=:P)
