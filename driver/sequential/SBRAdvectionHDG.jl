@@ -11,7 +11,7 @@ using GridapHybrid
 order  = 1
 degree = 3
 n      = 48
-dt     = 0.25*2.0*π/((order+1)*n)
+dt     = 0.25*2.0*π/((order+1)*4*n)
 # single rotation about the sphere
 nstep  = Int(2.0*π/dt)
 
@@ -23,15 +23,15 @@ function u₀(xyz)
 end
 
 # Gaussian tracer initial condition
-function q₀(xyz)
-  rsq = (xyz[1] - 1.0)*(xyz[1] - 1.0)*xyz[2]*xyz[2]*xyz[3]*xyz[3]
+function p₀(xyz)
+  rsq = (xyz[1] - 1.0)*(xyz[1] - 1.0) + xyz[2]*xyz[2] + xyz[3]*xyz[3]
   exp(-10.0*rsq)
 end
 
 model = CubedSphereDiscreteModel(n; radius=1)
 
 hf, uf = advection_hdg(model, order, degree,
-                       u₀, q₀, dt, nstep;
+                       u₀, p₀, dt, nstep;
                        write_solution=true,
                        write_solution_freq=nstep/16,
                        write_diagnostics=true,
