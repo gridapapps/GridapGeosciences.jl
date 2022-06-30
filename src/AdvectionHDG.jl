@@ -16,23 +16,23 @@ function advection_hdg_time_step!(
   b₁(q,m) = ∫(q*pn)dΩ - 
             ∫(m*0)d∂K
 
-  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(dt*q*p*(un⋅n + τ*n⋅n))d∂K -   # [q,p] block
-                    ∫(dt*q*l*τ*n⋅n)d∂K +                                        # [q,l] block
-                    ∫(m*p*(un⋅nₒ + τ*n⋅nₒ))d∂K -                                # [m,p] block
-                    ∫(m*l*τ*n⋅nₒ)d∂K                                            # [m,l] block
+  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(dt*q*p*((un⋅n) + τ*(n⋅n)))d∂K -   # [q,p] block
+                    ∫(dt*q*l*τ*(n⋅n))d∂K +                                          # [q,l] block
+                    ∫(m*p*((un⋅nₒ) + τ*(n⋅nₒ)))d∂K -                                # [m,p] block
+                    ∫(m*l*τ*(n⋅nₒ))d∂K                                              # [m,l] block
 
   op₁  = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1], [2])
   Xh   = solve(op₁)
   ph,_ = Xh
 
   # Second stage
-  b₂(q,m) = ∫(q*pn + dth*(∇(q)⋅un)*ph)dΩ - ∫(dth*q*ph*(un⋅n + τ*n⋅n))d∂K - 
-            ∫(0.5*m*q*(un⋅nₒ + τ*n⋅nₒ))d∂K
+  b₂(q,m) = ∫(q*pn + dth*(∇(q)⋅un)*ph)dΩ - ∫(dth*q*ph*((un⋅n) + τ*(n⋅n)))d∂K - 
+  ∫(0.5*m*q*((un⋅nₒ) + τ*(n⋅nₒ)))d∂K
 
-  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(dth*q*p*(un⋅n + τ*n⋅n))d∂K - # [q,p] block
-                    ∫(dt*q*l*τ*n⋅n)d∂K +                                        # [q,l] block
-                    ∫(0.5*m*p*(un⋅nₒ + τ*n⋅nₒ))d∂K -                            # [m,p] block
-                    ∫(m*l*τ*n⋅nₒ)d∂K                                            # [m,l] block
+  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(dth*q*p*((un⋅n) + τ*(n⋅n)))d∂K - # [q,p] block
+                    ∫(dt*q*l*τ*(n⋅n))d∂K +                                          # [q,l] block
+                    ∫(0.5*m*p*((un⋅nₒ) + τ*(n⋅nₒ)))d∂K -                            # [m,p] block
+                    ∫(m*l*τ*(n⋅nₒ))d∂K                                              # [m,l] block
 
   op₂  = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y)
   Xm   = solve(op₂)

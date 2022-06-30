@@ -10,7 +10,7 @@ using GridapHybrid
 
 order  = 1
 degree = 3
-n      = 48
+n      = 32
 dt     = 0.25*2.0*π/((order+1)*4*n)
 # single rotation about the sphere
 nstep  = Int(2.0*π/dt)
