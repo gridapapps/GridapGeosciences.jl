@@ -87,7 +87,7 @@ function advection_hdg(
   #Γ = SkeletonTriangulation(model)
   ∂K = GridapHybrid.Skeleton(model)
 
-  reffeᵤ = ReferenceFE(lagrangian,VectorValue{D,Float64},order;space=:P)
+  reffeᵤ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
   reffeₚ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeₗ = ReferenceFE(lagrangian,Float64,order;space=:P)
 

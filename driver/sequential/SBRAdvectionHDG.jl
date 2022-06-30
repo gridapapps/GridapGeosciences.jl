@@ -4,6 +4,16 @@ using Gridap
 using GridapGeosciences
 using GridapHybrid
 
+function Gridap.Geometry.push_normal(invJt,n)
+  v = invJt⋅n
+  m = sqrt(inner(v,v))
+  if m < eps()
+    return zero(v)
+  else
+    return v/m
+  end
+end
+
 # solid body rotation on the sphere for the scalar flux form
 # advection equation using a hybridized discontinuous Galerkin
 # method for L2 elements
