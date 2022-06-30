@@ -54,18 +54,18 @@ function project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_sol
   solve!(pnv, L2MMchol, pnv)
 
   # the velocity field
-  #b₂(v)    = ∫(v⋅u₀)dΩ
-  #a₂(u,v)  = ∫(v⋅u)dΩ
-  #rhs₂     = assemble_vector(b₂, V)
-  #MM       = assemble_matrix(a₂, U, V)
-  #MMchol   = numerical_setup(symbolic_setup(mass_matrix_solver,MM),MM)
-  #un       = FEFunction(V, copy(rhs₂))
-  #unv      = get_free_dof_values(un)
+  b₂(v)    = ∫(v⋅u₀)dΩ
+  a₂(u,v)  = ∫(v⋅u)dΩ
+  rhs₂     = assemble_vector(b₂, V)
+  MM       = assemble_matrix(a₂, U, V)
+  MMchol   = numerical_setup(symbolic_setup(mass_matrix_solver,MM),MM)
+  un       = FEFunction(V, copy(rhs₂))
+  unv      = get_free_dof_values(un)
 
-  #solve!(unv, MMchol, unv)
+  solve!(unv, MMchol, unv)
 
-  #pn, pnv, L2MM, L2MMchol, un
-  pn, pnv, L2MM
+  pn, pnv, L2MM, un
+  #pn, pnv, L2MM
 end
 
 function advection_hdg(
@@ -109,8 +109,8 @@ function advection_hdg(
   τ = 1.0
 
   # Project the initial conditions onto the trial spaces
-  #pn, pnv, L2MM, L2MMchol, un = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
-  pn, pnv, L2MM = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
+  pn, pnv, L2MM, un = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
+  #pn, pnv, L2MM = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
 
   # Work array
   p_tmp = copy(pnv)
@@ -127,8 +127,8 @@ function advection_hdg(
     end
 
     for istep in 1:N
-      #advection_hdg_time_step!(pn, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
-      advection_hdg_time_step!(pn, u₀, u₀, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
+      advection_hdg_time_step!(pn, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
+      #advection_hdg_time_step!(pn, u₀, u₀, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and entropy conservation
