@@ -32,7 +32,7 @@ model = CubedSphereDiscreteModel(n; radius=1)
 
 hf, uf = advection_hdg(model, order, degree,
                        u₀, p₀, dt, nstep;
-                       write_solution=true,
+                       write_solution=false,
                        write_solution_freq=nstep/16,
                        write_diagnostics=true,
                        write_diagnostics_freq=1,
