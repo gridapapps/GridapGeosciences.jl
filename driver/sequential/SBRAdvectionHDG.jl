@@ -38,7 +38,7 @@ function p₀(xyz)
   exp(-10.0*rsq)
 end
 
-model = CubedSphereDiscreteModel(n; radius=1)
+model = CubedSphereDiscreteModel(n,2; radius=1)
 
 hf, uf = advection_hdg(model, order, degree,
                        u₀, p₀, dt, nstep;

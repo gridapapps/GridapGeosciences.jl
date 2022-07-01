@@ -402,7 +402,7 @@ version = "0.2.4"
 
 [[GridapHybrid]]
 deps = ["DataFrames", "DrWatson", "FillArrays", "Gridap", "LinearAlgebra", "Plots", "ProfileView", "StaticArrays", "Test"]
-git-tree-sha1 = "b01b9bf09f03799fc19f33803c466b877adbc1ae"
+git-tree-sha1 = "d14b3d6e6cecb711309e040d071dcef97fa99c49"
 repo-rev = "main"
 repo-url = "https://github.com/gridap/GridapHybrid.jl"
 uuid = "94e6dd8f-308f-4a47-89a7-811b3127ae57"
