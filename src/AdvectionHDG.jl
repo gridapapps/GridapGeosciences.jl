@@ -63,7 +63,6 @@ function project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_sol
   solve!(unv, MMchol, unv)
 
   pn, pnv, L2MM, un
-  #pn, pnv, L2MM
 end
 
 function advection_hdg(
@@ -81,8 +80,6 @@ function advection_hdg(
   D = num_cell_dims(model)
   Ω = Triangulation(ReferenceFE{D},model)
   Γ = Triangulation(ReferenceFE{D-1},model)
-  #Ω = Triangulation(model)
-  #Γ = SkeletonTriangulation(model)
   ∂K = GridapHybrid.Skeleton(model)
 
   reffeᵤ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
@@ -108,7 +105,6 @@ function advection_hdg(
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, L2MM, un = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
-  #pn, pnv, L2MM = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
 
   # Work array
   p_tmp = copy(pnv)
@@ -123,10 +119,10 @@ function advection_hdg(
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"step", "mass", "entropy")
     end
+    pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un])
 
     for istep in 1:N
       advection_hdg_time_step!(pn, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
-      #advection_hdg_time_step!(pn, u₀, u₀, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and entropy conservation
