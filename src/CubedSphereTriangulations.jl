@@ -1,28 +1,9 @@
 
-struct PolynomialMapCubedSphereTriangulation{T} <: Triangulation{2,3}
-  model::T
-end
-
-Gridap.Geometry.get_cell_coordinates(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_coordinates(get_grid(trian.model))
-
-Gridap.Geometry.get_reffes(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_reffes(get_grid(trian.model))
-
-Gridap.Geometry.get_cell_type(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_type(get_grid(trian.model))
-
-Gridap.Geometry.get_node_coordinates(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_node_coordinates(get_grid(trian.model))
-
-Gridap.Geometry.get_cell_node_ids(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_node_ids(get_grid(trian.model))
-
-Gridap.Geometry.get_cell_map(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_map(trian.model)
-
-Gridap.Geometry.get_grid(trian::PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_grid(trian.model)
-
-
 struct AnalyticalMapCubedSphereTriangulation{T} <: Triangulation{2,3}
   model::T
 end
 
-const CSDTT = Union{PolynomialMapCubedSphereTriangulation,AnalyticalMapCubedSphereTriangulation}
+const CSDTT = Union{Gridap.Geometry.BodyFittedTriangulation{2,3},AnalyticalMapCubedSphereTriangulation}
 
 # Triangulation API
 function Gridap.Geometry.get_facet_normal(trian::CSDTT)

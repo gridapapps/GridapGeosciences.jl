@@ -45,16 +45,6 @@ function generate_Γface_to_bgface(model)
   Γface_to_bgface_panelwise
 end
 
-struct PolynomialMapCubedSphereDiscreteModel <: Gridap.Geometry.DiscreteModel{2,3}
-  model::Gridap.Geometry.UnstructuredDiscreteModel{2,3}
-end
-
-Gridap.Geometry.get_cell_map(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_cell_map(model.model)
-Gridap.Geometry.get_grid(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid(model.model)
-Gridap.Geometry.get_grid_topology(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.model)
-Gridap.Geometry.get_face_labeling(model::PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.model)
-Gridap.Geometry.Triangulation(a::PolynomialMapCubedSphereDiscreteModel) = PolynomialMapCubedSphereTriangulation(a.model)
-
 function CubedSphereDiscreteModel(n,order; radius=1)
   function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
     cache_cell_node_ids = array_cache(cell_node_ids)
@@ -98,10 +88,9 @@ function CubedSphereDiscreteModel(n,order; radius=1)
                                                        Gridap.Geometry.Oriented())
 
   cube_surface_model = Gridap.Geometry.compute_active_model(cube_surface_trian)
-  topology            = Gridap.Geometry.get_grid_topology(cube_surface_model)
-  labeling           = Gridap.Geometry.get_face_labeling(cube_surface_model)
-  PolynomialMapCubedSphereDiscreteModel(
-    Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,labeling))
+  topology = Gridap.Geometry.get_grid_topology(cube_surface_model)
+  labeling = Gridap.Geometry.get_face_labeling(cube_surface_model)
+  Gridap.Geometry.UnstructuredDiscreteModel(cube_surface_grid,topology,labeling)
 end
 
 
