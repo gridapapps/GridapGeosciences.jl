@@ -2,7 +2,7 @@ function advection_hdg_time_step!(
      pn, um, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
-  # Time centered second order advection
+  # Second order implicit advection
   # References:
   #   Muralikrishnan, Tran, Bui-Thanh, JCP, 2020 vol. 367
   #   Kang, Giraldo, Bui-Thanh, JCP, 2020 vol. 401
@@ -14,9 +14,9 @@ function advection_hdg_time_step!(
   # First stage
   b₁((q,m)) = ∫(q*pn)dΩ - ∫(m*0.0)d∂K
   a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dt*q*p)d∂K -   # [q,p] block
-                    ∫(dt*q*l*τ*(n⋅n))d∂K +                                          # [q,l] block
+                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                          # [q,l] block
                     ∫(((un⋅nₒ) + τ*(n⋅nₒ))*m*p)d∂K -                                # [m,p] block
-                    ∫(m*l*τ*(n⋅nₒ))d∂K                                              # [m,l] block
+                    ∫(τ*(n⋅nₒ)*m*l)d∂K                                              # [m,l] block
 
   op₁  = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1], [2])
   Xh   = solve(op₁)
@@ -25,12 +25,12 @@ function advection_hdg_time_step!(
   # Second stage
   b₂((q,m)) = ∫(q*pn + dth*(∇(q)⋅un)*ph)dΩ -
               ∫(((un⋅n) + τ*(n⋅n))*dth*q*ph)d∂K -
-              ∫(0.5*m*q*((un⋅nₒ) + τ*(n⋅nₒ)))d∂K
+              ∫(0.5*((un⋅nₒ) + τ*(n⋅nₒ))*m*ph)d∂K
 
   a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dth*q*p)d∂K -   # [q,p] block
-                    ∫(dt*q*l*τ*(n⋅n))d∂K +                                            # [q,l] block
+                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                            # [q,l] block
                     ∫(((un⋅nₒ) + τ*(n⋅nₒ))*0.5*m*p)d∂K -                              # [m,p] block
-                    ∫(m*l*τ*(n⋅nₒ))d∂K                                                # [m,l] block
+                    ∫(τ*(n⋅nₒ)*m*l)d∂K                                                # [m,l] block
 
   op₂  = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1], [2])
   Xm   = solve(op₂)
@@ -102,6 +102,8 @@ function advection_hdg(
 
   # HDG stabilisation parameter
   τ = 1.0
+
+  @printf("time step: %14.9e\n", dt)
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, L2MM, un = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
