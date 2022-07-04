@@ -20,7 +20,7 @@ end
 
 order  = 1
 degree = 3
-n      = 16
+n      = 12
 dt     = 0.25*2.0*π/((order+1)*4*n)
 # single rotation about the sphere
 nstep  = Int(2.0*π/dt)

@@ -13,10 +13,10 @@ function advection_hdg_time_step!(
 
   # First stage
   b₁((q,m)) = ∫(q*pn)dΩ - ∫(m*0.0)d∂K
-  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dt*q*p)d∂K -   # [q,p] block
-                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                          # [q,l] block
-                    ∫(((un⋅nₒ) + τ*(n⋅nₒ))*m*p)d∂K -                                # [m,p] block
-                    ∫(τ*(n⋅nₒ)*m*l)d∂K                                              # [m,l] block
+  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dt*q*p)d∂K -  # [q,p] block
+                    ∫(dt*τ*(n⋅nₒ)*q*l)d∂K +                                          # [q,l] block
+                    ∫(((un⋅n) + τ*(n⋅n))*m*p)d∂K -                                   # [m,p] block
+                    ∫(τ*(n⋅n)*m*l)d∂K                                                # [m,l] block
 
   op₁  = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1], [2])
   Xh   = solve(op₁)
@@ -24,13 +24,13 @@ function advection_hdg_time_step!(
 
   # Second stage
   b₂((q,m)) = ∫(q*pn + dth*(∇(q)⋅un)*ph)dΩ -
-              ∫(((un⋅n) + τ*(n⋅n))*dth*q*ph)d∂K -
-              ∫(0.5*((un⋅nₒ) + τ*(n⋅nₒ))*m*ph)d∂K
+              ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dth*q*ph)d∂K -
+              ∫(0.5*((un⋅n) + τ*(n⋅n))*m*ph)d∂K
 
-  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dth*q*p)d∂K -   # [q,p] block
-                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                            # [q,l] block
-                    ∫(((un⋅nₒ) + τ*(n⋅nₒ))*0.5*m*p)d∂K -                              # [m,p] block
-                    ∫(τ*(n⋅nₒ)*m*l)d∂K                                                # [m,l] block
+  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dth*q*p)d∂K -  # [q,p] block
+                    ∫(dt*τ*(n⋅nₒ)*q*l)d∂K +                                            # [q,l] block
+                    ∫(((un⋅n) + τ*(n⋅n))*0.5*m*p)d∂K -                                 # [m,p] block
+                    ∫(τ*(n⋅n)*m*l)d∂K                                                  # [m,l] block
 
   op₂  = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1], [2])
   Xm   = solve(op₂)
