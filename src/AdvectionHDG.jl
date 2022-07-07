@@ -13,10 +13,10 @@ function advection_hdg_time_step!(
 
   # First stage
   b₁((q,m)) = ∫(q*pn)dΩ - ∫(m*0.0)d∂K
-  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dt*q*p)d∂K -  # [q,p] block
-                    ∫(dt*τ*(n⋅nₒ)*q*l)d∂K +                                          # [q,l] block
-                    ∫(((un⋅n) + τ*(n⋅n))*m*p)d∂K -                                   # [m,p] block
-                    ∫(τ*(n⋅n)*m*l)d∂K                                                # [m,l] block
+  a₁((p,l),(q,m)) = ∫(q*p - dt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dt*q*p)d∂K -  # [q,p] block
+                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                         # [q,l] block
+		    ∫(((un⋅n) + τ*(n⋅n))*p*m)d∂K -                                 # [m,p] block
+		    ∫(τ*(n⋅n)*l*m)d∂K                                              # [m,l] block
 
   op₁  = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1], [2])
   Xh   = solve(op₁)
@@ -24,13 +24,13 @@ function advection_hdg_time_step!(
 
   # Second stage
   b₂((q,m)) = ∫(q*pn + dth*(∇(q)⋅un)*ph)dΩ -
-              ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dth*q*ph)d∂K -
-              ∫(0.5*((un⋅n) + τ*(n⋅n))*m*ph)d∂K
+              ∫(((un⋅n) + τ*(n⋅n))*dth*ph*q)d∂K -
+	      ∫(0.5*((un⋅n) + τ*(n⋅n))*ph*m)d∂K
 
-  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(((un⋅nₒ) + τ*(n⋅nₒ))*dth*q*p)d∂K -  # [q,p] block
-                    ∫(dt*τ*(n⋅nₒ)*q*l)d∂K +                                            # [q,l] block
-                    ∫(((un⋅n) + τ*(n⋅n))*0.5*m*p)d∂K -                                 # [m,p] block
-                    ∫(τ*(n⋅n)*m*l)d∂K                                                  # [m,l] block
+  a₂((p,l),(q,m)) = ∫(q*p - dth*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + τ*(n⋅n))*dth*q*p)d∂K -  # [q,p] block
+                    ∫(dt*τ*(n⋅n)*q*l)d∂K +                                           # [q,l] block
+		    ∫(((un⋅n) + τ*(n⋅n))*0.5*p*m)d∂K -                               # [m,p] block
+		    ∫(τ*(n⋅n)*l*m)d∂K                                                # [m,l] block
 
   op₂  = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1], [2])
   Xm   = solve(op₂)
@@ -124,7 +124,7 @@ function advection_hdg(
     pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un])
 
     for istep in 1:N
-      advection_hdg_time_step!(pn, un, un, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
+      advection_hdg_time_step!(pn, u₀, u₀, model, dΩ, ∂K, d∂K, X, Y, dt, τ)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and entropy conservation
