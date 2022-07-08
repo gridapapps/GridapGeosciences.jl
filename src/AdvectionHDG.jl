@@ -111,6 +111,7 @@ function advection_hdg(
 
   # Work array
   p_tmp = copy(pnv)
+  p_ic = copy(pnv)
 
   # Initial states
   mul!(p_tmp, L2MM, pnv)
@@ -143,6 +144,14 @@ function advection_hdg(
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["pn"=>pn,"un"=>un])
       end
     end
+    # compute the L2 error with respect to the inital condition after one rotation
+    mul!(p_tmp, L2MM, p_ic)
+    l2_norm_sq = p_tmp⋅p_ic
+    p_ic .= p_ic .- pnv
+    mul!(p_tmp, L2MM, p_ic)
+    l2_err_sq = p_ic⋅p_tmp
+    l2_err = sqrt(l2_err_sq/l2_norm_sq)
+    @printf("L2 error: %14.9e\n", l2_err)
     pn
   end
   if (write_diagnostics || write_solution)
