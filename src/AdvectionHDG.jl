@@ -104,6 +104,7 @@ function advection_hdg(
   τ = 1.0
 
   @printf("time step: %14.9e\n", dt)
+  @printf("number of time steps: %u\n", N)
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, L2MM, un = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
