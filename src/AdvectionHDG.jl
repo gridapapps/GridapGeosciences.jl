@@ -68,6 +68,15 @@ function project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_sol
   pn, pnv, L2MM, un
 end
 
+function conservation(L2MM, pnv, p_tmp, mass_0, entropy_0)
+  mul!(p_tmp, L2MM, pnv)
+  mass_con    = sum(p_tmp)
+  entropy_con = p_tmp⋅pnv
+  mass_con    = (mass_con - mass_0)/mass_0
+  entropy_con = (entropy_con - entropy_0)/entropy_0
+  mass_con, entropy_con
+end
+
 function advection_hdg(
         model, order, degree,
         u₀, p₀, dt, N;
@@ -123,18 +132,16 @@ function advection_hdg(
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"step", "mass", "entropy")
     end
-    pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un])
+    if (write_solution && write_solution_freq>0)
+      pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un])
+    end
 
     for istep in 1:N
       advection_hdg_time_step!(pn, u₀, u₀, model, dΩ, ∂K, d∂K, X, Y, dt)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and entropy conservation
-        mul!(p_tmp, L2MM, pnv)
-        pn1 = sum(p_tmp)
-        pn2 = p_tmp⋅pnv
-        pn1 = (pn1 - p01)/p01
-        pn2 = (pn2 - p02)/p02
+        pn1, pn2 = conservation(L2MM, pnv, p_tmp, p01, p02)
         if dump_diagnostics_on_screen
           @printf("%5d\t%14.9e\t%14.9e\n", istep, pn1, pn2)
         end
@@ -152,7 +159,8 @@ function advection_hdg(
     l2_err_sq = p_ic⋅p_tmp
     l2_err = sqrt(l2_err_sq/l2_norm_sq)
     @printf("L2 error: %14.9e\n", l2_err)
-    pn
+    pn1, pn2 = conservation(L2MM, pnv, p_tmp, p01, p02)
+    l2_err, pn1, pn2
   end
   if (write_diagnostics || write_solution)
     rm(output_dir,force=true,recursive=true)
