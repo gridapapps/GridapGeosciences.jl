@@ -9,6 +9,7 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 GridapDistributed = "f9701e48-63b3-45aa-9a63-9bc6c271f355"
+GridapHybrid = "94e6dd8f-308f-4a47-89a7-811b3127ae57"
 GridapP4est = "c2c8e14b-f5fd-423d-9666-1dd9ad120af9"
 GridapPETSc = "bcdc36c2-0c3e-11ea-095a-c9dadae499f1"
 GridapPardiso = "34aa2546-dee6-11e9-014e-739fa02ec06f"
@@ -27,13 +28,12 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 GridapDistributed = "=0.2.4"
-Gridap = "=0.17.7"
 GridapP4est = "= 0.1.2"
 GridapPETSc = "=0.4.1"
-PartitionedArrays = "0.2.9"
 MPI = "=0.19"
-WriteVTK = "=1.14.0"
+PartitionedArrays = "0.2.9"
 SparseMatricesCSR = "=0.6.6"
+WriteVTK = "=1.14.0"
 julia = "1.5"
 
 [extras]
