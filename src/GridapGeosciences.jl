@@ -22,6 +22,7 @@ module GridapGeosciences
   include("ShallowWaterThetaMethodFullNewton.jl")
   include("Helpers.jl")
   include("AdvectionHDG.jl")
+  include("WaveEqnHDG.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
   export perp,⟂
@@ -46,7 +47,7 @@ module GridapGeosciences
   export shallow_water_theta_method_full_newton_time_stepper
   export write_to_csv, get_scalar_field_from_csv, append_to_csv, initialize_csv
   export clone_fe_function, setup_mixed_spaces, setup_and_factorize_mass_matrices, new_vtk_step
-  export advection_hdg
+  export advection_hdg, project_initial_conditions_hdg, wave_eqn_hdg
 
   # MPI-parallel part
   using PartitionedArrays
