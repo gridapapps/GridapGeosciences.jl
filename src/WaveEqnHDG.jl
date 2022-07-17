@@ -13,17 +13,24 @@ function wave_eqn_hdg_time_step!(
   n  = get_cell_normal_vector(∂K)
   nₒ = get_cell_owner_normal_vector(∂K)
 
+  τ = 1.0
+
   # First stage
-  b₁((q,m)) = ∫(q*pn)dΩ +
-              ∫(v*un)dΩ - 
-              ∫(m*0.0)d∂K
+  b₁((q,v,m)) = ∫(q*pn)dΩ +
+                ∫(v*un)dΩ - 
+                ∫(m*0.0)d∂K
 
-  a₁((p,l),(q,m)) = ∫(q*p - γdt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + abs(un⋅n))*γdt*q*p)d∂K -    # [q,p] block
-                    ∫(γdt*abs(un⋅n)*q*l)d∂K +                                            # [q,l] block
-                    ∫(((un⋅n) + abs(un⋅n))*p*m)d∂K -                                     # [m,p] block
-                    ∫(abs(un⋅n)*l*m)d∂K                                                  # [m,l] block
+  a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -      # [q,p] block
+                        ∫(γdt*(∇(q)*u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
+			∫(γdt*τ*(nₒ⋅n)*q*l)d∂Ω -                 # [q,l] block
+			∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
+                        ∫(v⋅u)dΩ +                               # [v,u] block
+                        ∫(γdt*(v⋅n)*l)d∂Ω +                      # [v,l] block
+			∫(τ*(nₒ⋅n)*m*p)d∂Ω +                     # [m,p] block
+			∫((u⋅n)*m)d∂Ω -                          # [m,u] block
+			∫(τ*(nₒ⋅n)*m*l)d∂Ω                       # [m,l] block
 
-  op₁      = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1,2], [3])
+  op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3])
   Xh       = solve(op₁)
   ph,uh,lh = Xh
 
@@ -36,7 +43,7 @@ function wave_eqn_hdg_time_step!(
                     ∫(((un⋅n) + abs(un⋅n))*0.5*p*m)d∂K -                                 # [m,p] block
                     ∫(0.5*abs(un⋅n)*l*m)d∂K                                              # [m,l] block
 
-  op₂       = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1,2], [3])
+  op₂       = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3])
   Xm        = solve(op₂)
   pm,um,,_  = Xm
 
