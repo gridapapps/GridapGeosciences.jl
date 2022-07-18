@@ -130,7 +130,7 @@ function wave_eqn_hdg(
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"wave_diagnostics.csv")
     if (write_diagnostics)
-      initialize_csv(diagnostics_file,"step", "mass", "entropy")
+      initialize_csv(diagnostics_file,"step", "mass", "energy")
     end
     if (write_solution && write_solution_freq>0)
       pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un])
@@ -140,18 +140,18 @@ function wave_eqn_hdg(
       wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-        # compute mass and entropy conservation
-        pn1, pn2 = conservation_wave_eqn(L2MM, pnv, p_tmp, U2MM, unv, u_tmp, p01, p02)
+        # compute mass and energy conservation
+        pn1, pn2 = conservation_wave_eqn(L2MM, U2MM, pnv, unv, p_tmp, u_tmp, p01, p02)
         if dump_diagnostics_on_screen
           @printf("%5d\t%14.9e\t%14.9e\n", istep, pn1, pn2)
         end
-        append_to_csv(diagnostics_file; step=istep, mass=pn1, entropy=pn2)
+        append_to_csv(diagnostics_file; step=istep, mass=pn1, energy=pn2)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["pn"=>pn,"un"=>un])
       end
     end
-    pn1, pn2 = conservation_wave_eqn(L2MM, pnv, p_tmp, U2MM, unv, u_tmp, p01, p02)
+    pn1, pn2 = conservation_wave_eqn(L2MM, U2MM, pnv, unv, p_tmp, u_tmp, p01, p02)
     pn1, pn2
   end
   if (write_diagnostics || write_solution)
