@@ -2,7 +2,7 @@ function wave_eqn_hdg_time_step!(
      pn, un, model, dΩ, ∂K, d∂K, X, Y, dt,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
-  # Second order implicit advection
+  # Second order implicit linear wave equation
   # References:
   #   Muralikrishnan, Tran, Bui-Thanh, JCP, 2020 vol. 367
   #   Kang, Giraldo, Bui-Thanh, JCP, 2020 vol. 401
@@ -112,7 +112,7 @@ function wave_eqn_hdg(
   @printf("number of time steps: %u\n", N)
 
   # Project the initial conditions onto the trial spaces
-  pn, pnv, L2MM, un, unv, U2MM = project_initial_conditions(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
+  pn, pnv, L2MM, un, unv, U2MM = project_initial_conditions_hdg(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
 
   # Work array
   p_tmp = copy(pnv)
