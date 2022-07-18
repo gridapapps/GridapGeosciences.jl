@@ -20,32 +20,44 @@ function wave_eqn_hdg_time_step!(
                 ∫(v*un)dΩ - 
                 ∫(m*0.0)d∂K
 
-  a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -      # [q,p] block
-                        ∫(γdt*(∇(q)*u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
-			∫(γdt*τ*(nₒ⋅n)*q*l)d∂Ω -                 # [q,l] block
-			∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
-                        ∫(v⋅u)dΩ +                               # [v,u] block
-                        ∫(γdt*(v⋅n)*l)d∂Ω +                      # [v,l] block
-			∫(τ*(nₒ⋅n)*m*p)d∂Ω +                     # [m,p] block
-			∫((u⋅n)*m)d∂Ω -                          # [m,u] block
-			∫(τ*(nₒ⋅n)*m*l)d∂Ω                       # [m,l] block
+  a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -       # [q,p] block
+                        ∫(γdt*(∇(q)*u))dΩ + ∫(γdt*q*(u⋅n))d∂K -   # [q,u] block
+                        ∫(γdt*τ*(nₒ⋅n)*q*l)d∂Ω -                  # [q,l] block
+                        ∫(γdt*(∇⋅v)*p)dΩ +                        # [v,p] block
+                        ∫(v⋅u)dΩ +                                # [v,u] block
+                        ∫(γdt*(v⋅n)*l)d∂Ω +                       # [v,l] block
+                        ∫(τ*(nₒ⋅n)*m*p)d∂Ω +                      # [m,p] block
+                        ∫((u⋅n)*m)d∂Ω -                           # [m,u] block
+                        ∫(τ*(nₒ⋅n)*m*l)d∂Ω                        # [m,l] block
 
   op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3])
   Xh       = solve(op₁)
   ph,uh,lh = Xh
 
   # Second stage
-  b₂((q,m)) = ∫(q*pn + γm1dt*(∇(q)⋅un)*ph)dΩ - ∫(((un⋅n) + abs(un⋅n))*γm1dt*ph*q - abs(un⋅n)*γm1dt*lh*q)d∂K -
-              ∫(0.5*((un⋅n) + abs(un⋅n))*ph*m - 0.5*abs(un⋅n)*lh*m)d∂K
+  b₂((q,v,m)) = ∫(q*pn)dΩ + ∫(γm1dt*τ*(nₒ⋅n)*q*ph)d∂K -              # [q] rhs
+                ∫(γm1dt*(∇(q)*uh))dΩ + ∫(γm1dt*q*(uh⋅n))d∂K -        # [q] rhs
+                ∫(γm1dt*τ*(nₒ⋅n)*q*lh)d∂Ω -                          # [q] rhs
+                ∫(γm1dt*(∇⋅v)*ph)dΩ +                                # [v] rhs
+                ∫(v⋅un)dΩ +                                          # [v] rhs
+                ∫(γm1dt*(v⋅n)*lh)d∂Ω +                               # [v] rhs
+                ∫(γm1*τ*(nₒ⋅n)*m*ph)d∂Ω +                            # [m] rhs
+                ∫(γm1*(uh⋅n)*m)d∂Ω -                                 # [m] rhs
+                ∫(γm1*τ*(nₒ⋅n)*m*lh)d∂Ω                              # [m] rhs
 
-  a₂((p,l),(q,m)) = ∫(q*p - γdt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + abs(un⋅n))*γdt*q*p)d∂K -    # [q,p] block
-                    ∫(γdt*abs(un⋅n)*q*l)d∂K +                                            # [q,l] block
-                    ∫(((un⋅n) + abs(un⋅n))*0.5*p*m)d∂K -                                 # [m,p] block
-                    ∫(0.5*abs(un⋅n)*l*m)d∂K                                              # [m,l] block
+  a₂((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -      # [q,p] block
+                        ∫(γdt*(∇(q)*u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
+                        ∫(γdt*τ*(nₒ⋅n)*q*l)d∂Ω -                 # [q,l] block
+                        ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
+                        ∫(v⋅u)dΩ +                               # [v,u] block
+                        ∫(γdt*(v⋅n)*l)d∂Ω +                      # [v,l] block
+                        ∫(γ*τ*(nₒ⋅n)*m*p)d∂Ω +                   # [m,p] block
+                        ∫(γ*(u⋅n)*m)d∂Ω -                        # [m,u] block
+                        ∫(γ*τ*(nₒ⋅n)*m*l)d∂Ω                     # [m,l] block
 
-  op₂       = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3])
-  Xm        = solve(op₂)
-  pm,um,,_  = Xm
+  op₂      = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3])
+  Xm       = solve(op₂)
+  pm,um,_  = Xm
 
   get_free_dof_values(pn) .= get_free_dof_values(pm)
   get_free_dof_values(un) .= get_free_dof_values(um)

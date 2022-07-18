@@ -7,8 +7,9 @@ function advection_hdg_time_step!(
   #   Muralikrishnan, Tran, Bui-Thanh, JCP, 2020 vol. 367
   #   Kang, Giraldo, Bui-Thanh, JCP, 2020 vol. 401
   γ     = 0.5*(2.0 - sqrt(2.0))
+  γm1   = (1.0 - γ)
   γdt   = γ*dt
-  γm1dt = (1.0 - γ)*dt
+  γm1dt = γm1*dt
 
   n  = get_cell_normal_vector(∂K)
   nₒ = get_cell_owner_normal_vector(∂K)
@@ -28,12 +29,15 @@ function advection_hdg_time_step!(
 
   # Second stage
   b₂((q,m)) = ∫(q*pn + γm1dt*(∇(q)⋅un)*ph)dΩ - ∫(((un⋅n) + abs(un⋅n))*γm1dt*ph*q - abs(un⋅n)*γm1dt*lh*q)d∂K -
-              ∫(0.5*((un⋅n) + abs(un⋅n))*ph*m - 0.5*abs(un⋅n)*lh*m)d∂K
+              ∫(γm1*((un⋅n) + abs(un⋅n))*ph*m - γm1*abs(un⋅n)*lh*m)d∂K
+              #∫(0.5*((un⋅n) + abs(un⋅n))*ph*m - 0.5*abs(un⋅n)*lh*m)d∂K
 
   a₂((p,l),(q,m)) = ∫(q*p - γdt*(∇(q)⋅un)*p)dΩ + ∫(((un⋅n) + abs(un⋅n))*γdt*q*p)d∂K -    # [q,p] block
                     ∫(γdt*abs(un⋅n)*q*l)d∂K +                                            # [q,l] block
-                    ∫(((un⋅n) + abs(un⋅n))*0.5*p*m)d∂K -                                 # [m,p] block
-                    ∫(0.5*abs(un⋅n)*l*m)d∂K                                              # [m,l] block
+                    ∫(((un⋅n) + abs(un⋅n))*γ*p*m)d∂K -                                   # [m,p] block
+                    ∫(γ*abs(un⋅n)*l*m)d∂K                                                # [m,l] block
+                    #∫(((un⋅n) + abs(un⋅n))*0.5*p*m)d∂K -                                # [m,p] block
+                    #∫(0.5*abs(un⋅n)*l*m)d∂K                                             # [m,l] block
 
   op₂   = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1], [2])
   Xm    = solve(op₂)
@@ -63,7 +67,7 @@ function project_initial_conditions_hdg(dΩ, P, Q, p₀, U, V, u₀, mass_matrix
   un       = FEFunction(V, copy(rhs₂))
   unv      = get_free_dof_values(un)
 
-  solve!(unv, MMchol, unv)
+  solve!(unv, U2MMchol, unv)
 
   pn, pnv, L2MM, un, unv, U2MM
 end
