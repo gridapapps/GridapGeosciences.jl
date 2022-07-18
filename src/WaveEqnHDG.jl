@@ -36,14 +36,14 @@ function wave_eqn_hdg_time_step!(
   ph,uh,lh = Xh
 
   # Second stage
-  b₂((q,v,m)) = ∫(q*pn)dΩ + ∫(γm1dt*τ*(nₒ⋅n)*q*ph)d∂K -              # [q] rhs
-                ∫(γm1dt*(∇(q)⋅uh))dΩ + ∫(γm1dt*q*(uh⋅n))d∂K -        # [q] rhs
-                ∫(γm1dt*τ*(nₒ⋅n)*q*lh)d∂K -                          # [q] rhs
+  b₂((q,v,m)) = ∫(q*pn)dΩ - ∫(γm1dt*τ*(nₒ⋅n)*q*ph)d∂K +              # [q] rhs
+                ∫(γm1dt*(∇(q)⋅uh))dΩ - ∫(γm1dt*q*(uh⋅n))d∂K +        # [q] rhs
+                ∫(γm1dt*τ*(nₒ⋅n)*q*lh)d∂K +                          # [q] rhs
                 ∫(γm1dt*(∇⋅v)*ph)dΩ +                                # [v] rhs
-                ∫(v⋅un)dΩ +                                          # [v] rhs
-                ∫(γm1dt*(v⋅n)*lh)d∂K +                               # [v] rhs
-                ∫(γm1*τ*(nₒ⋅n)*m*ph)d∂K +                            # [m] rhs
-                ∫(γm1*(uh⋅n)*m)d∂K -                                 # [m] rhs
+                ∫(v⋅un)dΩ -                                          # [v] rhs
+                ∫(γm1dt*(v⋅n)*lh)d∂K -                               # [v] rhs
+                ∫(γm1*τ*(nₒ⋅n)*m*ph)d∂K -                            # [m] rhs
+                ∫(γm1*(uh⋅n)*m)d∂K +                                 # [m] rhs
                 ∫(γm1*τ*(nₒ⋅n)*m*lh)d∂K                              # [m] rhs
 
   a₂((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -      # [q,p] block
