@@ -1,3 +1,66 @@
+using Gridap.Helpers
+using Gridap.Geometry
+using Gridap.Fields
+using Gridap.ReferenceFEs
+using Gridap.CellData
+using Gridap.Arrays
+using Gridap.Visualization
+using FillArrays
+
+function push_tangent(invJt,t)
+  # QUESTION: what is the push forward of a tangent vector??
+  v = invJt⋅t
+  m = sqrt(inner(v,v))
+  if m < eps()
+    return zero(v)
+  else
+    return v/m
+  end
+end
+
+function _cell_ledge_to_tref(args...)
+  model,glue = args[1],first(args[2:end])
+  cell_grid = get_grid(model)
+  ## Reference normal
+  function f(r)
+    p = Gridap.ReferenceFEs.get_polytope(r)
+    ledge_to_t = Gridap.ReferenceFEs.get_edge_tangent(p)
+    ledge_to_pindex_to_perm = Gridap.ReferenceFEs.get_face_vertex_permutations(p,num_cell_dims(p)-1) # 2D only??
+    nledges = length(ledge_to_t)
+    ledge_pindex_to_t = [ fill(ledge_to_t[ledge],length(ledge_to_pindex_to_perm[ledge])) for ledge in 1:nledges ]
+    ledge_pindex_to_t
+  end
+  ctype_ledge_pindex_to_tref = map(f, get_reffes(cell_grid))
+  SkeletonCompressedVector(ctype_ledge_pindex_to_tref,glue)
+end
+
+function _get_cell_tangent_vector(model,glue,cell_ledge_to_tref::Function,sign_flip=nothing)
+  cell_grid = get_grid(model)
+
+  cell_ledge_to_tref = cell_ledge_to_tref(model,glue,sign_flip)
+  cell_ledge_s_tref = lazy_map(Gridap.Fields.constant_field,cell_ledge_to_tref)
+
+  # Inverse of the Jacobian transpose
+  cell_q_x = get_cell_map(cell_grid)
+  cell_q_Jt = lazy_map(∇,cell_q_x)
+  cell_q_invJt = lazy_map(Operation(Gridap.Fields.pinvJt),cell_q_Jt)
+  cell_ledge_q_invJt = _transform_cell_to_cell_lface_array(glue, cell_q_invJt)      # private GridapHybrid Skeleton.jl
+
+  # Change of domain
+  cell_ledge_s_q = _setup_tcell_lface_mface_map(num_cell_dims(model)-1,model,glue)  # private GridapHybrid Skeleton.jl
+
+  cell_ledge_s_invJt = lazy_map(∘,cell_ledge_q_invJt,cell_ledge_s_q)
+
+  lazy_map(Broadcasting(Operation(push_tangent)),
+           cell_ledge_s_invJt,
+           cell_ledge_s_tref)
+end
+
+function get_cell_tangent_vector(s::SkeletonTriangulation)
+  cell_ledge_tangent=_get_cell_tangent_vector(s.model, s.glue, _cell_ledge_to_tref)
+  GenericCellField(cell_ledge_tangent,s,ReferenceDomain())
+end
+
 function wave_eqn_hdg_time_step!(
      pn, un, model, dΩ, ∂K, d∂K, X, Y, dt,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
@@ -17,7 +80,7 @@ function wave_eqn_hdg_time_step!(
 
   # First stage
   b₁((q,v,m)) = ∫(q*pn)dΩ +
-                ∫(v⋅un)dΩ - 
+                ∫(v⋅un)dΩ -
                 ∫(m*0.0)d∂K
 
   a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
