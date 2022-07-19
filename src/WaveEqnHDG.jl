@@ -11,8 +11,7 @@ function wave_eqn_hdg_time_step!(
   γdt   = γ*dt
   γm1dt = γm1*dt
 
-  n  = get_cell_normal_vector(∂K)
-  nₒ = get_cell_owner_normal_vector(∂K)
+  n = get_cell_normal_vector(∂K)
 
   τ = 1.0
 
@@ -21,40 +20,40 @@ function wave_eqn_hdg_time_step!(
                 ∫(v⋅un)dΩ - 
                 ∫(m*0.0)d∂K
 
-  a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -       # [q,p] block
-                        ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅n))d∂K -   # [q,u] block
-                        ∫(γdt*τ*(nₒ⋅n)*q*l)d∂K -                  # [q,l] block
-                        ∫(γdt*(∇⋅v)*p)dΩ +                        # [v,p] block
-                        ∫(v⋅u)dΩ +                                # [v,u] block
-                        ∫(γdt*(v⋅n)*l)d∂K +                       # [v,l] block
-                        ∫(τ*(nₒ⋅n)*m*p)d∂K +                      # [m,p] block
-                        ∫((u⋅n)*m)d∂K -                           # [m,u] block
-                        ∫(τ*(nₒ⋅n)*m*l)d∂K                        # [m,l] block
+  a₁((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
+                        ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
+                        ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
+                        ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
+                        ∫(v⋅u)dΩ +                               # [v,u] block
+                        ∫(γdt*(v⋅n)*l)d∂K +                      # [v,l] block
+                        ∫(τ*m*p)d∂K +                            # [m,p] block
+                        ∫((u⋅n)*m)d∂K -                          # [m,u] block
+                        ∫(τ*m*l)d∂K                              # [m,l] block
 
   op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3])
   Xh       = solve(op₁)
   ph,uh,lh = Xh
 
   # Second stage
-  b₂((q,v,m)) = ∫(q*pn)dΩ - ∫(γm1dt*τ*(nₒ⋅n)*q*ph)d∂K +              # [q] rhs
+  b₂((q,v,m)) = ∫(q*pn)dΩ - ∫(γm1dt*τ*q*ph)d∂K +                     # [q] rhs
                 ∫(γm1dt*(∇(q)⋅uh))dΩ - ∫(γm1dt*q*(uh⋅n))d∂K +        # [q] rhs
-                ∫(γm1dt*τ*(nₒ⋅n)*q*lh)d∂K +                          # [q] rhs
+                ∫(γm1dt*τ*q*lh)d∂K +                                 # [q] rhs
                 ∫(γm1dt*(∇⋅v)*ph)dΩ +                                # [v] rhs
                 ∫(v⋅un)dΩ -                                          # [v] rhs
                 ∫(γm1dt*(v⋅n)*lh)d∂K -                               # [v] rhs
-                ∫(γm1*τ*(nₒ⋅n)*m*ph)d∂K -                            # [m] rhs
+                ∫(γm1*τ*m*ph)d∂K -                                   # [m] rhs
                 ∫(γm1*(uh⋅n)*m)d∂K +                                 # [m] rhs
-                ∫(γm1*τ*(nₒ⋅n)*m*lh)d∂K                              # [m] rhs
+                ∫(γm1*τ*m*lh)d∂K                                     # [m] rhs
 
-  a₂((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*(nₒ⋅n)*q*p)d∂K -      # [q,p] block
+  a₂((p,u,l),(q,v,m)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
                         ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
-                        ∫(γdt*τ*(nₒ⋅n)*q*l)d∂K -                 # [q,l] block
+                        ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
                         ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
                         ∫(v⋅u)dΩ +                               # [v,u] block
                         ∫(γdt*(v⋅n)*l)d∂K +                      # [v,l] block
-                        ∫(γ*τ*(nₒ⋅n)*m*p)d∂K +                   # [m,p] block
+                        ∫(γ*τ*m*p)d∂K +                          # [m,p] block
                         ∫(γ*(u⋅n)*m)d∂K -                        # [m,u] block
-                        ∫(γ*τ*(nₒ⋅n)*m*l)d∂K                     # [m,l] block
+                        ∫(γ*τ*m*l)d∂K                            # [m,l] block
 
   op₂      = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3])
   Xm       = solve(op₂)
