@@ -158,9 +158,9 @@ function wave_eqn_hdg_time_step_2!(
                         ∫(τ*m*p)d∂K +                            # [m,p] block
                         ∫((u⋅n)*m)d∂K -                          # [m,u] block
                         ∫(τ*m*l)d∂K +                             # [m,l] block
-			∫((v⋅n)*(n×(∇(p))×n))d∂K - 
+			∫((v⋅n)*(∇(p)×n))d∂K - 
 			∫((v⋅n)*r)d∂K + 
-                        ∫(s*(∇(p)×n))d∂K -
+			∫(s*(∇(p)×n))d∂K -
 			∫(s*r)d∂K 
 
   op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
@@ -177,7 +177,7 @@ function wave_eqn_hdg_time_step_2!(
                 ∫(γm1*τ*m*ph)d∂K -                                   # [m] rhs
                 ∫(γm1*(uh⋅n)*m)d∂K +                                 # [m] rhs
                 ∫(γm1*τ*m*lh)d∂K -                                    # [m] rhs
-		∫(γm1*(v⋅n)*(n×(∇(ph))×n))d∂K + 
+		∫(γm1*(v⋅n)*(∇(ph)×n))d∂K + 
 			∫(γm1*(v⋅n)*rh)d∂K - 
                         ∫(γm1*s*(∇(ph)×n))d∂K +
 			∫(γm1*s*rh)d∂K 
@@ -191,9 +191,9 @@ function wave_eqn_hdg_time_step_2!(
                         ∫(γ*τ*m*p)d∂K +                          # [m,p] block
                         ∫(γ*(u⋅n)*m)d∂K -                        # [m,u] block
                         ∫(γ*τ*m*l)d∂K +                           # [m,l] block
-			∫(γ*(v⋅n)*(n×(∇(p))×n))d∂K - 
+			∫(γ*(v⋅n)*(∇(p)×n))d∂K - 
 			∫(γ*(v⋅n)*r)d∂K + 
-                        ∫(γ*s*(∇(p)-∇(p)⋅n))d∂K -
+                        ∫(γ*s*(∇(p)×n))d∂K -
 			∫(γ*s*r)d∂K 
 
   op₂      = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
@@ -281,8 +281,8 @@ function wave_eqn_hdg(
     end
 
     for istep in 1:N
-      wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
-      #wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt)
+      #wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
+      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and energy conservation
