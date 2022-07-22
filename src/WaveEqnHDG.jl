@@ -127,7 +127,7 @@ function wave_eqn_hdg_time_step!(
 end
 
 function wave_eqn_hdg_time_step_2!(
-     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt,
+     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt, V, P, R, S,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
   # Second order implicit linear wave equation
@@ -142,6 +142,17 @@ function wave_eqn_hdg_time_step_2!(
   n = get_cell_normal_vector(∂K)
 
   τ = 1.0
+
+  ### TESTING ONLY
+  A₁(v,p) = ∫((v⋅n)*(∇(p)×n))d∂K
+  A₂(v,r) = ∫((v⋅n)*r)d∂K
+  A₃(s,p) = ∫(s*(∇(p)×n))d∂K
+  A₄(s,r) = ∫(s*r)d∂K
+  M1 = assemble_matrix(A₁, P, V)
+  M2 = assemble_matrix(A₂, R, V)
+  M3 = assemble_matrix(A₃, P, S)
+  M4 = assemble_matrix(A₄, R, S)
+  ### TESTING ONLY
 
   # First stage
   b₁((q,v,m,s)) = ∫(q*pn)dΩ +
@@ -282,7 +293,7 @@ function wave_eqn_hdg(
 
     for istep in 1:N
       #wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
-      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt)
+      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt, V, P, R, S)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and energy conservation
