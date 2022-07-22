@@ -144,14 +144,14 @@ function wave_eqn_hdg_time_step_2!(
   τ = 1.0
 
   ### TESTING ONLY
-  A₁(p,v) = ∫((v⋅n)*(∇(p)×n))d∂K
-  A₂(r,v) = ∫((v⋅n)*r)d∂K
-  A₃(p,s) = ∫(s*(∇(p)×n))d∂K
-  A₄(r,s) = ∫(s*r)d∂K
-  M1 = assemble_matrix(A₁, P, V)
-  M2 = assemble_matrix(A₂, R, V)
-  M3 = assemble_matrix(A₃, P, S)
-  M4 = assemble_matrix(A₄, R, S)
+  #A₁(p,v) = ∫((v⋅n)*(∇(p)×n))d∂K
+  #A₂(r,v) = ∫((v⋅n)*r)d∂K
+  #A₃(p,s) = ∫(s*(∇(p)×n))d∂K
+  #A₄(r,s) = ∫(s*r)d∂K
+  #M1 = assemble_matrix(A₁, P, V)
+  #M2 = assemble_matrix(A₂, R, V)
+  #M3 = assemble_matrix(A₃, P, S)
+  #M4 = assemble_matrix(A₄, R, S)
   ### TESTING ONLY
 
   # First stage
