@@ -127,7 +127,7 @@ function wave_eqn_hdg_time_step!(
 end
 
 function wave_eqn_hdg_time_step_2!(
-     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt, V, P, R, S,
+     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
   # Second order implicit linear wave equation
@@ -139,20 +139,10 @@ function wave_eqn_hdg_time_step_2!(
   γdt   = γ*dt
   γm1dt = γm1*dt
 
-  n = get_cell_normal_vector(∂K)
+  nₑ = get_cell_normal_vector(∂K)
+  nᵣ = get_normal_vector(Triangulation(model))
 
   τ = 1.0
-
-  ### TESTING ONLY
-  #A₁(p,v) = ∫((v⋅n)*(∇(p)×n))d∂K
-  #A₂(r,v) = ∫((v⋅n)*r)d∂K
-  #A₃(p,s) = ∫(s*(∇(p)×n))d∂K
-  #A₄(r,s) = ∫(s*r)d∂K
-  #M1 = assemble_matrix(A₁, P, V)
-  #M2 = assemble_matrix(A₂, R, V)
-  #M3 = assemble_matrix(A₃, P, S)
-  #M4 = assemble_matrix(A₄, R, S)
-  ### TESTING ONLY
 
   # First stage
   b₁((q,v,m,s)) = ∫(q*pn)dΩ +
@@ -161,51 +151,51 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(s*0.0)d∂K
 
   a₁((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
-                        ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
-                        ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
-                        ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
-                        ∫(v⋅u)dΩ +                               # [v,u] block
-                        ∫(γdt*(v⋅n)*l)d∂K +                      # [v,l] block
-                        ∫(τ*m*p)d∂K +                            # [m,p] block
-                        ∫((u⋅n)*m)d∂K -                          # [m,u] block
-                        ∫(τ*m*l)d∂K +                             # [m,l] block
-			∫((v⋅n)*(∇(p)×n))d∂K - 
-			∫((v⋅n)*r)d∂K + 
-			∫(s*(∇(p)×n))d∂K -
-			∫(s*r)d∂K 
+                            ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅nₑ))d∂K - # [q,u] block
+                            ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
+                            ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
+                            ∫(v⋅u)dΩ +                               # [v,u] block
+                            ∫(γdt*(v⋅nₑ)*l)d∂K +                     # [v,l] block
+                            ∫(τ*m*p)d∂K +                            # [m,p] block
+                            ∫((u⋅nₑ)*m)d∂K -                         # [m,u] block
+                            ∫(τ*m*l)d∂K +                            # [m,l] block
+                            ∫((v⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
+                            ∫((v⋅nₑ)*r)d∂K + 
+                            ∫(s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
+                            ∫(s*r)d∂K 
 
   op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
   Xh       = solve(op₁)
   ph,uh,lh,rh = Xh
 
   # Second stage
-  b₂((q,v,m,s)) = ∫(q*pn)dΩ - ∫(γm1dt*τ*q*ph)d∂K +                     # [q] rhs
-                ∫(γm1dt*(∇(q)⋅uh))dΩ - ∫(γm1dt*q*(uh⋅n))d∂K +        # [q] rhs
-                ∫(γm1dt*τ*q*lh)d∂K +                                 # [q] rhs
-                ∫(γm1dt*(∇⋅v)*ph)dΩ +                                # [v] rhs
-                ∫(v⋅un)dΩ -                                          # [v] rhs
-                ∫(γm1dt*(v⋅n)*lh)d∂K -                               # [v] rhs
-                ∫(γm1*τ*m*ph)d∂K -                                   # [m] rhs
-                ∫(γm1*(uh⋅n)*m)d∂K +                                 # [m] rhs
-                ∫(γm1*τ*m*lh)d∂K -                                    # [m] rhs
-		∫(γm1*(v⋅n)*(∇(ph)×n))d∂K + 
-			∫(γm1*(v⋅n)*rh)d∂K - 
-                        ∫(γm1*s*(∇(ph)×n))d∂K +
-			∫(γm1*s*rh)d∂K 
+  b₂((q,v,m,s)) = ∫(q*pn)dΩ - ∫(γm1dt*τ*q*ph)d∂K +                       # [q] rhs
+                  ∫(γm1dt*(∇(q)⋅uh))dΩ - ∫(γm1dt*q*(uh⋅nₑ))d∂K +         # [q] rhs
+                  ∫(γm1dt*τ*q*lh)d∂K +                                   # [q] rhs
+                  ∫(γm1dt*(∇⋅v)*ph)dΩ +                                  # [v] rhs
+                  ∫(v⋅un)dΩ -                                            # [v] rhs
+                  ∫(γm1dt*(v⋅nₑ)*lh)d∂K -                                # [v] rhs
+                  ∫(γm1*τ*m*ph)d∂K -                                     # [m] rhs
+                  ∫(γm1*(uh⋅nₑ)*m)d∂K +                                  # [m] rhs
+                  ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
+                  ∫(γm1*(v⋅nₑ)*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
+                  ∫(γm1*(v⋅nₑ)*rh)d∂K - 
+                  ∫(γm1*s*(∇(ph)⋅(nᵣ×nₑ)))d∂K +
+                  ∫(γm1*s*rh)d∂K 
 
   a₂((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
-                        ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅n))d∂K -  # [q,u] block
-                        ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
-                        ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
-                        ∫(v⋅u)dΩ +                               # [v,u] block
-                        ∫(γdt*(v⋅n)*l)d∂K +                      # [v,l] block
-                        ∫(γ*τ*m*p)d∂K +                          # [m,p] block
-                        ∫(γ*(u⋅n)*m)d∂K -                        # [m,u] block
-                        ∫(γ*τ*m*l)d∂K +                           # [m,l] block
-			∫(γ*(v⋅n)*(∇(p)×n))d∂K - 
-			∫(γ*(v⋅n)*r)d∂K + 
-                        ∫(γ*s*(∇(p)×n))d∂K -
-			∫(γ*s*r)d∂K 
+                            ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅nₑ))d∂K - # [q,u] block
+                            ∫(γdt*τ*q*l)d∂K -                        # [q,l] block
+                            ∫(γdt*(∇⋅v)*p)dΩ +                       # [v,p] block
+                            ∫(v⋅u)dΩ +                               # [v,u] block
+                            ∫(γdt*(v⋅nₑ)*l)d∂K +                     # [v,l] block
+                            ∫(γ*τ*m*p)d∂K +                          # [m,p] block
+                            ∫(γ*(u⋅nₑ)*m)d∂K -                       # [m,u] block
+                            ∫(γ*τ*m*l)d∂K +                          # [m,l] block
+                            ∫(γ*(v⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
+                            ∫(γ*(v⋅nₑ)*r)d∂K + 
+                            ∫(γ*s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
+                            ∫(γ*s*r)d∂K 
 
   op₂      = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
   Xm       = solve(op₂)
@@ -293,7 +283,7 @@ function wave_eqn_hdg(
 
     for istep in 1:N
       #wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
-      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt, V, P, R, S)
+      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and energy conservation
