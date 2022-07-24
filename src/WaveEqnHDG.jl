@@ -141,6 +141,7 @@ function wave_eqn_hdg_time_step_2!(
 
   nₑ = get_cell_normal_vector(∂K)
   nᵣ = get_normal_vector(Triangulation(model))
+  nₒ = get_cell_owner_normal_vector(∂K)
 
   τ = 1.0
 
@@ -159,13 +160,13 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(τ*m*p)d∂K +                            # [m,p] block
                             ∫((u⋅nₑ)*m)d∂K -                         # [m,u] block
                             ∫(τ*m*l)d∂K +                            # [m,l] block
-                            ∫((v⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫((v⋅nₑ)*r)d∂K + 
+                            ∫((v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
+                            ∫((v⋅(nᵣ×nₑ))*r)d∂K + 
                             ∫(s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
                             ∫(s*r)d∂K 
 
-  op₁      = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
-  Xh       = solve(op₁)
+  op₁         = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
+  Xh          = solve(op₁)
   ph,uh,lh,rh = Xh
 
   # Second stage
@@ -178,8 +179,8 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(γm1*τ*m*ph)d∂K -                                     # [m] rhs
                   ∫(γm1*(uh⋅nₑ)*m)d∂K +                                  # [m] rhs
                   ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
-                  ∫(γm1*(v⋅nₑ)*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
-                  ∫(γm1*(v⋅nₑ)*rh)d∂K - 
+                  ∫(γm1*(v⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
+                  ∫(γm1*(v⋅(nᵣ×nₑ))*rh)d∂K - 
                   ∫(γm1*s*(∇(ph)⋅(nᵣ×nₑ)))d∂K +
                   ∫(γm1*s*rh)d∂K 
 
@@ -192,13 +193,13 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γ*τ*m*p)d∂K +                          # [m,p] block
                             ∫(γ*(u⋅nₑ)*m)d∂K -                       # [m,u] block
                             ∫(γ*τ*m*l)d∂K +                          # [m,l] block
-                            ∫(γ*(v⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫(γ*(v⋅nₑ)*r)d∂K + 
+                            ∫(γ*(v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
+                            ∫(γ*(v⋅(nᵣ×nₑ))*r)d∂K + 
                             ∫(γ*s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
                             ∫(γ*s*r)d∂K 
 
-  op₂      = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
-  Xm       = solve(op₂)
+  op₂        = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
+  Xm         = solve(op₂)
   pm,um,_,_  = Xm
 
   get_free_dof_values(pn) .= get_free_dof_values(pm)
