@@ -127,7 +127,7 @@ function wave_eqn_hdg_time_step!(
 end
 
 function wave_eqn_hdg_time_step_2!(
-     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt,
+     pn, un, model, dΩ, ∂K, d∂K, X, Y, dt, uo,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
   # Second order implicit linear wave equation
@@ -147,9 +147,9 @@ function wave_eqn_hdg_time_step_2!(
 
   # First stage
   b₁((q,v,m,s)) = ∫(q*pn)dΩ +
-                  ∫(v⋅un)dΩ -
-                  ∫(m*0.0)d∂K - 
-                  ∫(s*0.0)d∂K
+                  ∫(v⋅un)dΩ +
+                  ∫(m*0.0)d∂K +
+                  ∫(s⋅uo)d∂K
 
   a₁((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
                             ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅nₑ))d∂K - # [q,u] block
@@ -162,8 +162,8 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(τ*m*l)d∂K +                            # [m,l] block
                             ∫((v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
                             ∫((v⋅(nᵣ×nₑ))*r)d∂K + 
-                            ∫(s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
-                            ∫(s*r)d∂K 
+                            ∫((s⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K -
+                            ∫((s⋅(nᵣ×nₑ))*r)d∂K 
 
   op₁         = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
   Xh          = solve(op₁)
@@ -181,8 +181,8 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
                   ∫(γm1*(v⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
                   ∫(γm1*(v⋅(nᵣ×nₑ))*rh)d∂K - 
-                  ∫(γm1*s*(∇(ph)⋅(nᵣ×nₑ)))d∂K +
-                  ∫(γm1*s*rh)d∂K 
+                  ∫(γm1*(s⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K +
+                  ∫(γm1*(s⋅(nᵣ×nₑ))*rh)d∂K 
 
   a₂((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
                             ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅nₑ))d∂K - # [q,u] block
@@ -195,8 +195,8 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γ*τ*m*l)d∂K +                          # [m,l] block
                             ∫(γ*(v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
                             ∫(γ*(v⋅(nᵣ×nₑ))*r)d∂K + 
-                            ∫(γ*s*(∇(p)⋅(nᵣ×nₑ)))d∂K -
-                            ∫(γ*s*r)d∂K 
+                            ∫(γ*(s⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K -
+                            ∫(γ*(s⋅(nᵣ×nₑ))*r)d∂K 
 
   op₂        = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
   Xm         = solve(op₂)
@@ -236,12 +236,13 @@ function wave_eqn_hdg(
   reffeᵤ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
   reffeₚ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeₗ = ReferenceFE(lagrangian,Float64,order;space=:P)
+  reffeᵣ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
 
   # Define test FESpaces
   V = TestFESpace(Ω, reffeᵤ; conformity=:L2)
   Q = TestFESpace(Ω, reffeₚ; conformity=:L2)
   M = TestFESpace(Γ, reffeₗ; conformity=:L2)
-  S = TestFESpace(Γ, reffeₗ; conformity=:L2)
+  S = TestFESpace(Γ, reffeᵣ; conformity=:L2)
   Y = MultiFieldFESpace([Q,V,M])
   Y2 = MultiFieldFESpace([Q,V,M,S])
 
@@ -260,6 +261,7 @@ function wave_eqn_hdg(
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, L2MM, un, unv, U2MM = project_initial_conditions_hdg(dΩ, P, Q, p₀, U, V, u₀, mass_matrix_solver)
+  uo = FEFunction(V, copy(unv))
 
   # Work array
   p_tmp = copy(pnv)
@@ -284,7 +286,7 @@ function wave_eqn_hdg(
 
     for istep in 1:N
       #wave_eqn_hdg_time_step!(pn, un, model, dΩ, ∂K, d∂K, X, Y, dt)
-      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt)
+      wave_eqn_hdg_time_step_2!(pn, un, model, dΩ, ∂K, d∂K, X2, Y2, dt, uo)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
         # compute mass and energy conservation
