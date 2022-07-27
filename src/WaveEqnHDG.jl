@@ -161,9 +161,9 @@ function wave_eqn_hdg_time_step_2!(
                             ∫((u⋅nₑ)*m)d∂K -                         # [m,u] block
                             ∫(τ*m*l)d∂K +                            # [m,l] block
                             ∫((v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫((v⋅(nᵣ×nₑ))*r)d∂K + 
-                            ∫((s⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K -
-                            ∫((s⋅(nᵣ×nₑ))*r)d∂K 
+                            ∫((v⋅(nᵣ×nₑ))⋅r)d∂K + 
+			    ∫((s⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K -
+                            ∫(s⋅r)d∂K 
 
   op₁         = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
   Xh          = solve(op₁)
@@ -180,9 +180,9 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(γm1*(uh⋅nₑ)*m)d∂K +                                  # [m] rhs
                   ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
                   ∫(γm1*(v⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
-                  ∫(γm1*(v⋅(nᵣ×nₑ))*rh)d∂K - 
-                  ∫(γm1*(s⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K +
-                  ∫(γm1*(s⋅(nᵣ×nₑ))*rh)d∂K 
+                  ∫(γm1*(v⋅(nᵣ×nₑ))⋅rh)d∂K - 
+		  ∫(γm1*((s⋅nₑ)*(∇(ph)⋅(nᵣ×nₑ))))d∂K +
+		  ∫(γm1*(s⋅rh))d∂K 
 
   a₂((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
                             ∫(γdt*(∇(q)⋅u))dΩ + ∫(γdt*q*(u⋅nₑ))d∂K - # [q,u] block
@@ -194,9 +194,9 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γ*(u⋅nₑ)*m)d∂K -                       # [m,u] block
                             ∫(γ*τ*m*l)d∂K +                          # [m,l] block
                             ∫(γ*(v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫(γ*(v⋅(nᵣ×nₑ))*r)d∂K + 
-                            ∫(γ*(s⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K -
-                            ∫(γ*(s⋅(nᵣ×nₑ))*r)d∂K 
+                            ∫(γ*(v⋅(nᵣ×nₑ))⋅r)d∂K + 
+			    ∫(γ*((s⋅nₑ)*(∇(p)⋅(nᵣ×nₑ))))d∂K -
+			    ∫(γ*(s⋅r))d∂K 
 
   op₂        = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
   Xm         = solve(op₂)
