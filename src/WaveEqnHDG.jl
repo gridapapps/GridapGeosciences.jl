@@ -161,7 +161,7 @@ function wave_eqn_hdg_time_step_2!(
                             ∫((u⋅nₑ)*m)d∂K -                         # [m,u] block
                             ∫(τ*m*l)d∂K +                            # [m,l] block
                             ∫((v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫((v⋅(nᵣ×nₑ))⋅r)d∂K + 
+                            ∫(v⋅r)d∂K + 
 			    ∫((s⋅nₑ)*(∇(p)⋅(nᵣ×nₑ)))d∂K -
                             ∫(s⋅r)d∂K 
 
@@ -180,7 +180,7 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(γm1*(uh⋅nₑ)*m)d∂K +                                  # [m] rhs
                   ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
                   ∫(γm1*(v⋅(nᵣ×nₑ))*(∇(ph)⋅(nᵣ×nₑ)))d∂K + 
-                  ∫(γm1*(v⋅(nᵣ×nₑ))⋅rh)d∂K - 
+		  ∫(γm1*(v⋅rh))d∂K - 
 		  ∫(γm1*((s⋅nₑ)*(∇(ph)⋅(nᵣ×nₑ))))d∂K +
 		  ∫(γm1*(s⋅rh))d∂K 
 
@@ -194,7 +194,7 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γ*(u⋅nₑ)*m)d∂K -                       # [m,u] block
                             ∫(γ*τ*m*l)d∂K +                          # [m,l] block
                             ∫(γ*(v⋅(nᵣ×nₑ))*(∇(p)⋅(nᵣ×nₑ)))d∂K - 
-                            ∫(γ*(v⋅(nᵣ×nₑ))⋅r)d∂K + 
+			    ∫(γ*(v⋅r))d∂K + 
 			    ∫(γ*((s⋅nₑ)*(∇(p)⋅(nᵣ×nₑ))))d∂K -
 			    ∫(γ*(s⋅r))d∂K 
 
