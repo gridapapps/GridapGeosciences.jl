@@ -159,10 +159,10 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γdt*(v⋅nₑ)*l)d∂K +                     # [v,l] block
                             ∫(τ*m*p)d∂K +                            # [m,p] block
                             ∫((u⋅nₑ)*m)d∂K -                         # [m,u] block
-                            ∫(τ*m*l)d∂K -                            # [m,l] block
-			    ∫(τ*((v×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K +
-			    ∫(τ*((v×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K +
-			    ∫(τ*((s×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K -
+                            ∫(τ*m*l)d∂K +                            # [m,l] block
+			    ∫(τ*((v×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K -
+			    ∫(τ*((v×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K -
+			    ∫(τ*((s×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K +
 			    ∫(τ*((s×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K
 
   op₁         = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2], [3,4])
@@ -178,10 +178,10 @@ function wave_eqn_hdg_time_step_2!(
                   ∫(γm1dt*(v⋅nₑ)*lh)d∂K -                                # [v] rhs
                   ∫(γm1*τ*m*ph)d∂K -                                     # [m] rhs
                   ∫(γm1*(uh⋅nₑ)*m)d∂K +                                  # [m] rhs
-                  ∫(γm1*τ*m*lh)d∂K +                                     # [m] rhs
-		  ∫(γm1*τ*((v×nₑ)⋅((nₑ×(uh×nₑ))×nₑ)))d∂K -
-		  ∫(γm1*τ*((v×nₑ)⋅((nₑ×(rh×nₑ))×nₑ)))d∂K -
-		  ∫(γm1*τ*((s×nₑ)⋅((nₑ×(uh×nₑ))×nₑ)))d∂K +
+                  ∫(γm1*τ*m*lh)d∂K -                                     # [m] rhs
+		  ∫(γm1*τ*((v×nₑ)⋅((nₑ×(uh×nₑ))×nₑ)))d∂K +
+		  ∫(γm1*τ*((v×nₑ)⋅((nₑ×(rh×nₑ))×nₑ)))d∂K +
+		  ∫(γm1*τ*((s×nₑ)⋅((nₑ×(uh×nₑ))×nₑ)))d∂K -
 		  ∫(γm1*τ*((s×nₑ)⋅((nₑ×(rh×nₑ))×nₑ)))d∂K
 
   a₂((p,u,l,r),(q,v,m,s)) = ∫(q*p)dΩ + ∫(γdt*τ*q*p)d∂K -             # [q,p] block
@@ -192,10 +192,10 @@ function wave_eqn_hdg_time_step_2!(
                             ∫(γdt*(v⋅nₑ)*l)d∂K +                     # [v,l] block
                             ∫(γ*τ*m*p)d∂K +                          # [m,p] block
                             ∫(γ*(u⋅nₑ)*m)d∂K -                       # [m,u] block
-                            ∫(γ*τ*m*l)d∂K -                          # [m,l] block
-			    ∫(γ*τ*((v×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K +
-			    ∫(γ*τ*((v×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K +
-			    ∫(γ*τ*((s×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K -
+                            ∫(γ*τ*m*l)d∂K +                          # [m,l] block
+			    ∫(γ*τ*((v×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K -
+			    ∫(γ*τ*((v×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K -
+			    ∫(γ*τ*((s×nₑ)⋅((nₑ×(u×nₑ))×nₑ)))d∂K +
 			    ∫(γ*τ*((s×nₑ)⋅((nₑ×(r×nₑ))×nₑ)))d∂K
 
   op₂        = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2], [3,4])
