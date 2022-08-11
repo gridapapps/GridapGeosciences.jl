@@ -73,7 +73,7 @@ function shallow_water_hdg_time_step!(
   get_free_dof_values(wn) .= get_free_dof_values(wm)
 end
 
-function project_initial_conditions_sw_hdg(dΩ, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
+function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
   # the depth field
   b₁(q)    = ∫(q*p₀)dΩ
   a₁(p,q)  = ∫(q*p)dΩ
@@ -141,7 +141,7 @@ end
 
 function shallow_water_hdg(
         model, order, degree,
-        u₀, p₀, f₀, grav, dt, N;
+        p₀, u₀, f₀, grav, dt, N;
         mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
         write_diagnostics=true,
         write_diagnostics_freq=1,
@@ -184,10 +184,10 @@ function shallow_water_hdg(
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, un, unv, fn, fnv, wn, wnv, L2MM, U2MM, L2MMchol, U2MMchol = 
-    project_initial_conditions_sw_hdg(dΩ, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
+    project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
 
   wr = FEFunction(Q, copy(pnv))
-  wr = get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)
+  get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)
 
   bo = FEFunction(V, copy(unv))
   get_free_dof_values(bo) .= 0.0
