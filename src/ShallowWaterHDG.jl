@@ -29,15 +29,15 @@ function shallow_water_hdg_time_step!(
                     ∫(m*0.0)d∂K +
                     ∫(s⋅bₒ)d∂K
 
-  a₁((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K       + # b equation
-                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                           - # v equation
-			        ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ    + # ...
-                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K  + # ...
-                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                               + # q equation
-			        ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K               - # ...
-			        ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                 + # ...
-			        ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  - # m equation
-			        ∫((nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
+  a₁((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K        + # b equation
+                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                            - # v equation
+                                ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ     + # ...
+                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K   + # ...
+                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                + # q equation
+                                ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                - # ...
+                                ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                  + # ...
+                                ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K   - # m equation
+                                ∫((nₑ×(s×nₑ))⋅(nₑ×(a + τ*(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
 
   op₁            = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2,3], [4,5])
   Xh             = solve(op₁)
@@ -52,17 +52,17 @@ function shallow_water_hdg_time_step!(
                     ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                 +
                     ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                      -
                     ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*p*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
-                    ∫(γm1*(nₑ×(s×nₑ))⋅(nₑ×(wh + τ(nₑ×(uh×nₑ - nₑ×(rh×nₑ)))×nₑ)))d∂K
+                    ∫(γm1*(nₑ×(s×nₑ))⋅(nₑ×(wh + τ*(nₑ×(uh×nₑ - nₑ×(rh×nₑ)))×nₑ)))d∂K
 
-  a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K         + # b equation
-                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                             - # v equation
-			        ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ      + # ...
-                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K    + # ...
-                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                 + # q equation
-			        ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                 - # ...
-			        ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                   + # ...
-			        ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  - # m equation
-			        ∫(γ*(nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
+  a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K          + # b equation
+                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                              - # v equation
+			        ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ       + # ...
+                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K     + # ...
+                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                  + # q equation
+			        ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                  - # ...
+			        ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                    + # ...
+			        ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K   - # m equation
+			        ∫(γ*(nₑ×(s×nₑ))⋅(nₑ×(a + τ*(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
 
   op₂            = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2,3], [4,5])
   Xm             = solve(op₂)
@@ -163,13 +163,14 @@ function shallow_water_hdg(
   Γ = Triangulation(ReferenceFE{D-1},model)
   ∂K = GridapHybrid.Skeleton(model)
 
+  reffeₐ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
   reffeᵤ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
   reffeₚ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeₗ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeᵣ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
 
   # Define test FESpaces
-  B = TestFESpace(Ω, reffeᵤ; conformity=:L2)
+  B = TestFESpace(Ω, reffeₐ; conformity=:L2)
   V = TestFESpace(Ω, reffeᵤ; conformity=:L2)
   Q = TestFESpace(Ω, reffeₚ; conformity=:L2)
   M = TestFESpace(Γ, reffeₗ; conformity=:L2)
