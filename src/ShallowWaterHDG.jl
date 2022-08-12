@@ -23,48 +23,48 @@ function shallow_water_hdg_time_step!(
   # R/S: lagrange multiplier (velocity)
 
   # First stage
-  b₁((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ
-                  + ∫(v*un)dΩ
-                  + ∫(q*pn)dΩ
-                  + ∫(m*0.0)d∂K
-                  + ∫(s⋅bₒ)d∂K
+  b₁((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ +
+                    ∫(v⋅un)dΩ +
+                    ∫(q*pn)dΩ +
+                    ∫(m*0.0)d∂K +
+                    ∫(s⋅bₒ)d∂K
 
-  a₁((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K         # b equation
-                              + ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                             # v equation
-			      - ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ      # ...
-                              + ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K    # ...
-                              + ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                 # q equation
-			      + ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                 # ...
-			      - ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                   # ...
-			      + ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K    # m equation
-			      - ∫((nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
+  a₁((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K       + # b equation
+                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                           - # v equation
+			        ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ    + # ...
+                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K  + # ...
+                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                               + # q equation
+			        ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K               - # ...
+			        ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                 + # ...
+			        ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  - # m equation
+			        ∫((nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
 
-  op₁            = HybridAffineFEOperator((u,v)->(a₁(u,v),b₁(v)), X, Y, [1,2,3], [4,5])
+  op₁            = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2,3], [4,5])
   Xh             = solve(op₁)
   wh,uh,ph,lh,rh = Xh
 
   # Second stage
-  b₂((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ
-                  - ∫(v⋅un + γm1dt*v⋅((wh + fn)×uh))dΩ
-                  + ∫(γm1dt*(∇⋅v)*(0.5*(nₑ*(uh⋅nₑ))⋅(nₑ*(uh⋅nₑ)) + grav*ph))dΩ
-                  - ∫(γm1dt*(v⋅nₑ)*(0.5*(nₑ*(rh⋅nₑ))⋅(nₑ*(rh⋅nₑ)) + grav*lh))d∂K
-                  - ∫(q*ph - γm1dt*(∇(q)⋅uh)*ph)dΩ
-                  - ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K
-                  + ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K
-                  - ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*p*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K
-                  + ∫(γm1*(nₑ×(s×nₑ))⋅(nₑ×(wh + τ(nₑ×(uh×nₑ - nₑ×(rh×nₑ)))×nₑ)))d∂K
+  b₂((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ                                                        -
+                    ∫(v⋅un + γm1dt*v⋅((wh + fn)×uh))dΩ                               +
+                    ∫(γm1dt*(∇⋅v)*(0.5*(nₑ*(uh⋅nₑ))⋅(nₑ*(uh⋅nₑ)) + grav*ph))dΩ       -
+                    ∫(γm1dt*(v⋅nₑ)*(0.5*(nₑ*(rh⋅nₑ))⋅(nₑ*(rh⋅nₑ)) + grav*lh))d∂K     -
+                    ∫(q*ph - γm1dt*(∇(q)⋅uh)*ph)dΩ                                   -
+                    ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                 +
+                    ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                      -
+                    ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*p*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
+                    ∫(γm1*(nₑ×(s×nₑ))⋅(nₑ×(wh + τ(nₑ×(uh×nₑ - nₑ×(rh×nₑ)))×nₑ)))d∂K
 
-  a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K         # b equation
-                              + ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                             # v equation
-			      - ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ      # ...
-                              + ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K    # ...
-                              + ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                 # q equation
-			      + ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                 # ...
-			      - ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                   # ...
-			      + ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  # m equation
-			      - ∫(γ*(nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K # s equation
+  a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(u×nₑ)))d∂K         + # b equation
+                                ∫(v⋅u + γdt*v⋅((wn + fn)×u))dΩ                             - # v equation
+			        ∫(γdt*(∇⋅v)*(0.5*(nₑ*(u⋅nₑ))⋅(nₑ*(u⋅nₑ)) + grav*p))dΩ      + # ...
+                                ∫(γdt*(v⋅nₑ)*(0.5*(nₑ*(r⋅nₑ))⋅(nₑ*(r⋅nₑ)) + grav*l))d∂K    + # ...
+                                ∫(q*p - γdt*(∇(q)⋅u)*pn)dΩ                                 + # q equation
+			        ∫(γdt*(u⋅nₑ)*q*pn + γdt*abs(un⋅nₑ)*q*p)d∂K                 - # ...
+			        ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                   + # ...
+			        ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  - # m equation
+			        ∫(γ*(nₑ×(s×nₑ))⋅(nₑ×(a + τ(nₑ×(u×nₑ - nₑ×(r×nₑ)))×nₑ)))d∂K   # s equation
 
-  op₂            = HybridAffineFEOperator((u,v)->(a₂(u,v),b₂(v)), X, Y, [1,2,3], [4,5])
+  op₂            = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2,3], [4,5])
   Xm             = solve(op₂)
   wm,um,pm,lm,rm = Xm
 
@@ -73,7 +73,7 @@ function shallow_water_hdg_time_step!(
   get_free_dof_values(wn) .= get_free_dof_values(wm)
 end
 
-function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
+function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, model, mass_matrix_solver)
   # the depth field
   b₁(q)    = ∫(q*p₀)dΩ
   a₁(p,q)  = ∫(q*p)dΩ
@@ -112,6 +112,13 @@ function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P
   ω3    = FEFunction(V, copy(rhs₄))
   ω3v   = get_free_dof_values(ω3)
   solve!(ω3v, U2MMchol, ω3v)
+
+  #nᵣ   = get_normal_vector(Triangulation(model))
+  #b₅(q) = ∫(q*(ω3⋅nᵣ))dΩ
+  #rhs₅  = assemble_vector(b₅, Q)
+  #ωr    = FEFunction(Q, copy(rhs₅))
+  #ωrv  = get_free_dof_values(ωr)
+  #solve!(ωrv, L2MMchol, ωrv)
 
   pn, pnv, un, unv, fn, fnv, ω3, ω3v, L2MM, U2MM, L2MMchol, U2MMchol
 end
@@ -184,7 +191,7 @@ function shallow_water_hdg(
 
   # Project the initial conditions onto the trial spaces
   pn, pnv, un, unv, fn, fnv, wn, wnv, L2MM, U2MM, L2MMchol, U2MMchol = 
-    project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, mass_matrix_solver)
+    project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, model, mass_matrix_solver)
 
   wr = FEFunction(Q, copy(pnv))
   get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)

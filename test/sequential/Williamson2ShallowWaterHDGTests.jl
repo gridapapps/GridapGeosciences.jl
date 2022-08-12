@@ -46,7 +46,7 @@ for i in 1:1
   dt     = 0.05*dx/Uc
   println("timestep: ", dt)   # gravity wave time step
 
-  model = CubedSphereDiscreteModel(n; radius=rₑ)
+  model = CubedSphereDiscreteModel(n,2; radius=rₑ)
   shallow_water_hdg(model, order, degree,
                              h₀, u₀, f3, g,
                              dt, nstep;
