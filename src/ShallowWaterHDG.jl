@@ -49,19 +49,19 @@ function shallow_water_hdg_time_step!(
   wh,uh,ph,lh,rh = Xh
 
   # Second stage
-  b₂((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ                                                        -
-                    ∫(v⋅un + γm1dt*(v⋅((wh + fn)×uh)))dΩ                             +
-                    ∫(γm1dt*(∇⋅v)*0.5*(uh⋅uh))dΩ                                     -
-                    ∫(γm1dt*(∇⋅v)*(grav*ph))dΩ                                       -
+  b₂((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ                                                         -
+                    ∫(v⋅un + γm1dt*(v⋅((wh + fn)×uh)))dΩ                              +
+                    ∫(γm1dt*(∇⋅v)*0.5*(uh⋅uh))dΩ                                      -
+                    ∫(γm1dt*(∇⋅v)*(grav*ph))dΩ                                        -
                     #∫(γm1dt*(v⋅nₑ)*0.5*((nₑ⋅(rh⋅nₑ))⋅(nₑ⋅(rh⋅nₑ))))d∂K               -
-                    ∫(γm1dt*(v⋅nₑ)*0.5*(rh⋅rh))d∂K                                   -
-                    ∫(γm1dt*(v⋅nₑ)*(grav*lh))d∂K                                     -
-                    ∫(q*ph - γm1dt*(∇(q)⋅uh)*ph)dΩ                                   -
-                    ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                 +
-                    ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                      -
-                    ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*p*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
-                    ∫(γm1*((nₑ×(s×nₑ))⋅(wh×nₑ)))d∂K                                  +
-                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅((nₑ×(uh×nₑ))×nₑ)))d∂K                      -
+                    ∫(γm1dt*(v⋅nₑ)*0.5*(rh⋅rh))d∂K                                    -
+                    ∫(γm1dt*(v⋅nₑ)*(grav*lh))d∂K                                      -
+                    ∫(q*ph - γm1dt*(∇(q)⋅uh)*ph)dΩ                                    -
+                    ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                  +
+                    ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                       -
+                    ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*ph*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
+                    ∫(γm1*((nₑ×(s×nₑ))⋅(wh×nₑ)))d∂K                                   +
+                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅((nₑ×(uh×nₑ))×nₑ)))d∂K                       -
                     ∫(τ*γm1*((nₑ×(s×nₑ))⋅((nₑ×(rh×nₑ))×nₑ)))d∂K                   
 
   a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(r×nₑ)))d∂K        + # b equation
@@ -147,7 +147,7 @@ function sw_conservation_hdg(L2MM, U2MM, pnv, unv, wnv, p_tmp, u_tmp, w_tmp, mas
   mass_con = (mass_con - mass_0)/mass_0
 
   # 3d vorticity conservation
-  mul!(w_tmp, U3MM, unv)
+  mul!(w_tmp, U2MM, unv)
   vort_con = sum(w_tmp)
   vort_con = (vort_con - vort_0)/vort_0
 
