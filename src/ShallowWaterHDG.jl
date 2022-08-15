@@ -31,7 +31,7 @@ function shallow_water_hdg_time_step!(
 
   a₁((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(r×nₑ)))d∂K       + # b equation
                                 ∫(v⋅u + γdt*(v⋅((wn + fn)×u)))dΩ                         - # v equation
-                                ∫(γdt*(∇⋅v)*0.5*(un⋅u))dΩ                                + # ...
+                                ∫(γdt*(∇⋅v)*0.5*(un⋅u))dΩ                                - # ...
                                 ∫(γdt*(∇⋅v)*(grav*p))dΩ                                  + # ...
                                 ∫(γdt*(v⋅nₑ)*0.5*(rn⋅r))d∂K                              + # ...
                                 ∫(γdt*(v⋅nₑ)*(grav*l))d∂K                                + # ...
@@ -50,7 +50,7 @@ function shallow_water_hdg_time_step!(
   # Second stage
   b₂((b,v,q,m,s)) = ∫(b⋅bₒ)dΩ                                                         -
                     ∫(v⋅un + γm1dt*(v⋅((wh + fn)×uh)))dΩ                              +
-                    ∫(γm1dt*(∇⋅v)*0.5*(uh⋅uh))dΩ                                      -
+                    ∫(γm1dt*(∇⋅v)*0.5*(uh⋅uh))dΩ                                      +
                     ∫(γm1dt*(∇⋅v)*(grav*ph))dΩ                                        -
                     ∫(γm1dt*(v⋅nₑ)*0.5*(rh⋅rh))d∂K                                    -
                     ∫(γm1dt*(v⋅nₑ)*(grav*lh))d∂K                                      -
@@ -64,7 +64,7 @@ function shallow_water_hdg_time_step!(
 
   a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(r×nₑ)))d∂K        + # b equation
                                 ∫(v⋅u + γdt*(v⋅((wn + fn)×u)))dΩ                          - # v equation
-                                ∫(γdt*(∇⋅v)*0.5*(uh⋅u))dΩ                                 + # ...
+                                ∫(γdt*(∇⋅v)*0.5*(uh⋅u))dΩ                                 - # ...
                                 ∫(γdt*(∇⋅v)*(grav*p))dΩ                                   + # ...
                                 ∫(γdt*(v⋅nₑ)*0.5*(rh⋅r))d∂K                               + # ...
                                 ∫(γdt*(v⋅nₑ)*(grav*l))d∂K                                 + # ...
@@ -121,7 +121,7 @@ function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P
   # the vorticity field
   nₑ = get_cell_normal_vector(∂K)
 
-  b₄(v) = ∫((∇×v)⋅un)dΩ + ∫((v×nₑ)⋅((nₑ×(un×nₑ))×nₑ))d∂K
+  b₄(v) = ∫((∇×v)⋅un)dΩ + ∫((v×nₑ)⋅((nₑ×(un×nₑ))))d∂K
   rhs₄  = assemble_vector(b₄, V)
   ω3    = FEFunction(V, copy(rhs₄))
   ω3v   = get_free_dof_values(ω3)
