@@ -50,8 +50,8 @@ for i in 1:1
   shallow_water_hdg(model, order, degree,
                              h₀, u₀, f3, g,
                              dt, nstep;
-                             write_solution=false,
-                             write_solution_freq=5,
+                             write_solution=true,
+                             write_solution_freq=1,
                              write_diagnostics=true,
                              write_diagnostics_freq=1,
                              dump_diagnostics_on_screen=true)
