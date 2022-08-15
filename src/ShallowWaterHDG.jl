@@ -1,5 +1,5 @@
 function shallow_water_hdg_time_step!(
-     pn, un, wn, fn, bₒ, grav, model, dΩ, ∂K, d∂K, X, Y, dt,
+     pn, un, wn, rn, fn, bₒ, grav, model, dΩ, ∂K, d∂K, X, Y, dt,
      assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},X,Y))
 
   # Second order implicit shallow_water
@@ -33,8 +33,7 @@ function shallow_water_hdg_time_step!(
                                 ∫(v⋅u + γdt*(v⋅((wn + fn)×u)))dΩ                         - # v equation
                                 ∫(γdt*(∇⋅v)*0.5*(un⋅u))dΩ                                + # ...
                                 ∫(γdt*(∇⋅v)*(grav*p))dΩ                                  + # ...
-                                #∫(γdt*(v⋅nₑ)*0.5*((nₑ⋅(un⋅nₑ))⋅(nₑ⋅(r⋅nₑ))))d∂K          + # ...
-                                ∫(γdt*(v⋅nₑ)*0.5*(un⋅r))d∂K                              + # ...
+                                ∫(γdt*(v⋅nₑ)*0.5*(rn⋅r))d∂K                              + # ...
                                 ∫(γdt*(v⋅nₑ)*(grav*l))d∂K                                + # ...
                                 ∫(q*p)dΩ - ∫(γdt*(∇(q)⋅u)*pn)dΩ                          + # q equation
                                 ∫(γdt*pn*(u⋅nₑ)*q)d∂K + ∫(γdt*abs(un⋅nₑ)*q*p)d∂K         - # ...
@@ -53,10 +52,9 @@ function shallow_water_hdg_time_step!(
                     ∫(v⋅un + γm1dt*(v⋅((wh + fn)×uh)))dΩ                              +
                     ∫(γm1dt*(∇⋅v)*0.5*(uh⋅uh))dΩ                                      -
                     ∫(γm1dt*(∇⋅v)*(grav*ph))dΩ                                        -
-                    #∫(γm1dt*(v⋅nₑ)*0.5*((nₑ⋅(rh⋅nₑ))⋅(nₑ⋅(rh⋅nₑ))))d∂K               -
                     ∫(γm1dt*(v⋅nₑ)*0.5*(rh⋅rh))d∂K                                    -
                     ∫(γm1dt*(v⋅nₑ)*(grav*lh))d∂K                                      -
-                    ∫(q*ph - γm1dt*(∇(q)⋅uh)*ph)dΩ                                    -
+                    ∫(q*pn - γm1dt*(∇(q)⋅uh)*ph)dΩ                                    -
                     ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                  +
                     ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                       -
                     ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*ph*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
@@ -68,7 +66,6 @@ function shallow_water_hdg_time_step!(
                                 ∫(v⋅u + γdt*(v⋅((wn + fn)×u)))dΩ                          - # v equation
                                 ∫(γdt*(∇⋅v)*0.5*(uh⋅u))dΩ                                 + # ...
                                 ∫(γdt*(∇⋅v)*(grav*p))dΩ                                   + # ...
-                                #∫(γdt*(v⋅nₑ)*0.5*((nₑ⋅(rh⋅nₑ))⋅(nₑ⋅(r⋅nₑ))))d∂K           + # ...
                                 ∫(γdt*(v⋅nₑ)*0.5*(rh⋅r))d∂K                               + # ...
                                 ∫(γdt*(v⋅nₑ)*(grav*l))d∂K                                 + # ...
                                 ∫(q*p)dΩ - ∫(γdt*(∇(q)⋅u)*pn)dΩ                           + # q equation
@@ -86,6 +83,8 @@ function shallow_water_hdg_time_step!(
   get_free_dof_values(un) .= get_free_dof_values(um)
   get_free_dof_values(pn) .= get_free_dof_values(pm)
   get_free_dof_values(wn) .= get_free_dof_values(wm)
+
+  rn
 end
 
 function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, model, mass_matrix_solver)
@@ -149,7 +148,7 @@ function sw_conservation_hdg(L2MM, U2MM, pnv, unv, wnv, p_tmp, u_tmp, w_tmp, mas
   # 3d vorticity conservation
   mul!(w_tmp, U2MM, unv)
   vort_con = sum(w_tmp)
-  vort_con = (vort_con - vort_0)/vort_0
+  vort_con = (vort_con - vort_0)
 
   mass_con, vort_con
 end
@@ -223,6 +222,8 @@ function shallow_water_hdg(
   mul!(w_tmp, U2MM, wnv)
   vort_0 = sum(w_tmp)
 
+  rn = FEFunction(V, copy(unv))
+
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"sw_diagnostics.csv")
     if (write_diagnostics)
@@ -233,7 +234,7 @@ function shallow_water_hdg(
     end
 
     for istep in 1:N
-      shallow_water_hdg_time_step!(pn, un, wn, fn, bo, grav, model, dΩ, ∂K, d∂K, X, Y, dt)
+      rn = shallow_water_hdg_time_step!(pn, un, wn, rn, fn, bo, grav, model, dΩ, ∂K, d∂K, X, Y, dt)
       get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
