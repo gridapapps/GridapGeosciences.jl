@@ -38,10 +38,10 @@ function shallow_water_hdg_time_step!(
                                 ∫(q*p)dΩ - ∫(γdt*(∇(q)⋅u)*pn)dΩ                          + # q equation
                                 ∫(γdt*pn*(u⋅nₑ)*q)d∂K + ∫(γdt*abs(un⋅nₑ)*q*p)d∂K         - # ...
                                 ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                 + # ...
-                                ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  - # m equation
-                                ∫((nₑ×(s×nₑ))⋅(nₑ×a))d∂K                                 - # s equation
-                                ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(u×nₑ)))))d∂K                   + # ...
-                                ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(r×nₑ)))))d∂K                     # ...
+                                ∫(((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(abs(un⋅nₑ)*l*m)d∂K  + # m equation
+                                ∫((nₑ×(s×nₑ))⋅(nₑ×a))d∂K                                 + # s equation
+                                ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(u×nₑ))))d∂K                        - # ...
+                                ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(r×nₑ))))d∂K                          # ...
 
   op₁            = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1,2,3], [4,5])
   Xh             = solve(op₁)
@@ -57,10 +57,10 @@ function shallow_water_hdg_time_step!(
                     ∫(q*pn - γm1dt*(∇(q)⋅uh)*ph)dΩ                                    -
                     ∫(γm1dt*(uh⋅nₑ)*q*ph + γm1dt*abs(uh⋅nₑ)*q*ph)d∂K                  +
                     ∫(γm1dt*abs(uh⋅nₑ)*q*lh)d∂K                                       -
-                    ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*ph*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K +
-                    ∫(γm1*((nₑ×(s×nₑ))⋅(nₑ×wh)))d∂K                                   +
-                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(uh×nₑ)))))d∂K                       -
-                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(rh×nₑ)))))d∂K
+                    ∫(γm1*((uh⋅nₑ) + abs(uh⋅nₑ))*ph*m)d∂K + ∫(γm1*abs(uh⋅nₑ)*lh*m)d∂K -
+                    ∫(γm1*((nₑ×(s×nₑ))⋅(nₑ×wh)))d∂K                                   -
+                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅(nₑ×(uh×nₑ))))d∂K                            +
+                    ∫(τ*γm1*((nₑ×(s×nₑ))⋅(nₑ×(rh×nₑ))))d∂K
 
   a₂((a,u,p,l,r),(b,v,q,m,s)) = ∫(b⋅a)dΩ - ∫((∇×b)⋅u)dΩ - ∫((b×nₑ)⋅(nₑ×(r×nₑ)))d∂K          + # b equation
                                 ∫(v⋅u + γdt*(v⋅((wn + fn)×u)))dΩ                            - # v equation
@@ -71,10 +71,10 @@ function shallow_water_hdg_time_step!(
                                 ∫(q*p)dΩ - ∫(γdt*(∇(q)⋅u)*pn)dΩ                             + # q equation
                                 ∫(γdt*pn*(u⋅nₑ)*q)d∂K + ∫(γdt*abs(un⋅nₑ)*q*p)d∂K            - # ...
                                 ∫(γdt*abs(un⋅nₑ)*q*l)d∂K                                    + # ...
-                                ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(γ*abs(un⋅nₑ)*l*m)d∂K - # m equation
-                                ∫(γ*((nₑ×(s×nₑ))⋅(nₑ×a)))d∂K                                - # s equation
-                                ∫(τ*γ*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(u×nₑ)))))d∂K                    + # ...
-                                ∫(τ*γ*((nₑ×(s×nₑ))⋅(nₑ×(nₑ×(r×nₑ)))))d∂K                      # ...
+                                ∫(γ*((un⋅nₑ) + abs(un⋅nₑ))*p*m)d∂K - ∫(γ*abs(un⋅nₑ)*l*m)d∂K + # m equation
+                                ∫(γ*((nₑ×(s×nₑ))⋅(nₑ×a)))d∂K                                + # s equation
+                                ∫(τ*γ*((nₑ×(s×nₑ))⋅(nₑ×(u×nₑ))))d∂K                         - # ...
+                                ∫(τ*γ*((nₑ×(s×nₑ))⋅(nₑ×(r×nₑ))))d∂K                           # ...
 
   op₂            = HybridAffineFEOperator((x,y)->(a₂(x,y),b₂(y)), X, Y, [1,2,3], [4,5])
   Xm             = solve(op₂)
@@ -84,10 +84,10 @@ function shallow_water_hdg_time_step!(
   get_free_dof_values(pn) .= get_free_dof_values(pm)
   get_free_dof_values(wn) .= get_free_dof_values(wm)
 
-  rn
+  rm
 end
 
-function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, model, mass_matrix_solver)
+function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, P, Q, U, V, model, mass_matrix_solver)
   # the depth field
   b₁(q)    = ∫(q*p₀)dΩ
   a₁(p,q)  = ∫(q*p)dΩ
@@ -96,7 +96,6 @@ function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P
   L2MMchol = numerical_setup(symbolic_setup(mass_matrix_solver,L2MM),L2MM)
   pn       = FEFunction(Q, copy(rhs₁))
   pnv      = get_free_dof_values(pn)
-
   solve!(pnv, L2MMchol, pnv)
 
   # the velocity field
@@ -107,16 +106,7 @@ function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P
   U2MMchol = numerical_setup(symbolic_setup(mass_matrix_solver,U2MM),U2MM)
   un       = FEFunction(V, copy(rhs₂))
   unv      = get_free_dof_values(un)
-
   solve!(unv, U2MMchol, unv)
-
-  # the coriolis field
-  b₃(v)    = ∫(v⋅f₀)dΩ
-  rhs₃     = assemble_vector(b₃, V)
-  fn       = FEFunction(V, copy(rhs₃))
-  fnv      = get_free_dof_values(fn)
-
-  solve!(fnv, U2MMchol, fnv)
 
   # the vorticity field
   nₑ = get_cell_normal_vector(∂K)
@@ -127,7 +117,26 @@ function project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P
   ω3v   = get_free_dof_values(ω3)
   solve!(ω3v, U2MMchol, ω3v)
 
-  pn, pnv, un, unv, fn, fnv, ω3, ω3v, L2MM, U2MM, L2MMchol, U2MMchol
+  pn, pnv, un, unv, ω3, ω3v, L2MM, U2MM, L2MMchol, U2MMchol
+end
+
+function project_vorticity_hdg(dΩ, ∂K, d∂K, u₀, b₀, A, B, R, S, model, mass_matrix_solver)
+  nₑ = get_cell_normal_vector(∂K)
+  τ  = 1.0
+
+  X = MultiFieldFESpace([A,R])
+  Y = MultiFieldFESpace([B,S])
+
+  b₁((b,s)) = ∫((∇×b)⋅u₀)dΩ + ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(u₀×nₑ))))d∂K
+  a₁((a,r),(b,s)) = ∫(b⋅a)dΩ - ∫((b×nₑ)⋅(nₑ×(r×nₑ)))d∂K    + # b equation
+                    ∫((nₑ×(s×nₑ))⋅(nₑ×a))d∂K               + # s equation
+                    ∫(τ*((nₑ×(s×nₑ))⋅(nₑ×(r×nₑ))))d∂K        # ...
+
+  op₁   = HybridAffineFEOperator((x,y)->(a₁(x,y),b₁(y)), X, Y, [1], [2])
+  Xh    = solve(op₁)
+  wh,rh = Xh
+
+  wh,rh
 end
 
 function get_radial_vorticity!(ωr, ω3, dΩ, Q, L2MMchol, model)
@@ -151,6 +160,15 @@ function sw_conservation_hdg(L2MM, U2MM, pnv, unv, wnv, p_tmp, u_tmp, w_tmp, mas
   vort_con = (vort_con - vort_0)
 
   mass_con, vort_con
+end
+
+function l2_error_norm(nv, ic, tmp, MM)
+  mul!(tmp, MM, ic)
+  l2_norm_sq = tmp⋅ic
+  ic        .= ic .- nv
+  mul!(tmp, MM, ic)
+  l2_err_sq  = ic⋅tmp
+  sqrt(l2_err_sq/l2_norm_sq)
 end
 
 function shallow_water_hdg(
@@ -198,14 +216,19 @@ function shallow_water_hdg(
   @printf("number of time steps: %u\n", N)
 
   # Project the initial conditions onto the trial spaces
-  pn, pnv, un, unv, fn, fnv, wn, wnv, L2MM, U2MM, L2MMchol, U2MMchol = 
-    project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, f₀, P, Q, U, V, model, mass_matrix_solver)
+  pn, pnv, un, unv, wn, wnv, L2MM, U2MM, L2MMchol, U2MMchol = 
+    project_initial_conditions_sw_hdg(dΩ, ∂K, d∂K, p₀, u₀, P, Q, U, V, model, mass_matrix_solver)
+
+  rn = FEFunction(V, copy(unv))
+  bo = FEFunction(V, copy(unv))
+  get_free_dof_values(bo) .= 0.0
+
+  wn2,_ = project_vorticity_hdg(dΩ, ∂K, d∂K, u₀, bo, A, B, R, S, model, mass_matrix_solver)
 
   wr = FEFunction(Q, copy(pnv))
   get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)
-
-  bo = FEFunction(V, copy(unv))
-  get_free_dof_values(bo) .= 0.0
+  wr2 = FEFunction(Q, copy(pnv))
+  get_radial_vorticity!(wr2, wn2, dΩ, Q, L2MMchol, model)
 
   # Work array
   p_tmp = copy(pnv)
@@ -222,19 +245,17 @@ function shallow_water_hdg(
   mul!(w_tmp, U2MM, wnv)
   vort_0 = sum(w_tmp)
 
-  rn = FEFunction(V, copy(unv))
-
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"sw_diagnostics.csv")
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"step", "mass", "vorticity")
     end
     if (write_solution && write_solution_freq>0)
-      pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un,"wn"=>wn,"wr"=>wr])
+      pvd[dt*Float64(0)] = new_vtk_step(Ω,joinpath(output_dir,"n=0"),["pn"=>pn,"un"=>un,"wn"=>wn,"wr"=>wr,"wn2"=>wn2,"wr2"=>wr2])
     end
 
     for istep in 1:N
-      rn = shallow_water_hdg_time_step!(pn, un, wn, rn, fn, bo, grav, model, dΩ, ∂K, d∂K, X, Y, dt)
+      rn = shallow_water_hdg_time_step!(pn, un, wn, rn, f₀, bo, grav, model, dΩ, ∂K, d∂K, X, Y, dt)
       get_radial_vorticity!(wr, wn, dΩ, Q, L2MMchol, model)
 
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
@@ -250,27 +271,9 @@ function shallow_water_hdg(
       end
     end
     # compute the L2 error with respect to the inital condition after one rotation
-    # velocity field
-    mul!(u_tmp, U2MM, u_ic)
-    l2_norm_sq = u_tmp⋅u_ic
-    u_ic      .= u_ic .- unv
-    mul!(u_tmp, U2MM, u_ic)
-    l2_err_sq  = u_ic⋅u_tmp
-    l2_err_u   = sqrt(l2_err_sq/l2_norm_sq)
-    # depth field
-    mul!(p_tmp, L2MM, p_ic)
-    l2_norm_sq = p_tmp⋅p_ic
-    p_ic      .= p_ic .- pnv
-    mul!(p_tmp, L2MM, p_ic)
-    l2_err_sq  = p_ic⋅p_tmp
-    l2_err_p   = sqrt(l2_err_sq/l2_norm_sq)
-    # vorticity field
-    mul!(w_tmp, U2MM, w_ic)
-    l2_norm_sq = w_tmp⋅w_ic
-    w_ic      .= w_ic .- wnv
-    mul!(w_tmp, U2MM, w_ic)
-    l2_err_sq  = w_ic⋅w_tmp
-    l2_err_w   = sqrt(l2_err_sq/l2_norm_sq)
+    l2_err_u = l2_error_norm(unv, u_ic, u_tmp, U2MM)
+    l2_err_p = l2_error_norm(pnv, p_ic, p_tmp, L2MM)
+    l2_err_w = l2_error_norm(wnv, w_ic, w_tmp, U2MM)
     @printf("L2 errors: %14.9e\t%14.9e\t%14.9e\n", l2_err_u, l2_err_p, l2_err_w)
     cons_mass, cons_vort = sw_conservation_hdg(L2MM, U2MM, pnv, unv, wnv, p_tmp, u_tmp, w_tmp, mass_0, vort_0)
     l2_err_u, l2_err_p, l2_err_w, cons_mass, cons_vort
