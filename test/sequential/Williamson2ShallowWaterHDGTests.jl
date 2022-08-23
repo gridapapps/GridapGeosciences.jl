@@ -48,7 +48,7 @@ for i in 1:1
 
   model = CubedSphereDiscreteModel(n,2; radius=rₑ)
   shallow_water_hdg(model, order, degree,
-                             h₀, u₀, f3, g,
+                             ϕ₀, u₀, f3, g,
                              dt, nstep;
                              write_solution=true,
                              write_solution_freq=1,
