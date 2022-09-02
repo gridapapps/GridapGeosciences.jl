@@ -314,7 +314,8 @@ function Gridap.Geometry.get_glue(a::D2toD3AnalyticalMapCubedSphereTriangulation
   tface_to_mface=Gridap.Fields.IdentityVector(nc)
   tface_to_mface_map=Fill(Gridap.Fields.GenericField(identity),nc)
   mface_to_tface=tface_to_mface
-  Gridap.Geometry.FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  Dt=2
+  Gridap.Geometry.FaceToFaceGlue(Dt,tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 Gridap.Geometry.get_grid(trian::D2toD3AnalyticalMapCubedSphereTriangulation) = trian.model.cube_grid_geo

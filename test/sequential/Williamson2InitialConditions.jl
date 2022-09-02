@@ -34,6 +34,14 @@ function h₀(xyz)
   H₀ - (rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*h*h/g
 end
 
+# Initial fluid depth (minus the mean)
+function ϕ₀(xyz)
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,r = θϕr
+  h  = -cos(θ)*cos(ϕ)*sin(α) + sin(ϕ)*cos(α)
+  H₀ - (rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*h*h/g - 2.363021308e+03
+end
+
 # Topography
 function topography(xyz)
   0.0
