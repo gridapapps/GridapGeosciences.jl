@@ -1,6 +1,9 @@
 function tang(n,v)
   (n×(v×n))
 end
+function tang(n,v,k)
+  ((n×(v×n))⋅k)
+end
 
 function quasi_geostrophic_hdg_time_step!(
      wn, un, fn, uo, model, dΩ, ∂K, d∂K, X1, Y1, X2, Y2, dt,
@@ -13,8 +16,8 @@ function quasi_geostrophic_hdg_time_step!(
   #γ     = 0.5*(2.0 - sqrt(2.0))
   γ     = 1.0
   γm1   = (1.0 - γ)
-  γdt   = γ*dt
-  γm1dt = γm1*dt
+  γdt   = (γ*dt)
+  γm1dt = (γm1*dt)
 
   τ = 1.0
 
@@ -24,25 +27,40 @@ function quasi_geostrophic_hdg_time_step!(
   # First stage
 
   # Elliptic equation for the velocity (u), stream function (a), velocity tangent multiplier (r)
-  B₁((v,b,s)) = ∫(v⋅uo)dΩ + ∫(b*wn)dΩ + ∫(s⋅uo)d∂Ω
-  A₁((u,a,r),(v,b,s)) = ∫(v⋅u)dΩ -
-                        ∫((∇×v)*a)dΩ - ∫((v×nₑ)*a)d∂K -
-			∫((v×nₑ)*τ*(tang(nₑ,u)⋅nᵣ))d∂K +           
-			∫((v×nₑ)*τ*(tang(nₑ,r)⋅nᵣ))d∂K + 
-                        ∫(perp(nᵣ,∇(b))⋅u)dΩ + 
-                        ∫(b*(nₑ×(r×nₑ)))d∂K + 
-			∫(tang(nₑ,s)*a)d∂K +
-			∫(tang(nₑ,s)*τ*(tang(nₑ,u)⋅nᵣ))d∂K -
-			∫(tang(nₑ,s)*τ*(tang(nₑ,r)⋅nᵣ))d∂K
+  # velocity equation:
+  #   (v,u) - ((∇×v)⋅k,ψ) + ∫(v×n)⋅k ψ̂dΩ = 0
+  # stream function equation
+  #   (k×∇ϕ,u) + (ϕ,(û×n)⋅k)             = (ϕ,ω)
+  # lagrange multiplier equation
+  #   ∫λ,u + τ(ψ - ψ̂)(k×n)dΩ             = 0
+  #
+  B₁((v,b,s)) = ∫(v⋅uo)dΩ + ∫(b*wn)dΩ + ∫(s⋅uo)d∂K
   #A₁((u,a,r),(v,b,s)) = ∫(v⋅u)dΩ -
   #                      ∫((∇×v)*a)dΩ - ∫((v×nₑ)*a)d∂K -
-  #                      ∫((v×nₑ)*τ*((nₑ×(u×nₑ))⋅nᵣ))d∂K +           
-  #                      ∫((v×nₑ)*τ*((nₑ×(r×nₑ))⋅nᵣ))d∂K + 
+  #                      ∫((v×nₑ)*τ*(tang(nₑ,u)⋅nᵣ))d∂K +           
+  #                      ∫((v×nₑ)*τ*(tang(nₑ,r)⋅nᵣ))d∂K + 
   #                      ∫(perp(nᵣ,∇(b))⋅u)dΩ + 
-  #                      ∫(b*(nₑ×(r×nₑ)))d∂K + 
-  #                      ∫((nₑ×(s×nₑ))*a)d∂K +
-  #                      ∫((nₑ×(s×nₑ))*τ*((nₑ×(u×nₑ))⋅nᵣ))d∂K -
-  #                      ∫((nₑ×(s×nₑ))*τ*((nₑ×(r×nₑ))⋅nᵣ))d∂K
+  #                      ∫(b*tang(nₑ,r))d∂K + 
+  #                      ∫(tang(nₑ,s)*a)d∂K +
+  #                      ∫(tang(nₑ,s)*τ*(tang(nₑ,u)⋅nᵣ))d∂K -
+  #                      ∫(tang(nₑ,s)*τ*(tang(nₑ,r)⋅nᵣ))d∂K
+  #A₁((u,a,r),(v,b,s)) = ∫(v⋅u)dΩ -
+  #                      ∫(((∇×v)⋅nᵣ)*a)dΩ - ∫(((v×nₑ)⋅nᵣ)*a)d∂K -
+#			∫(((v×nₑ)⋅nᵣ)*τ*(tang(nₑ,u)⋅nᵣ))d∂K +
+#			∫(((v×nₑ)⋅nᵣ)*τ*(tang(nₑ,r)⋅nᵣ))d∂K +
+#                        ∫(perp(nᵣ,∇(b))⋅u)dΩ + 
+#                        ∫(b*tang(nₑ,r,nᵣ))d∂K + 
+#                        ∫(tang(nₑ,s,nᵣ)*a)d∂K +
+#                        ∫(tang(nₑ,s,nᵣ)*τ*(tang(nₑ,u)⋅nᵣ))d∂K -
+#                        ∫(tang(nₑ,s,nᵣ)*τ*(tang(nₑ,r)⋅nᵣ))d∂K
+  A₁((u,a,r),(v,b,s)) = ∫(v⋅u)dΩ - ∫(((∇×v)⋅nᵣ)*a)dΩ + ∫(((v×nₑ)⋅nᵣ)*r)d∂K + 
+                        ∫(perp(nᵣ,∇(b))⋅u)dΩ + 
+                        ∫(b*((u×nₑ)⋅nᵣ))d∂K + 
+                        ∫(τ*(((nᵣ×nₑ)×nₑ)⋅nᵣ)*b*a)d∂K -
+                        ∫(τ*(((nᵣ×nₑ)×nₑ)⋅nᵣ)*b*r)d∂K + 
+			∫(s*((u×nₑ)⋅nᵣ))d∂K + 
+                        ∫(τ*(((nᵣ×nₑ)×nₑ)⋅nᵣ)*s*a)d∂K -
+                        ∫(τ*(((nᵣ×nₑ)×nₑ)⋅nᵣ)*s*r)d∂K 
 
   OP₁     = HybridAffineFEOperator((u,v)->(A₁(u,v),B₁(v)), X2, Y2, [1,2], [3])
   Xh      = solve(OP₁)
@@ -136,7 +154,7 @@ function quasi_geostrophic_hdg(
   reffeₐ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeₚ = ReferenceFE(lagrangian,Float64,order;space=:P)
   reffeₗ = ReferenceFE(lagrangian,Float64,order;space=:P)
-  reffeᵣ = ReferenceFE(lagrangian,VectorValue{3,Float64},order;space=:P)
+  reffeᵣ = ReferenceFE(lagrangian,Float64,order;space=:P)
 
   # Define test FESpaces
   V = TestFESpace(Ω, reffeᵤ; conformity=:L2)
