@@ -24,12 +24,13 @@ module DarcyCubedSphereTestsMPI
       -pc_type lu -pc_factor_mat_solver_type mumps
     """
   end
-  function main(parts)
+  function main(distribute,parts)
+    ranks = distribute(LinearIndices((prod(parts),)))
     GridapPETSc.with(args=split(petsc_gamg_options())) do
        num_refs=[2,3,4,5]
        hs=[2.0/2^n for n in num_refs]
-       model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
-       t = PartitionedArrays.PTimer(parts,verbose=true)
+       model_args_series=zip(Fill(ranks,length(num_refs)),num_refs)
+       t = PartitionedArrays.PTimer(ranks,verbose=true)
        PartitionedArrays.tic!(t)
        hs1,k1errors,s1=convergence_study(solve_darcy,hs,model_args_series,1,4,PETScLinearSolver())
        PartitionedArrays.toc!(t,"DarcyCubedSphereConvergenceStudy")
@@ -39,5 +40,7 @@ module DarcyCubedSphereTestsMPI
        println(s1)
     end
   end
-  prun(main,mpi,4)
+  with_mpi() do distribute 
+    main(distribute,1)
+  end 
 end #module

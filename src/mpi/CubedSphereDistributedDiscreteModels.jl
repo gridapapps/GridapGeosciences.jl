@@ -68,7 +68,7 @@ function generate_cell_coordinates_and_panels(parts,
   ptr_ghost_quadrants = Ptr{P4est_wrapper.p4est_quadrant_t}(pXest_ghost.ghosts.array)
 
   tree_offsets = unsafe_wrap(Array, pXest_ghost.tree_offsets, pXest_ghost.num_trees+1)
-  dcell_coordinates_and_panels=map_parts(parts) do part
+  dcell_coordinates_and_panels=map(parts) do part
      ncells=pXest.local_num_quadrants+pXest_ghost.ghosts.elem_count
      panels = Vector{Int}(undef,ncells)
      data = Vector{Point{Dc,Float64}}(undef,ncells*PXEST_CORNERS)
@@ -149,7 +149,7 @@ function generate_cube_grid_geo(cell_coordinates_and_panels)
     x
   end
 
-  map_parts(cell_coordinates_and_panels) do (cell_coordinates,panels)
+  map(cell_coordinates_and_panels) do (cell_coordinates,panels)
      ptr  = generate_ptr(length(cell_coordinates))
      data = collect(1:length(cell_coordinates)*4)
      cell_vertex_lids=Gridap.Arrays.Table(data,ptr)
@@ -179,7 +179,7 @@ function generate_cube_grid_geo(cell_coordinates_and_panels)
 end
 
 function generate_cube_grid_top(cell_vertex_lids_nlvertices)
-  map_parts(cell_vertex_lids_nlvertices) do (cell_vertex_lids,nlvector)
+  map(cell_vertex_lids_nlvertices[1],cell_vertex_lids_nlvertices[2]) do cell_vertex_lids,nlvector
      node_coordinates=Vector{Point{2,Float64}}(undef,nlvector)
      polytope=QUAD
      scalar_reffe=Gridap.ReferenceFEs.ReferenceFE(polytope,Gridap.ReferenceFEs.lagrangian,Float64,1)
@@ -200,7 +200,7 @@ end
 
 
 function CubedSphereDiscreteModel(
-  parts::MPIData,
+  parts::MPIArray,
   num_uniform_refinements::Int;
   radius=1,
   p4est_verbosity_level=P4est_wrapper.SC_LP_DEFAULT)
@@ -246,7 +246,7 @@ function CubedSphereDiscreteModel(
   # # end
 
   ddiscretemodel=
-  map_parts(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
+  map(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
     D2toD3AnalyticalMapCubedSphereDiscreteModel(cube_grid_geo, cube_grid_top, radius=radius)
   end
 

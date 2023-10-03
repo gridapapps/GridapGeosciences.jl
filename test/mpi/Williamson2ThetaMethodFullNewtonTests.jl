@@ -74,12 +74,12 @@ function set_ksp_mm(ksp)
   #@check_error_code GridapPETSc.PETSC.KSPView(ksp[],C_NULL)
 end
 
-function main(parts)
+function main(distribute,parts)
+  ranks = distribute(LinearIndices((prod(parts),)))
   GridapPETSc.with(args=split(options)) do
-      if (PArrays.get_part_id(parts)==1)
+      map_main(ranks) do _
         println(options)
       end
-
       # Solves the steady state Williamson2 test case for the shallow water equations on a sphere
       # of physical radius 6371220m. Involves a modified coriolis term that exactly balances
       # the potential gradient term to achieve a steady state
@@ -103,7 +103,7 @@ function main(parts)
             println("timestep: ", dt)   # gravity wave time step
             T      = dt*nstep
             τ      = dt/2
-            model  = CubedSphereDiscreteModel(parts, n; radius=rₑ)
+            model  = CubedSphereDiscreteModel(ranks, n; radius=rₑ)
             nls    = PETScNonlinearSolver(mysnessetup)
             mmls   = PETScLinearSolver(set_ksp_mm)
 
@@ -114,7 +114,7 @@ function main(parts)
                 g, θ, T, nstep, τ;
                 mass_matrix_solver=mmls,
                 matrix_type=matrix_type,
-                am_i_root=PArrays.get_part_id(parts)==1,
+                am_i_root=GridapDistributed.get_part_id(ranks.comm)==1,
                 write_solution=false,
                 write_solution_freq=5,
                 write_diagnostics=true,
@@ -122,11 +122,8 @@ function main(parts)
                 dump_diagnostics_on_screen=true)
             end
 
-            if (PArrays.get_part_id(parts)==1)
-              @time hf, uf, _ = ts()
-            else
-              hf, uf, _ = ts()
-            end
+
+            hf, uf, _ = ts()
 
             Ω     = Triangulation(model)
             dΩ    = Measure(Ω, degree)
@@ -136,7 +133,7 @@ function main(parts)
             uc    = CellField(u₀, Ω)
             e     = u₀-uf
             err_u = sqrt(sum(∫(e⋅e)*dΩ))/sqrt(sum(∫(uc⋅uc)*dΩ))
-            if PArrays.get_part_id(parts)==1
+            map_parts(ranks) do _
               println("n=", n, ",\terr_u: ", err_u, ",\terr_h: ", err_h)
             end
             #@test abs(err_u - l2_err_u[i]) < 10.0^-12
@@ -146,6 +143,8 @@ function main(parts)
   end
 end
 MPI.Init()
-prun(main,mpi,MPI.Comm_size(MPI.COMM_WORLD))
-
+with_mpi() do distribute 
+  main(distribute,MPI.Comm_size(MPI.COMM_WORLD))
+end 
 end # module
+
