@@ -82,7 +82,7 @@ options = """
      """
 
 
-  function main_galewsky(parts,ir,
+  function main_galewsky(ranks,ir,
                         np,numrefs,dt,τ,
                         write_solution,write_solution_freq,title,order,degree,
                         verbose,mumps_relaxation,nstep)
@@ -115,9 +115,9 @@ options = """
     end
 
 
-    t = PArrays.PTimer(parts,verbose=true)
+    t = PArrays.PTimer(ranks,verbose=true)
     PArrays.tic!(t,barrier=true)
-    ngcells, ngdofs = galewsky(parts,numrefs,dt,τ,
+    ngcells, ngdofs = galewsky(ranks,numrefs,dt,τ,
                               write_solution,write_solution_freq,title,order,degree,
                               verbose,mumps_relaxation,mysnessetup,set_ksp_mm,nstep)
     PArrays.toc!(t,"Simulation")
@@ -156,12 +156,13 @@ options = """
 
     numrefs>=1 || throw(ArgumentError("numrefs should be larger or equal than 1"))
 
-    prun(mpi,np) do parts
+    with_mpi() do distribute 
+      ranks = distribute(LinearIndices((prod(np),)))
       for ir=1:nr
         GridapPETSc.with(args=split(options_pcasm)) do
           str_r   = lpad(ir,ceil(Int,log10(nr)),'0')
           title_r = "$(title)_ir$(str_r)"
-          main_galewsky(parts,ir,np,numrefs,dt,τ,
+          main_galewsky(ranks,ir,np,numrefs,dt,τ,
               write_solution,write_solution_freq,title_r,
               k,degree,
               verbose,mumps_relaxation,nstep)
@@ -172,34 +173,26 @@ options = """
 
   include("../../../sequential/GalewskyInitialConditions.jl")
 
-  function galewsky(parts,numrefs,dt,τ,
+  function galewsky(ranks,numrefs,dt,τ,
                     write_solution,write_solution_freq,title,order,degree,
                     verbose,mumps_relaxation,mysnessetup,set_ksp_mm,nstep)
       T      = dt*nstep
       θ      = 0.5
-      model  = CubedSphereDiscreteModel(parts, numrefs; radius=rₑ)
+      model  = CubedSphereDiscreteModel(ranks, numrefs; radius=rₑ)
 
       nls    = PETScNonlinearSolver()
       mmls   = PETScLinearSolver(set_ksp_mm)
 
-      function ts()
-        shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
-        h₀, u₀, f, topography, g, θ, T, nstep, τ;
-        mass_matrix_solver=mmls,
-        am_i_root=PArrays.get_part_id(parts)==1,
-        write_solution=write_solution,
-        write_solution_freq=write_solution_freq,
-        write_diagnostics=true,
-        write_diagnostics_freq=1,
-        dump_diagnostics_on_screen=true,
-        output_dir=title)
-      end
-
-      if (PArrays.get_part_id(parts)==1)
-        _,_,ndofs = ts()
-      else
-        _,_,ndofs = ts()
-      end
+        _,_,ndofs = shallow_water_theta_method_full_newton_time_stepper(nls, model, order, degree,
+                                                            h₀, u₀, f, topography, g, θ, T, nstep, τ;
+                                                            mass_matrix_solver=mmls,
+                                                            am_i_root=GridapDistributed.get_part_id(ranks.comm)==1,
+                                                            write_solution=write_solution,
+                                                            write_solution_freq=write_solution_freq,
+                                                            write_diagnostics=true,
+                                                            write_diagnostics_freq=1,
+                                                            dump_diagnostics_on_screen=true,
+                                                            output_dir=title)
 
       num_cells(model), ndofs
   end
