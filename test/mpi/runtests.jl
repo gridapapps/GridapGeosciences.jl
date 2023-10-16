@@ -11,7 +11,7 @@ if length(ARGS)==1
 end
 
 mpidir = @__DIR__
-testdir = mpidir #joinpath(mpidir,"..")
+testdir = mpidir
 repodir = joinpath(mpidir,"../../")
 
 function run_driver(procs,file,sysimage)

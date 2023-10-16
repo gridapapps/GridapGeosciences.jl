@@ -18,12 +18,13 @@ module WeakDivPerpTestsMPI
       -pc_gamg_square_graph 9 pc_gamg_agg_nsmooths 1
     """
    end
-   function main(parts)
+   function main(distribute,parts)
+     ranks = distribute(LinearIndices((prod(parts),)))
      GridapPETSc.with(args=split(petsc_gamg_options())) do
        num_refs=[1,2,3,4,5]
        hs=[2.0/2^n for n in num_refs]
-       model_args_series=zip(Fill(parts,length(num_refs)),num_refs)
-       t = PartitionedArrays.PTimer(parts,verbose=true)
+       model_args_series=zip(Fill(ranks,length(num_refs)),num_refs)
+       t = PartitionedArrays.PTimer(ranks,verbose=true)
        PartitionedArrays.tic!(t)
        a,b,s=convergence_study(compute_error_weak_div_perp,
                              hs,model_args_series,0,4,PETScLinearSolver())
@@ -32,5 +33,7 @@ module WeakDivPerpTestsMPI
        @test round(s,digits=2) ≈ 2.12
      end
    end
-   prun(main,mpi,4)
+   with_mpi() do distribute 
+    main(distribute,4)
+  end 
 end
