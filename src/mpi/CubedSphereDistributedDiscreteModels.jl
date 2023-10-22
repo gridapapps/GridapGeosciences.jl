@@ -197,73 +197,87 @@ function generate_cube_grid_top(cell_vertex_lids_nlvertices)
   end
 end
 
-
-function CubedSphereDiscreteModel(
-  ranks::MPIArray,
-  num_uniform_refinements::Int;
-  radius=1,
-  p4est_verbosity_level=P4est_wrapper.SC_LP_DEFAULT)
-
-  comm = ranks.comm
-
-  sc_init(ranks.comm, Cint(true), Cint(true), C_NULL, p4est_verbosity_level)
-  p4est_init(C_NULL, p4est_verbosity_level)
-
+function setup_analytical_map_cubed_sphere_distributed_discrete_model(ranks,
+                                                                      coarse_discrete_model,
+                                                                      ptr_pXest_connectivity,
+                                                                      ptr_pXest,
+                                                                      ptr_pXest_ghost,
+                                                                      ptr_pXest_lnodes;
+                                                                      radius=1.0)
   Dc=2
-
-  coarse_discrete_model=setup_cubed_sphere_coarse_discrete_model()
-
-  ptr_pXest_connectivity=GridapP4est.setup_pXest_connectivity(coarse_discrete_model)
-
-  # Create a new forest
-  ptr_pXest = GridapP4est.setup_pXest(Val{Dc},comm,ptr_pXest_connectivity,num_uniform_refinements)
-
-  # Build the ghost layer
-  ptr_pXest_ghost=GridapP4est.setup_pXest_ghost(Val{Dc},ptr_pXest)
-
   cellindices = GridapP4est.setup_cell_prange(Val{Dc},ranks,ptr_pXest,ptr_pXest_ghost)
-
-  ptr_pXest_lnodes=GridapP4est.setup_pXest_lnodes(Val{Dc}, ptr_pXest, ptr_pXest_ghost)
-
   cell_vertex_gids=GridapP4est.generate_cell_vertex_gids(ptr_pXest_lnodes,cellindices)
-
   cell_vertex_lids_nlvertices=GridapP4est.generate_cell_vertex_lids_nlvertices(cell_vertex_gids)
-
   cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
                                              coarse_discrete_model,
                                              ptr_pXest_connectivity,
                                              ptr_pXest,
                                              ptr_pXest_ghost)
-
   cube_grid_geo=generate_cube_grid_geo(cell_coordinates_and_panels)
   cube_grid_top=generate_cube_grid_top(cell_vertex_lids_nlvertices)
-
-  # # do_on_parts(comm, cell_coordinates) do part, cell_coords
-  # #   if part==1
-  # #     println(cell_coords[9:12])
-  # #   end
-  # # end
-
   ddiscretemodel=
-  map(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
-    D2toD3AnalyticalMapCubedSphereDiscreteModel(cube_grid_geo, cube_grid_top, radius=radius)
-  end
-
-  # Write forest to VTK file
-  #p4est_vtk_write_file(unitsquare_forest, C_NULL, "my_step")
-
-  # Destroy lnodes
-  GridapP4est.p4est_lnodes_destroy(ptr_pXest_lnodes)
-  GridapP4est.p4est_ghost_destroy(ptr_pXest_ghost)
-  # Destroy the forest
-  GridapP4est.p4est_destroy(ptr_pXest)
-  # Destroy the connectivity
-  GridapP4est.p4est_connectivity_destroy(ptr_pXest_connectivity)
-
-  sc_finalize()
-
+    map(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
+      cube_model_top=Gridap.Geometry.UnstructuredDiscreteModel(cube_grid_top)
+      D2toD3AnalyticalMapCubedSphereDiscreteModel(cube_grid_geo, cube_model_top, radius=radius)
+    end
   GridapDistributed.DistributedDiscreteModel(ddiscretemodel,cellindices)
 end
+
+function setup_cube_surface_distributed_discrete_model(ranks,
+                                                       coarse_discrete_model,
+                                                       ptr_pXest_connectivity,
+                                                       ptr_pXest,
+                                                       ptr_pXest_ghost,
+                                                       ptr_pXest_lnodes;
+                                                       radius=1.0)
+  Dc=2
+  cellindices = GridapP4est.setup_cell_prange(Val{Dc},ranks,ptr_pXest,ptr_pXest_ghost)
+  cell_vertex_gids=GridapP4est.generate_cell_vertex_gids(ptr_pXest_lnodes,cellindices)
+  cell_vertex_lids_nlvertices=GridapP4est.generate_cell_vertex_lids_nlvertices(cell_vertex_gids)
+  cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
+                                             coarse_discrete_model,
+                                             ptr_pXest_connectivity,
+                                             ptr_pXest,
+                                             ptr_pXest_ghost)
+  cube_grid_geo=generate_cube_grid_geo(cell_coordinates_and_panels)
+  cube_grid_top=generate_cube_grid_top(cell_vertex_lids_nlvertices)
+  ddiscretemodel=
+    map(cube_grid_geo,cube_grid_top) do cube_grid_geo, cube_grid_top
+      cube_model_top=Gridap.Geometry.UnstructuredDiscreteModel(cube_grid_top)
+      D2toD3PolynomialMapCubedSphereDiscreteModel(cube_grid_geo,cube_model_top)
+    end
+  GridapDistributed.DistributedDiscreteModel(ddiscretemodel,cellindices)
+end
+
+function _setup_non_adaptive_cubed_sphere_discrete_model(ranks::MPIArray,
+                                                         num_uniform_refinements::Int;
+                                                         radius=1.0)
+  Dc=2
+  comm = ranks.comm
+  coarse_discrete_model=setup_cubed_sphere_coarse_discrete_model()
+
+  ptr_pXest_connectivity,
+    ptr_pXest,
+      ptr_pXest_ghost,
+        ptr_pXest_lnodes = GridapP4est.setup_ptr_pXest_objects(Val{Dc},
+                                                   comm,
+                                                   coarse_discrete_model,
+                                                   num_uniform_refinements)
+
+  dmodel=setup_analytical_map_cubed_sphere_distributed_discrete_model(ranks,
+                                                       coarse_discrete_model,
+                                                       ptr_pXest_connectivity,
+                                                       ptr_pXest,
+                                                       ptr_pXest_ghost,
+                                                       ptr_pXest_lnodes;
+                                                       radius=radius)
+  GridapP4est.p4est_lnodes_destroy(ptr_pXest_lnodes)
+  GridapP4est.p4est_ghost_destroy(ptr_pXest_ghost)
+  GridapP4est.p4est_destroy(ptr_pXest)
+  GridapP4est.p4est_connectivity_destroy(ptr_pXest_connectivity)
+  return dmodel
+end                                                          
+
 
 struct D2toD3AnalyticalMapCubedSphereTriangulation{M} <: Triangulation{2,3}
   model::M
@@ -324,8 +338,8 @@ struct D2toD3AnalyticalMapCubedSphereDiscreteModel{T,B,C,D} <: Gridap.Geometry.D
   cube_grid_geo::C
   cubed_sphere_grid_geo::D
   function D2toD3AnalyticalMapCubedSphereDiscreteModel(
-      cube_grid_geo::Gridap.Geometry.UnstructuredGrid{2,3},
-      cube_grid_top::Gridap.Geometry.UnstructuredGrid{2,2};
+      cube_grid_geo  :: Gridap.Geometry.UnstructuredGrid{2,3},
+      cube_model_top :: Gridap.Geometry.UnstructuredDiscreteModel{2,2};
       radius=1)
 
     mcts=Gridap.Fields.GenericField(MapCubeToSphere(radius))
@@ -340,8 +354,6 @@ struct D2toD3AnalyticalMapCubedSphereDiscreteModel{T,B,C,D} <: Gridap.Geometry.D
     m1=Fill(mcts,num_cells(cube_grid_geo))
     m2=get_cell_map(cube_grid_geo)
     m=lazy_map(∘,m1,m2)
-
-    cube_model_top=Gridap.Geometry.UnstructuredDiscreteModel(cube_grid_top)
 
     # Build output object
     T=typeof(m)
@@ -372,3 +384,325 @@ function Gridap.Geometry.Triangulation(
   Gridap.Helpers.@notimplementedif tags!=nothing
   D2toD3AnalyticalMapCubedSphereTriangulation(model)
 end 
+
+struct D2toD3PolynomialMapCubedSphereTriangulation{M} <: Triangulation{2,3}
+  model::M
+end
+
+function Gridap.CellData.get_normal_vector(trian::D2toD3PolynomialMapCubedSphereTriangulation)
+  cell_normal = Gridap.Geometry.get_facet_normal(trian)
+  Gridap.CellData.GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
+function _unit_outward_normal(v::Gridap.Fields.MultiValue{Tuple{2,3}})
+  n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
+  n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
+  n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
+  n = VectorValue(n1,n2,n3)
+  n/norm(n)
+end
+
+function Gridap.Geometry.get_facet_normal(trian::D2toD3PolynomialMapCubedSphereTriangulation)
+  # Get the Jacobian of the cubed sphere mesh
+  map   = get_cell_map(trian)
+  Jt    = lazy_map(∇,map)
+  p=lazy_map(Operation(_unit_outward_normal),Jt)
+  p
+end
+
+# Triangulation API
+
+# Delegating to the underlying face Triangulation
+
+Gridap.Geometry.get_cell_coordinates(trian::D2toD3PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_coordinates(trian.model.cubed_sphere_grid_geo)
+
+Gridap.Geometry.get_reffes(trian::D2toD3PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_reffes(trian.model.cubed_sphere_grid_geo)
+
+Gridap.Geometry.get_cell_type(trian::D2toD3PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_type(trian.model.cubed_sphere_grid_geo)
+
+Gridap.Geometry.get_node_coordinates(trian::D2toD3PolynomialMapCubedSphereTriangulation) = trian.model.cubed_sphere_node_coordinates
+
+Gridap.Geometry.get_cell_node_ids(trian::D2toD3PolynomialMapCubedSphereTriangulation) = Gridap.Geometry.get_cell_node_ids(trian.model.cubed_sphere_grid_geo)
+
+Gridap.Geometry.get_cell_map(trian::D2toD3PolynomialMapCubedSphereTriangulation) = get_cell_map(trian.model.cubed_sphere_grid_geo)
+
+Gridap.Geometry.get_background_model(trian::D2toD3PolynomialMapCubedSphereTriangulation) = trian.model
+
+function Gridap.Geometry.get_glue(a::D2toD3PolynomialMapCubedSphereTriangulation,D::Val{2})
+  nc=num_cells(a.model.cube_model_top)
+  tface_to_mface=Gridap.Fields.IdentityVector(nc)
+  tface_to_mface_map=Fill(Gridap.Fields.GenericField(identity),nc)
+  mface_to_tface=tface_to_mface
+  Gridap.Geometry.FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
+
+Gridap.Geometry.get_grid(trian::D2toD3PolynomialMapCubedSphereTriangulation) = trian.model.cubed_sphere_grid_geo
+
+struct D2toD3PolynomialMapCubedSphereDiscreteModel{A,B} <: Gridap.Geometry.DiscreteModel{2,3}
+  cubed_sphere_grid_geo::A
+  cube_model_top::B
+end
+
+# IMPORTANT NOTE: this method is needed as its default definition in Gridap
+#   num_point_dims(model::DiscreteModel) = num_point_dims(get_grid_topology(model))
+# returns Dp=2 as the topological dimension of the model is 2
+Gridap.Geometry.num_point_dims(::D2toD3PolynomialMapCubedSphereDiscreteModel) = 3
+Gridap.Geometry.get_cell_map(model::D2toD3PolynomialMapCubedSphereDiscreteModel) = get_cell_map(model.cubed_sphere_grid_geo)
+Gridap.Geometry.get_grid(model::D2toD3PolynomialMapCubedSphereDiscreteModel) = model.cubed_sphere_grid_geo
+Gridap.Geometry.get_grid_topology(model::D2toD3PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_grid_topology(model.cube_model_top)
+Gridap.Geometry.get_face_labeling(model::D2toD3PolynomialMapCubedSphereDiscreteModel) = Gridap.Geometry.get_face_labeling(model.cube_model_top)
+function Gridap.Geometry.Triangulation(a::D2toD3PolynomialMapCubedSphereDiscreteModel)
+  D2toD3PolynomialMapCubedSphereTriangulation(a)
+end
+
+function Gridap.Geometry.Triangulation(
+  ::Type{Gridap.ReferenceFEs.ReferenceFE{2}},
+  model::D2toD3PolynomialMapCubedSphereDiscreteModel,
+  labels::Gridap.Geometry.FaceLabeling;tags=nothing)
+  Gridap.Helpers.@notimplementedif tags!=nothing
+  D2toD3PolynomialMapCubedSphereTriangulation(model)
+end
+
+
+struct ForestOfOctreesCubedSphereDiscreteModel{A<:OctreeDistributedDiscreteModel{2,3}, 
+                                               B<:Integer, 
+                                               C<:Real} <: GridapDistributed.DistributedDiscreteModel{2,3}
+    octree_model::A
+    order::B
+    radius::C
+end 
+
+GridapDistributed.get_parts(model::ForestOfOctreesCubedSphereDiscreteModel) = model.octree_model.parts
+GridapDistributed.local_views(model::ForestOfOctreesCubedSphereDiscreteModel) = GridapDistributed.local_views(model.octree_model.dmodel)
+GridapDistributed.get_cell_gids(model::ForestOfOctreesCubedSphereDiscreteModel) = GridapDistributed.get_cell_gids(model.octree_model.dmodel)
+GridapDistributed.get_face_gids(model::ForestOfOctreesCubedSphereDiscreteModel,dim::Integer) = GridapDistributed.get_face_gids(model.octree_model.dmodel,dim)
+
+function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
+                                                 num_uniform_refinements;
+                                                 order=1,
+                                                 radius=1.0)
+
+  
+   Dc=2
+   Dp=3
+
+   comm = ranks.comm                                              
+
+   coarse_model=setup_cubed_sphere_coarse_discrete_model()
+    
+   ptr_pXest_connectivity,
+      ptr_pXest,
+        ptr_pXest_ghost,
+          ptr_pXest_lnodes = GridapP4est.setup_ptr_pXest_objects(Val{Dc},
+                                                     comm,
+                                                     coarse_model,
+                                                     num_uniform_refinements)
+
+    
+    cube_surface_dmodel=setup_cube_surface_distributed_discrete_model(ranks,
+                                                         coarse_model,
+                                                         ptr_pXest_connectivity,
+                                                         ptr_pXest,
+                                                         ptr_pXest_ghost,
+                                                         ptr_pXest_lnodes;
+                                                         radius=radius)
+
+    GridapP4est.pXest_lnodes_destroy(Val{Dc},ptr_pXest_lnodes)
+    GridapP4est.pXest_ghost_destroy(Val{Dc},ptr_pXest_ghost)
+
+    non_conforming_glue = GridapP4est._create_conforming_model_non_conforming_glue(cube_surface_dmodel)
+
+    cube_surface_octree_dmodel=OctreeDistributedDiscreteModel(Dc,
+                                          Dp,
+                                          ranks,
+                                          cube_surface_dmodel,
+                                          non_conforming_glue,
+                                          coarse_model,
+                                          ptr_pXest_connectivity,
+                                          ptr_pXest,
+                                          true,
+                                          nothing)
+
+    bumped_octree_dmodel=_bump_polynomial_map_cubed_sphere_octree_model(cube_surface_octree_dmodel,1,radius)
+    ForestOfOctreesCubedSphereDiscreteModel(bumped_octree_dmodel,order,radius)
+end
+
+function _bump_polynomial_map_cubed_sphere_octree_model(
+            octree_cube_surface::OctreeDistributedDiscreteModel{2,3},
+            order,
+            radius)
+
+  vector_reffe=ReferenceFE(lagrangian,VectorValue{3,Float64},order)
+  Vh = FESpace(octree_cube_surface,vector_reffe; conformity=:H1)
+  vh = interpolate(GridapGeosciences.MapCubeToSphere(radius),Vh)
+  bumped_models=map(octree_cube_surface.dmodel.models, 
+                     Vh.spaces, 
+                     partition(get_free_dof_values(vh))) do cube_surface_model, Vh, free_dof_values
+    scalar_reffe=ReferenceFE(QUAD,lagrangian,Float64,order)
+    xref=Gridap.ReferenceFEs.get_node_coordinates(scalar_reffe)
+    xrefₖ=Fill(xref,num_cells(cube_surface_model))
+    vh=FEFunction(Vh, free_dof_values)
+    vhx=lazy_map(evaluate,Gridap.CellData.get_data(vh),xrefₖ)
+    Vhs = FESpace(cube_surface_model,scalar_reffe; conformity=:H1)
+    node_coordinates = Vector{Point{3,Float64}}(undef,num_free_dofs(Vhs))
+    cell_node_ids    = get_cell_dof_ids(Vhs)
+    Gridap.Geometry._cell_vector_to_dof_vector!(node_coordinates,cell_node_ids,vhx)
+    cell_types  = collect(Fill(1,num_cells(cube_surface_model)))
+    cell_reffes = [scalar_reffe]
+
+    cubed_sphere_grid = Gridap.Geometry.UnstructuredGrid(node_coordinates,
+                                                         Gridap.Arrays.Table(cell_node_ids),
+                                                         cell_reffes,
+                                                         cell_types,
+                                                         Gridap.Geometry.Oriented())
+
+    D2toD3PolynomialMapCubedSphereDiscreteModel(cubed_sphere_grid,cube_surface_model.cube_model_top)
+  end
+  bumped_dmodel=GridapDistributed.GenericDistributedDiscreteModel(bumped_models,get_cell_gids(octree_cube_surface))
+
+  OctreeDistributedDiscreteModel(2,
+                                 3,
+                                 octree_cube_surface.parts,
+                                 bumped_dmodel,
+                                 octree_cube_surface.non_conforming_glue,
+                                 octree_cube_surface.coarse_model,
+                                 octree_cube_surface.ptr_pXest_connectivity,
+                                 octree_cube_surface.ptr_pXest,
+                                 true,
+                                 nothing)
+end 
+
+function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel, 
+                                 refinement_and_coarsening_flags::MPIArray{<:Vector})
+
+  Dc=2
+  Dp=3
+
+  ranks=model.octree_model.parts
+
+  ptr_new_pXest = 
+     GridapP4est._refine_coarsen_balance!(model.octree_model, 
+                                          refinement_and_coarsening_flags)
+
+  # Extract ghost and lnodes
+  ptr_pXest_ghost  = GridapP4est.setup_pXest_ghost(Val{Dc}, ptr_new_pXest)
+  ptr_pXest_lnodes = GridapP4est.setup_pXest_lnodes_nonconforming(Val{Dc}, ptr_new_pXest, ptr_pXest_ghost)
+  ptr_pXest_connectivity = model.octree_model.ptr_pXest_connectivity
+  coarse_model = model.octree_model.coarse_model
+
+  cell_prange = GridapP4est.setup_cell_prange(Val{Dc}, ranks, ptr_new_pXest, ptr_pXest_ghost)
+
+  gridap_cell_faces,
+    non_conforming_glue=
+       GridapP4est.generate_cell_faces_and_non_conforming_glue(Val{Dc},ptr_pXest_lnodes, cell_prange)
+
+  GridapP4est.pXest_lnodes_destroy(Val{Dc},ptr_pXest_lnodes)
+
+  nlvertices = map(non_conforming_glue) do ncglue
+    ncglue.num_regular_faces[1]+ncglue.num_hanging_faces[1]
+  end
+
+  # TO-DO: This can be waived as the geometrical information 
+  # is not actually extracted from the underlying forest of 
+  # octrees. Only the topological information out of this 
+  # forest is used. However, we still need to generate some 
+  # geometrical information to be able to generate the
+  # UnstructuredDiscreteModel corresponding to the topological
+  # model below. We could have generated a dummy geometrical 
+  # information, waiving the computations within this function
+  # call.
+  node_coordinates=GridapP4est.generate_node_coordinates(Val{Dc},
+                                             gridap_cell_faces[1],
+                                             nlvertices,
+                                             ptr_pXest_connectivity,
+                                             ptr_new_pXest,
+                                             ptr_pXest_ghost)
+  
+  grid,topology=GridapP4est.generate_grid_and_topology(Val{Dc},
+                                                       gridap_cell_faces[1],
+                                                       nlvertices,
+                                                       node_coordinates)
+
+  map(topology,gridap_cell_faces[Dc]) do topology,cell_faces
+    cell_faces_gridap = Gridap.Arrays.Table(cell_faces.data,cell_faces.ptrs)
+    topology.n_m_to_nface_to_mfaces[Dc+1,Dc] = cell_faces_gridap
+    topology.n_m_to_nface_to_mfaces[Dc,Dc+1] = Gridap.Geometry.generate_cells_around(cell_faces_gridap)
+  end
+
+  face_labeling=GridapP4est.generate_face_labeling(ranks,
+                                       cell_prange,
+                                       model.octree_model.coarse_model,
+                                       topology,
+                                       ptr_new_pXest,
+                                       ptr_pXest_ghost)
+
+  GridapP4est._set_hanging_labels!(face_labeling,non_conforming_glue)
+
+  cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
+                                              coarse_model,
+                                              ptr_pXest_connectivity,
+                                              ptr_new_pXest,
+                                              ptr_pXest_ghost)
+
+  GridapP4est.pXest_ghost_destroy(Val{Dc},ptr_pXest_ghost)
+
+  cube_grid_geo=generate_cube_grid_geo(cell_coordinates_and_panels)
+
+  ddiscretemodel=
+  map(cube_grid_geo,grid,topology,face_labeling) do cube_grid_geo, grid, topology, face_labeling
+    cube_model_top=Gridap.Geometry.UnstructuredDiscreteModel(grid,topology,face_labeling)
+    D2toD3PolynomialMapCubedSphereDiscreteModel(cube_grid_geo, cube_model_top)
+  end
+  fmodel=GridapDistributed.DistributedDiscreteModel(ddiscretemodel,cell_prange)
+
+  adaptivity_glue = GridapP4est._compute_fine_to_coarse_model_glue(ranks,
+                                                  model.octree_model.dmodel,
+                                                  fmodel,
+                                                  refinement_and_coarsening_flags)
+
+  ref_model = OctreeDistributedDiscreteModel(Dc,Dp,
+                                            ranks,
+                                            fmodel,
+                                            non_conforming_glue,
+                                            coarse_model,
+                                            ptr_pXest_connectivity,
+                                            ptr_new_pXest,
+                                            false,
+                                            model.octree_model)
+
+  ref_model=_bump_polynomial_map_cubed_sphere_octree_model(ref_model,1,model.radius)
+
+  adaptive_models = map(local_views(model.octree_model),
+                        local_views(ref_model.dmodel.models),
+                        adaptivity_glue) do model, fmodel, glue 
+      Gridap.Adaptivity.AdaptedDiscreteModel(fmodel,model,glue)
+  end
+  fmodel = GridapDistributed.GenericDistributedDiscreteModel(adaptive_models,get_cell_gids(ref_model))
+  ref_model = OctreeDistributedDiscreteModel(Dc,Dp,
+                                            ranks,
+                                            fmodel,
+                                            non_conforming_glue,
+                                            coarse_model,
+                                            ptr_pXest_connectivity,
+                                            ptr_new_pXest,
+                                            false,
+                                            model.octree_model)
+
+  ForestOfOctreesCubedSphereDiscreteModel(ref_model,model.order,model.radius), adaptivity_glue
+end 
+
+function CubedSphereDiscreteModel(
+  ranks::MPIArray,
+  num_uniform_refinements::Int;
+  radius=1.0,
+  adaptive=false,
+  order=1)
+
+  if (!adaptive)
+    _setup_non_adaptive_cubed_sphere_discrete_model(ranks,num_uniform_refinements,radius=radius)
+  else 
+    ForestOfOctreesCubedSphereDiscreteModel(ranks,num_uniform_refinements,radius=radius)
+  end  
+end
+
+
