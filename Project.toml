@@ -1,18 +1,7 @@
-authors = ["Santiago Badia <santiago.badia@monash.edu>", "Christopher Bladwell <c.bladwell@unsw.edu.au>", "David R. Lee <davelee2804@gmail.com >", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
 name = "GridapGeosciences"
 uuid = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
+authors = ["Santiago Badia <santiago.badia@monash.edu>", "Christopher Bladwell <c.bladwell@unsw.edu.au>", "David R. Lee <davelee2804@gmail.com >", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
 version = "0.4.0"
-
-[compat]
-Gridap = "0.17.7"
-GridapDistributed = "0.3.1"
-GridapP4est = "0.3.1"
-GridapPETSc = "0.5.0"
-MPI = "0.20"
-PartitionedArrays = "0.3.4"
-SparseMatricesCSR = "0.6.6"
-WriteVTK = "1.14.0"
-julia = "1.8,1.9"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -22,7 +11,6 @@ Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 GridapDistributed = "f9701e48-63b3-45aa-9a63-9bc6c271f355"
 GridapP4est = "c2c8e14b-f5fd-423d-9666-1dd9ad120af9"
 GridapPETSc = "bcdc36c2-0c3e-11ea-095a-c9dadae499f1"
-GridapPardiso = "34aa2546-dee6-11e9-014e-739fa02ec06f"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
@@ -35,6 +23,17 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SparseMatricesCSR = "a0a7dd2c-ebf4-11e9-1f05-cf50bc540ca1"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
+
+[compat]
+Gridap = "0.18.0"
+GridapDistributed = "0.4"
+GridapP4est = "0.3.6"
+GridapPETSc = "0.5.2"
+MPI = "0.20"
+PartitionedArrays = "0.3.4"
+SparseMatricesCSR = "0.6.6"
+WriteVTK = "1.14.0"
+julia = "1.8,1.9"
 
 [extras]
 MPIPreferences = "3da0fdf6-3ccc-4f1b-acd9-58baa6c99267"
