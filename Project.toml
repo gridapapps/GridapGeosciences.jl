@@ -35,7 +35,7 @@ MPI = "0.20"
 PartitionedArrays = "0.3.4"
 SparseMatricesCSR = "0.6.6"
 WriteVTK = "1.14.0"
-julia = "1.8,1.9"
+julia = "1.8,1.9,1.10"
 
 [extras]
 MPIPreferences = "3da0fdf6-3ccc-4f1b-acd9-58baa6c99267"
