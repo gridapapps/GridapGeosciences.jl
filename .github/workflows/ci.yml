@@ -5,7 +5,7 @@ jobs:
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     env:
-      P4EST_ROOT_DIR: "/opt/p4est/2.2/"
+      P4EST_ROOT_DIR: "/opt/p4est/2.3.6/"
       JULIA_PETSC_LIBRARY: "/opt/petsc/3.15.4/lib/libpetsc"
     strategy:
       fail-fast: false
@@ -49,10 +49,10 @@ jobs:
       - name: Install p4est
         if: steps.cache-p4est.outputs.cache-hit != 'true'
         run: |
-          # Install p4est 2.2 from sources
+          # Install p4est 2.3.6 from sources
           CURR_DIR=$(pwd)
           PACKAGE=p4est
-          VERSION=2.2
+          VERSION=2.3.6
           INSTALL_ROOT=/opt
           P4EST_INSTALL=$INSTALL_ROOT/$PACKAGE/$VERSION
           TAR_FILE=$PACKAGE-$VERSION.tar.gz
@@ -72,7 +72,6 @@ jobs:
       - name: Install petsc
         # if: steps.cache-petsc.outputs.cache-hit != 'true'
         run: |
-          # Install p4est 2.2 from sources
           CURR_DIR=$(pwd)
           PACKAGE=petsc
           VERSION=3.15.4
@@ -105,7 +104,7 @@ jobs:
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     env:
-      P4EST_ROOT_DIR: "/opt/p4est/2.2/"
+      P4EST_ROOT_DIR: "/opt/p4est/2.3.6/"
       JULIA_PETSC_LIBRARY: "/opt/petsc/3.15.4/lib/libpetsc"
     strategy:
       fail-fast: false
@@ -149,10 +148,10 @@ jobs:
       - name: Install p4est
         if: steps.cache-p4est.outputs.cache-hit != 'true'
         run: |
-          # Install p4est 2.2 from sources
+          # Install p4est 2.3.6 from sources
           CURR_DIR=$(pwd)
           PACKAGE=p4est
-          VERSION=2.2
+          VERSION=2.3.6
           INSTALL_ROOT=/opt
           P4EST_INSTALL=$INSTALL_ROOT/$PACKAGE/$VERSION
           TAR_FILE=$PACKAGE-$VERSION.tar.gz
@@ -172,7 +171,6 @@ jobs:
       - name: Install petsc
         # if: steps.cache-petsc.outputs.cache-hit != 'true'
         run: |
-          # Install p4est 2.2 from sources
           CURR_DIR=$(pwd)
           PACKAGE=petsc
           VERSION=3.15.4
