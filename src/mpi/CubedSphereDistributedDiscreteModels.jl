@@ -519,7 +519,7 @@ function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
                                           true,
                                           nothing)
 
-    bumped_models=_bump_polynomial_map_cubed_sphere_octree_model(cube_surface_octree,1,radius)
+    bumped_models=_bump_polynomial_map_cubed_sphere_octree_model(cube_surface_octree,order,radius)
 
     bumped_dmodel=GridapDistributed.GenericDistributedDiscreteModel(bumped_models,
                                                                     get_cell_gids(cube_surface_octree))
@@ -722,7 +722,7 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
                                              false,
                                              model.octree_model)
 
-  bumped_models=_bump_polynomial_map_cubed_sphere_octree_model(cube_surface_octree_dmodel,1,model.radius)
+  bumped_models=_bump_polynomial_map_cubed_sphere_octree_model(cube_surface_octree_dmodel,model.order,model.radius)
 
   adaptive_models = map(local_views(model.octree_model),
                         bumped_models,
@@ -755,7 +755,7 @@ function CubedSphereDiscreteModel(
   if (!adaptive)
     _setup_non_adaptive_cubed_sphere_discrete_model(ranks,num_uniform_refinements,radius=radius)
   else 
-    ForestOfOctreesCubedSphereDiscreteModel(ranks,num_uniform_refinements,radius=radius)
+    ForestOfOctreesCubedSphereDiscreteModel(ranks,num_uniform_refinements,radius=radius,order=order)
   end  
 end
 
