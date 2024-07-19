@@ -1,4 +1,4 @@
-# module DarcyCubedSphereTestsMPI
+module DarcyCubedSphereTestsMPI
   using PartitionedArrays
   using Test
   using FillArrays
@@ -115,7 +115,7 @@
     end
   end
   with_mpi() do distribute 
-    main(distribute,1)
+    main(distribute,4)
   end
   
 end #module
