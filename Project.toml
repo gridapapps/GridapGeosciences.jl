@@ -1,7 +1,7 @@
 name = "GridapGeosciences"
 uuid = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Christopher Bladwell <c.bladwell@unsw.edu.au>", "David R. Lee <davelee2804@gmail.com >", "Alberto F. Martin <alberto.f.martin@anu.edu.au>"]
-version = "0.4.0"
+version = "0.5.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
