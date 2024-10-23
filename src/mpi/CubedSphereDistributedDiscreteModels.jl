@@ -1,9 +1,7 @@
-const ref_panel_coordinates = [ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0 ]
-
-function set_panel_vertices_coordinates!( pconn :: Ptr{P4est_wrapper.p4est_connectivity_t},
-                                             coarse_discrete_model :: DiscreteModel{2,2},
-                                             panel )
-  @assert num_cells(coarse_discrete_model) == 6
+function set_coarse_cell_vertices_coordinates!( pconn :: Ptr{P4est_wrapper.p4est_connectivity_t},
+                                                coarse_discrete_model :: DiscreteModel{2,2},
+                                                panel,
+                                                ref_cell_coordinates)
   @assert panel ≤ num_cells(coarse_discrete_model)
   @assert panel ≥ 1
   trian=Triangulation(coarse_discrete_model)
@@ -15,8 +13,8 @@ function set_panel_vertices_coordinates!( pconn :: Ptr{P4est_wrapper.p4est_conne
                        conn.vertices,
                        length(Gridap.Geometry.get_node_coordinates(coarse_discrete_model))*3)
   for (l,g) in enumerate(cell_vertices_panel)
-     vertices[(g-1)*3+1]=ref_panel_coordinates[(l-1)*2+1]
-     vertices[(g-1)*3+2]=ref_panel_coordinates[(l-1)*2+2]
+     vertices[(g-1)*3+1]=ref_cell_coordinates[l][1]
+     vertices[(g-1)*3+2]=ref_cell_coordinates[l][2]
   end
 end
 
@@ -54,6 +52,7 @@ end
 
 function generate_cell_coordinates_and_panels(parts,
                                    coarse_discrete_model,
+                                   coarse_cell_wise_vertex_coordinates,
                                    ptr_pXest_connectivity,
                                    ptr_pXest,
                                    ptr_pXest_ghost)
@@ -79,7 +78,10 @@ function generate_cell_coordinates_and_panels(parts,
      for itree=1:pXest_ghost.num_trees
        tree = p4est_tree_array_index(pXest.trees, itree-1)[]
        if tree.quadrants.elem_count > 0
-          set_panel_vertices_coordinates!( ptr_pXest_connectivity, coarse_discrete_model, itree)
+          set_coarse_cell_vertices_coordinates!( ptr_pXest_connectivity, 
+                                                 coarse_discrete_model, 
+                                                 itree, 
+                                                 coarse_cell_wise_vertex_coordinates[itree])
        end
        for cell=1:tree.quadrants.elem_count
           panels[current_cell]=itree
@@ -102,7 +104,10 @@ function generate_cell_coordinates_and_panels(parts,
      # Go over ghost cells
      for i=1:pXest_ghost.num_trees
       if tree_offsets[i+1]-tree_offsets[i] > 0
-        set_panel_vertices_coordinates!( ptr_pXest_connectivity, coarse_discrete_model, i)
+        set_coarse_cell_vertices_coordinates!( ptr_pXest_connectivity, 
+                                               coarse_discrete_model, 
+                                               i, 
+                                               coarse_cell_wise_vertex_coordinates[i])
       end
       for j=tree_offsets[i]:tree_offsets[i+1]-1
           panels[current_cell]=i
@@ -196,6 +201,7 @@ end
 
 function setup_analytical_map_cubed_sphere_distributed_discrete_model(ranks,
                                                                       coarse_discrete_model,
+                                                                      coarse_cell_wise_vertex_coordinates,
                                                                       ptr_pXest_connectivity,
                                                                       ptr_pXest,
                                                                       ptr_pXest_ghost,
@@ -209,6 +215,7 @@ function setup_analytical_map_cubed_sphere_distributed_discrete_model(ranks,
   end |> tuple_of_arrays
   cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
                                              coarse_discrete_model,
+                                             coarse_cell_wise_vertex_coordinates,
                                              ptr_pXest_connectivity,
                                              ptr_pXest,
                                              ptr_pXest_ghost)
@@ -224,6 +231,7 @@ end
 
 function setup_cube_surface_distributed_discrete_model(ranks,
                                                        coarse_discrete_model,
+                                                       coarse_cell_wise_vertex_coordinates,
                                                        ptr_pXest_connectivity,
                                                        ptr_pXest,
                                                        ptr_pXest_ghost,
@@ -237,6 +245,7 @@ function setup_cube_surface_distributed_discrete_model(ranks,
   end |> tuple_of_arrays
   cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
                                              coarse_discrete_model,
+                                             coarse_cell_wise_vertex_coordinates,
                                              ptr_pXest_connectivity,
                                              ptr_pXest,
                                              ptr_pXest_ghost)
@@ -251,11 +260,11 @@ function setup_cube_surface_distributed_discrete_model(ranks,
 end
 
 function _setup_non_adaptive_cubed_sphere_discrete_model(ranks::MPIArray,
+                                                         coarse_discrete_model,
+                                                         coarse_cell_wise_vertex_coordinates,
                                                          num_uniform_refinements::Int;
                                                          radius=1.0)
   comm = ranks.comm
-  coarse_discrete_model=setup_cubed_sphere_coarse_discrete_model()
-
   ptr_pXest_connectivity,
     ptr_pXest,
       ptr_pXest_ghost,
@@ -266,6 +275,7 @@ function _setup_non_adaptive_cubed_sphere_discrete_model(ranks::MPIArray,
 
   dmodel=setup_analytical_map_cubed_sphere_distributed_discrete_model(ranks,
                                                        coarse_discrete_model,
+                                                       coarse_cell_wise_vertex_coordinates,
                                                        ptr_pXest_connectivity,
                                                        ptr_pXest,
                                                        ptr_pXest_ghost,
@@ -457,11 +467,13 @@ end
 
 
 struct ForestOfOctreesCubedSphereDiscreteModel{A<:OctreeDistributedDiscreteModel{2,3}, 
-                                               B<:Integer, 
-                                               C<:Real} <: GridapDistributed.DistributedDiscreteModel{2,3}
+                                               B<:AbstractVector{<:AbstractVector{<:Point{2,Float64}}},
+                                               C<:Integer, 
+                                               D<:Real} <: GridapDistributed.DistributedDiscreteModel{2,3}
     octree_model::A
-    order::B
-    radius::C
+    coarse_cell_wise_vertex_coordinates::B
+    order::C
+    radius::D
 end 
 
 GridapDistributed.get_parts(model::ForestOfOctreesCubedSphereDiscreteModel) = model.octree_model.parts
@@ -470,6 +482,8 @@ GridapDistributed.get_cell_gids(model::ForestOfOctreesCubedSphereDiscreteModel) 
 GridapDistributed.get_face_gids(model::ForestOfOctreesCubedSphereDiscreteModel,dim::Integer) = GridapDistributed.get_face_gids(model.octree_model.dmodel,dim)
 
 function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
+                                                 coarse_model,
+                                                 coarse_cell_wise_vertex_coordinates,
                                                  num_uniform_refinements;
                                                  order=1,
                                                  radius=1.0)
@@ -478,9 +492,7 @@ function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
    Dc=2
    Dp=3
 
-   comm = ranks.comm                                              
-
-   coarse_model=setup_cubed_sphere_coarse_discrete_model()
+   comm = ranks.comm
 
    pXest_type = GridapP4est._dim_to_pXest_type(Dc)
 
@@ -495,6 +507,7 @@ function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
     
     cube_surface_dmodel=setup_cube_surface_distributed_discrete_model(ranks,
                                                          coarse_model,
+                                                         coarse_cell_wise_vertex_coordinates,
                                                          ptr_pXest_connectivity,
                                                          ptr_pXest,
                                                          ptr_pXest_ghost,
@@ -535,7 +548,7 @@ function ForestOfOctreesCubedSphereDiscreteModel(ranks::MPIArray{<:Integer},
                                   cube_surface_octree.pXest_refinement_rule_type,
                                   false,
                                   cube_surface_octree)
-    ForestOfOctreesCubedSphereDiscreteModel(bumped_octree_model,order,radius)
+    ForestOfOctreesCubedSphereDiscreteModel(bumped_octree_model,coarse_cell_wise_vertex_coordinates,order,radius)
 end
 
 function _bump_polynomial_map_cubed_sphere_octree_model(
@@ -635,7 +648,7 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
 
   gridap_cell_faces,
     non_conforming_glue=
-       GridapP4est.generate_cell_faces_and_non_conforming_glue(pXest_type,ptr_pXest_lnodes, cell_prange)
+       GridapP4est.generate_cell_faces_and_non_conforming_glue(pXest_type,pXest_refinement_rule_type,ptr_pXest_lnodes, cell_prange)
 
   GridapP4est.pXest_lnodes_destroy(pXest_type,ptr_pXest_lnodes)
 
@@ -683,6 +696,7 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
 
   cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
                                               coarse_model,
+                                              model.coarse_cell_wise_vertex_coordinates,
                                               ptr_pXest_connectivity,
                                               ptr_new_pXest,
                                               ptr_pXest_ghost)
@@ -742,8 +756,23 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
                                             false,
                                             model.octree_model)
 
-  ForestOfOctreesCubedSphereDiscreteModel(bumped_cubed_surface,model.order,model.radius), adaptivity_glue
+  ForestOfOctreesCubedSphereDiscreteModel(bumped_cubed_surface,
+                                          model.coarse_cell_wise_vertex_coordinates, 
+                                          model.order,
+                                          model.radius), adaptivity_glue
 end 
+
+function setup_coarse_cell_vertices_coordinates()
+  data = [ Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0),
+           Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0),
+           Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0),
+           Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0),
+           Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0),
+           Point(-1.0,-1.0), Point(1.0, -1.0), Point(-1.0, 1.0), Point(1.0, 1.0) ]
+  ptr = [1, 5, 9, 13, 17, 21, 25]
+  Gridap.Arrays.Table(data,ptr)
+end 
+
 
 function CubedSphereDiscreteModel(
   ranks::MPIArray,
@@ -752,10 +781,47 @@ function CubedSphereDiscreteModel(
   adaptive=false,
   order=1)
 
+  coarse_model=setup_cubed_sphere_coarse_discrete_model()
+  coarse_cell_wise_vertex_coordinates=setup_coarse_cell_vertices_coordinates()
+
   if (!adaptive)
-    _setup_non_adaptive_cubed_sphere_discrete_model(ranks,num_uniform_refinements,radius=radius)
+    _setup_non_adaptive_cubed_sphere_discrete_model(ranks,
+                                                    coarse_model,
+                                                    coarse_cell_wise_vertex_coordinates,
+                                                    num_uniform_refinements,
+                                                    radius=radius)
   else 
-    ForestOfOctreesCubedSphereDiscreteModel(ranks,num_uniform_refinements,radius=radius,order=order)
+    ForestOfOctreesCubedSphereDiscreteModel(ranks,
+                                            coarse_model,
+                                            coarse_cell_wise_vertex_coordinates,
+                                            num_uniform_refinements,
+                                            radius=radius,
+                                            order=order)
+  end  
+end
+
+function CubedSphereDiscreteModel(
+  ranks::MPIArray,
+  coarse_model,
+  coarse_cell_wise_vertex_coordinates,
+  num_uniform_refinements::Int;
+  radius=1.0,
+  adaptive=false,
+  order=1)
+
+  if (!adaptive)
+    _setup_non_adaptive_cubed_sphere_discrete_model(ranks,
+                                                    coarse_model,
+                                                    coarse_cell_wise_vertex_coordinates.
+                                                    num_uniform_refinements,
+                                                    radius=radius)
+  else 
+    ForestOfOctreesCubedSphereDiscreteModel(ranks,
+                                            coarse_model,
+                                            coarse_cell_wise_vertex_coordinates.
+                                            num_uniform_refinements,
+                                            radius=radius,
+                                            order=order)
   end  
 end
 
