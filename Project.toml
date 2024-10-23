@@ -28,7 +28,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 [compat]
 Gridap = "0.18.0"
 GridapDistributed = "0.4"
-GridapP4est = "0.3.6"
+GridapP4est = "0.3.9"
 GridapPETSc = "0.5.2"
 GridapPardiso = "0.7.0"
 MPI = "0.20"
