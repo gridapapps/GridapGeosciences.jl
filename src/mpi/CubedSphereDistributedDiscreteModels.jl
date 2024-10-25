@@ -712,6 +712,7 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
   cell_coordinates_and_panels=generate_cell_coordinates_and_panels(ranks,
                                               coarse_model,
                                               model.coarse_cell_wise_vertex_coordinates,
+                                              model.coarse_cell_panel,
                                               ptr_pXest_connectivity,
                                               ptr_new_pXest,
                                               ptr_pXest_ghost)
@@ -773,6 +774,7 @@ function Gridap.Adaptivity.adapt(model::ForestOfOctreesCubedSphereDiscreteModel,
 
   ForestOfOctreesCubedSphereDiscreteModel(bumped_cubed_surface,
                                           model.coarse_cell_wise_vertex_coordinates, 
+                                          model.coarse_cell_panel,
                                           model.order,
                                           model.radius), adaptivity_glue
 end 
