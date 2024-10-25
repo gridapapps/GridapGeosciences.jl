@@ -158,8 +158,8 @@ module DarcyCubedSphereTestsMPI
                                             Gridap.Geometry.NonOriented())
     coarse_model=Gridap.Geometry.UnstructuredDiscreteModel(grid)
 
-    println(coarse_cell_wise_vertex_coordinates_data)
-    println(coarse_cell_wise_vertex_coordinates_ptrs)
+    #println(coarse_cell_wise_vertex_coordinates_data)
+    #println(coarse_cell_wise_vertex_coordinates_ptrs)
 
     model=CubedSphereDiscreteModel(
                     ranks,
@@ -172,32 +172,31 @@ module DarcyCubedSphereTestsMPI
                     adaptive=true,
                     order=1)
     
-    writevtk(model,"model") # This line currently fails
-
-
+    # writevtk(model,"model") # This line currently fails
+    # model,_=adapt_model(ranks,model)
+    # writevtk(model,"model_adapted_1")
+    # model,_=adapt_model(ranks,model)
+    # writevtk(model,"model_adapted_2")
     
-    #fin=open("geometry-gridapgeo.txt","r")
-    #cell_nodes = [eval(Meta.parse(split(line)[2])).+1 for line in eachline(fin)]
-    #close(fin)
-    # order=0
-    # GridapPETSc.with(args=split(petsc_mumps_options())) do
-    #   num_uniform_refinements=1
-    #   model=CubedSphereDiscreteModel(
-    #         ranks,
-    #         num_uniform_refinements;
-    #         radius=1.0,
-    #         adaptive=true,
-    #         order=1)
-    #   op=assemble_darcy_problem(model, order)      
-    #   xh=solve_darcy_problem(op)
-    #   for num_uniform_refinements=1:3
-    #     model,_=adapt_model(ranks,model)
-    #     order=0
-    #     op=assemble_darcy_problem(model, order) 
-    #     xh=solve_darcy_problem(op)
-    #     println(compute_darcy_errors(model, order, xh))
-    #   end 
-    # end
+    order=0
+    GridapPETSc.with(args=split(petsc_mumps_options())) do
+      num_uniform_refinements=1
+      model=CubedSphereDiscreteModel(
+            ranks,
+            num_uniform_refinements;
+            radius=1.0,
+            adaptive=true,
+            order=1)
+      op=assemble_darcy_problem(model, order)      
+      xh=solve_darcy_problem(op)
+      for num_uniform_refinements=1:3
+        model,_=adapt_model(ranks,model)
+        order=0
+        op=assemble_darcy_problem(model, order) 
+        xh=solve_darcy_problem(op)
+        println(compute_darcy_errors(model, order, xh))
+      end 
+    end
   end
   with_mpi() do distribute 
     main(distribute,1)
