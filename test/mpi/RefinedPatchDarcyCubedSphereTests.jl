@@ -1,4 +1,4 @@
-module DarcyCubedSphereTestsMPI
+module RefinedPatchDarcyCubedSphereTestsMPI
   using PartitionedArrays
   using Test
   using FillArrays
@@ -91,7 +91,7 @@ module DarcyCubedSphereTestsMPI
     end
     GridapP4est.adapt(model,ref_coarse_flags)
   end 
-  
+
   function main(distribute,parts)
     ranks = distribute(LinearIndices((prod(parts),)))
 
@@ -99,99 +99,32 @@ module DarcyCubedSphereTestsMPI
     # where the mesh data files are located 
     cd(@__DIR__)
 
-    fin=open("connectivity-gridapgeo.txt","r")
-    cell_panels=[parse(Int64,split(line)[1])+1 for line in eachline(fin)]
-    close(fin)
+    coarse_model, cell_panels, coarse_cell_wise_vertex_coordinates=
+          read_cubed_sphere_coarse_model("connectivity-gridapgeo.txt","geometry-gridapgeo.txt")
 
-    fin=open("connectivity-gridapgeo.txt","r")
-    cell_nodes=Gridap.Arrays.Table([eval(Meta.parse(split(line)[3])).+1 for line in eachline(fin)])
-    close(fin)
-
-    fin=open("geometry-gridapgeo.txt","r")
-    d=Dict{Int64,Array{Tuple{Int64,Point{2,Float64}},1}}()
-    for line in eachline(fin)
-       tokens=split(line) 
-       vertex_panel_id=parse(Int64,tokens[1])+1
-       vertex_id=parse(Int64,tokens[2])+1
-       vertex_coords=Point(parse(Float64,tokens[3]),parse(Float64,tokens[4]))
-       if !haskey(d, vertex_id)
-          d[vertex_id]=[(vertex_panel_id,vertex_coords)]
-       else
-          push!(d[vertex_id],(vertex_panel_id,vertex_coords))
-       end
-    end
-    close(fin)
-
-    coarse_cell_wise_vertex_coordinates_data=Vector{Point{2,Float64}}(undef,length(cell_nodes.data))
-    j=1
-    for cell=1:length(cell_nodes)
-        current_cell_nodes=cell_nodes[cell]
-        current_panel=cell_panels[cell]
-        for node=1:length(current_cell_nodes)
-            vertex_id=current_cell_nodes[node]
-            found=false
-            current_vertex_coords=nothing
-            for (panel,coords) in d[vertex_id]
-                if panel==current_panel
-                    found=true
-                    current_vertex_coords=coords
-                    break
-                end
-            end
-            @assert found 
-            coarse_cell_wise_vertex_coordinates_data[j]=current_vertex_coords
-            j=j+1
-        end
-    end
-    coarse_cell_wise_vertex_coordinates_ptrs = [ (i-1)*4+1 for i in 1:length(cell_nodes)+1]
-
-    nvertices = maximum(maximum.(cell_nodes))
-    node_coordinates = [Point{2,Float64}(0.0,0.0) for i in 1:nvertices]    
-    polytope=QUAD
-    scalar_reffe=Gridap.ReferenceFEs.ReferenceFE(polytope,Gridap.ReferenceFEs.lagrangian,Float64,1)
-    cell_types=collect(Fill(1,length(cell_nodes)))
-    cell_reffes=[scalar_reffe]
-    grid = Gridap.Geometry.UnstructuredGrid(node_coordinates,
-                                            cell_nodes,
-                                            cell_reffes,
-                                            cell_types,
-                                            Gridap.Geometry.NonOriented())
-    coarse_model=Gridap.Geometry.UnstructuredDiscreteModel(grid)
 
     #println(coarse_cell_wise_vertex_coordinates_data)
     #println(coarse_cell_wise_vertex_coordinates_ptrs)
-
-    model=CubedSphereDiscreteModel(
-                    ranks,
-                    coarse_model,
-                    Gridap.Arrays.Table(coarse_cell_wise_vertex_coordinates_data, 
-                                        coarse_cell_wise_vertex_coordinates_ptrs),
-                    cell_panels,
-                    1;
-                    radius=1.0,
-                    adaptive=true,
-                    order=1)
-    
-    # writevtk(model,"model") # This line currently fails
     # model,_=adapt_model(ranks,model)
     # writevtk(model,"model_adapted_1")
     # model,_=adapt_model(ranks,model)
     # writevtk(model,"model_adapted_2")
-    
-    order=0
     GridapPETSc.with(args=split(petsc_mumps_options())) do
-      num_uniform_refinements=1
+      order=0
+      num_uniform_refinements=0
       model=CubedSphereDiscreteModel(
-            ranks,
-            num_uniform_refinements;
-            radius=1.0,
-            adaptive=true,
-            order=1)
+        ranks,
+        coarse_model,
+        coarse_cell_wise_vertex_coordinates,
+        cell_panels,
+        num_uniform_refinements;
+        radius=1.0,
+        adaptive=true,
+        order=1)
       op=assemble_darcy_problem(model, order)      
       xh=solve_darcy_problem(op)
       for num_uniform_refinements=1:3
         model,_=adapt_model(ranks,model)
-        order=0
         op=assemble_darcy_problem(model, order) 
         xh=solve_darcy_problem(op)
         println(compute_darcy_errors(model, order, xh))
@@ -201,5 +134,4 @@ module DarcyCubedSphereTestsMPI
   with_mpi() do distribute 
     main(distribute,1)
   end
-  
 end #module

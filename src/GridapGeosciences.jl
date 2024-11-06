@@ -10,6 +10,7 @@ module GridapGeosciences
   include("GeoConstantsParameters.jl")
   include("CubedSphereTriangulations.jl")
   include("CubedSphereDiscreteModels.jl")
+  include("ParseCubedSphereDiscreteModels.jl")
   include("Operators.jl")
   include("CoordinateTransformations.jl")
   include("DiagnosticTools.jl")
@@ -22,6 +23,7 @@ module GridapGeosciences
   include("Helpers.jl")
   export rₑ, Ωₑ, g, f
   export CubedSphereDiscreteModel
+  export parse_cubed_sphere_coarse_model
   export perp,⟂
   export divergence_unit_sphere
   export laplacian_unit_sphere
