@@ -100,7 +100,7 @@ module RefinedPatchDarcyCubedSphereTestsMPI
     cd(@__DIR__)
 
     coarse_model, cell_panels, coarse_cell_wise_vertex_coordinates=
-          read_cubed_sphere_coarse_model("connectivity-gridapgeo.txt","geometry-gridapgeo.txt")
+          parse_cubed_sphere_coarse_model("connectivity-gridapgeo.txt","geometry-gridapgeo.txt")
 
 
     #println(coarse_cell_wise_vertex_coordinates_data)
