@@ -74,7 +74,7 @@ module RefinedPatchDarcyCubedSphereTestsMPI
     uh,ph=xh 
     eph = ph-p_ex
     euh = uh-u_ex
-    degree=10 #2*order
+    degree=2*order
     Ω = Triangulation(model)
     dΩ = Measure(Ω, degree)
     err_p = sum(∫(eph*eph)dΩ)
@@ -102,13 +102,6 @@ module RefinedPatchDarcyCubedSphereTestsMPI
     coarse_model, cell_panels, coarse_cell_wise_vertex_coordinates=
           parse_cubed_sphere_coarse_model("connectivity-gridapgeo.txt","geometry-gridapgeo.txt")
 
-
-    #println(coarse_cell_wise_vertex_coordinates_data)
-    #println(coarse_cell_wise_vertex_coordinates_ptrs)
-    # model,_=adapt_model(ranks,model)
-    # writevtk(model,"model_adapted_1")
-    # model,_=adapt_model(ranks,model)
-    # writevtk(model,"model_adapted_2")
     GridapPETSc.with(args=split(petsc_mumps_options())) do
       order=0
       num_uniform_refinements=0
@@ -121,8 +114,9 @@ module RefinedPatchDarcyCubedSphereTestsMPI
         radius=1.0,
         adaptive=true,
         order=1)
-      op=assemble_darcy_problem(model, order)      
+      op=assemble_darcy_problem(model, order)
       xh=solve_darcy_problem(op)
+      println(compute_darcy_errors(model, order, xh))    
       for num_uniform_refinements=1:3
         model,_=adapt_model(ranks,model)
         op=assemble_darcy_problem(model, order) 
