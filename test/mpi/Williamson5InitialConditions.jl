@@ -32,14 +32,15 @@ end
 
 # Topography
 function topography(xyz)
-  θϕr = xyz2θϕr(xyz)
-  θc  = -π/2.0
-  ϕc  =  π/6.0
-  bo  = 2000.0
-  rad = π/9.0
-  rsq = (ϕ - ϕc)*(ϕ - ϕc) + (θ - θc)*(θ - θc)
-  r   = sqrt(rsq)
-  b   = 0.0
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,r = θϕr
+  θc    = -π/2.0
+  ϕc    =  π/6.0
+  bo    = 2000.0
+  rad   = π/9.0
+  rsq   = (ϕ - ϕc)*(ϕ - ϕc) + (θ - θc)*(θ - θc)
+  r     = sqrt(rsq)
+  b     = 0.0
   if(r < rad) 
     b = bo*(1.0 - r/rad)
   end
@@ -48,8 +49,9 @@ end
 
 # Initial fluid depth
 function h₀(xyz)
-  θϕr = xyz2θϕr(xyz)
-  b   = -cos(θ)*cos(ϕ)*sin(α₀) + sin(ϕ)*cos(α₀)
-  bt  = topography(xyz)
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,r = θϕr
+  b     = -cos(θ)*cos(ϕ)*sin(α₀) + sin(ϕ)*cos(α₀)
+  bt    = topography(xyz)
   H₀ - (Rₑ*Ωₑ*U₀ + 0.5*U₀*U₀)*b*b/gₑ - bt
 end

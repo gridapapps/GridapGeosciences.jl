@@ -1,5 +1,7 @@
 module Williamson5ShallowWaterRosenbrock
 
+  using LinearMaps
+  using SparseMatricesCSR
   using PartitionedArrays
   using Test
   using FillArrays
@@ -7,8 +9,10 @@ module Williamson5ShallowWaterRosenbrock
   using GridapPETSc
   using GridapGeosciences
   using GridapDistributed
+  using GridapSolvers
   using GridapP4est
 
+  include("GridapSolversFixes.jl")
   include("Williamson5InitialConditions.jl")
 
   function petsc_gamg_options()
@@ -58,9 +62,14 @@ module Williamson5ShallowWaterRosenbrock
                                      adaptive=true,
                                      order=1)
 
+      P          = JacobiLinearSolver()
+      mm_solver  = GridapSolvers.CGSolver(P;rtol=1.e-6)
+      jac_solver = GridapSolvers.GMRESSolver(100;Pr=nothing,Pl=nothing,maxiter=2000,atol=1e-12,rtol=1.e-6,restart=true,m_add=20,verbose=false,name="GMRES")
+
       hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                      h₀, u₀, Ωₑ, gₑ, H₀,
-                                                     λ, dt, 60.0, nstep;
+                                                     λ, dt, 60.0, nstep,
+                                                     mm_solver, jac_solver;
                                                      t₀=topography,
                                                      leap_frog=true,
                                                      write_solution=true,

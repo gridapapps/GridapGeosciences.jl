@@ -83,9 +83,9 @@ end
 function shallow_water_rosenbrock_time_stepper(
   model, order, degree,
   h₀, u₀, f₀, g, H₀,
-  λ, dt, τ, N;
-  mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+  λ, dt, τ, N,
+  mass_matrix_solver,
+  jacobian_matrix_solver;
   t₀=nothing,
   leap_frog=false,
   write_diagnostics=true,
@@ -126,7 +126,9 @@ function shallow_water_rosenbrock_time_stepper(
   Mmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ # block mass matrix
   A = assemble_matrix(Amat, X,Y)
   M = assemble_matrix(Mmat, X,Y)
-  B = M - A
+  #B = M - A
+  Bmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ + ∫(dt*λ*f*(v⋅⟂(u,n)))dΩ - ∫(dt*λ*g*(DIV(v)*p))dω + ∫(dt*λ*H₀*(q*DIV(u)))dω
+  B = assemble_matrix(Bmat, X,Y)
 
   Bchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
   Mchol = numerical_setup(symbolic_setup(mass_matrix_solver,M),M)
@@ -135,7 +137,9 @@ function shallow_water_rosenbrock_time_stepper(
   if leap_frog
     lf = 2.0
   end
-  Blf = M - lf*A
+  #Blf = M - lf*A
+  Blfmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ + ∫(lf*dt*λ*f*(v⋅⟂(u,n)))dΩ - ∫(lf*dt*λ*g*(DIV(v)*p))dω + ∫(lf*dt*λ*H₀*(q*DIV(u)))dω
+  Blf = assemble_matrix(Blfmat, X,Y)
   Blfchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,Blf),Blf)
 
   # multifield initial condtions
