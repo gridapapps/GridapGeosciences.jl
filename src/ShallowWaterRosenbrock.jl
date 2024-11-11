@@ -17,12 +17,10 @@ function _compute_potential_vorticity!(q,dΩ,R,S,h,u,f,n,solver)
 end
 
 function shallow_water_rosenbrock_time_step!(
-  y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
-  model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,         # in args
-  RTMMchol, L2MMchol, Amat, Bchol, Blfchol,           # more in args
-  dt, τ, leap_frog,
-  mm_solver, jac_solver,
-  topog=nothing)
+  y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hns, y_wrk,  # in/out args
+  model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,       # in args
+  RTMMns, L2MMns, Amat, Bns, Blfns,                 # more in args
+  dt, τ, leap_frog, mm_solver, topog=nothing)
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -39,36 +37,35 @@ function shallow_water_rosenbrock_time_step!(
   u₁, h₁ = y₁
 
   # 1.1: the mass flux
-  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
+  compute_mass_flux!(F,dΩ,V,RTMMns,u₁*h₁)
   # 1.2: the bernoulli function
   if topog==nothing
-    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMns,u₁⋅u₁,h₁,g)
   else
-    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁+topog,g)
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMns,u₁⋅u₁,h₁+topog,g)
   end
   # 1.3: the potential vorticity
-  #compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
   _compute_potential_vorticity!(q₁,dΩ,R,S,h₁,u₁,f,n,mm_solver)
   # 1.4: assemble the momentum and continuity equation residuals
   assemble_residuals!(duh₁, dΩ, dω, Y, q₁ - τ*u₁⋅∇(q₁), ϕ, F, n)
 
   # Solve for du₁, dh₁ over a MultiFieldFESpace
-  solve!(duh₁, Blfchol, duh₁)
+  solve!(duh₁, Blfns, duh₁)
+  #consistent!(get_free_dof_values(duh₁)) |> wait
 
   # update
   y₂v .=  y₀v .+ dt₁ .* duh₁
 
   u₂, h₂ = y₂
   # 2.1: the mass flux
-  compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
+  compute_mass_flux!(F,dΩ,V,RTMMns,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
   # 2.2: the bernoulli function
   if topog==nothing
-    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMns,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
   else
-    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂)+topog,g)
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMns,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂)+topog,g)
   end
   # 2.3: the potential vorticity
-  #compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n,assem)
   _compute_potential_vorticity!(q₂,dΩ,R,S,h₂,u₂,f,n,mm_solver)
   # 2.4: assemble the momentum and continuity equation residuals
   assemble_residuals!(duh₂, dΩ, dω, Y, 0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂)), ϕ, F, n)
@@ -78,7 +75,8 @@ function shallow_water_rosenbrock_time_step!(
   duh₂ .= duh₂ .- y_wrk
 
   # solve for du₂, dh₂
-  solve!(duh₂, Bchol, duh₂)
+  solve!(duh₂, Bns, duh₂)
+  #consistent!(get_free_dof_values(duh₂)) |> wait
 
   # update yⁿ⁺¹
   y₂v .= y₁v .+ dt .* duh₂
@@ -120,9 +118,8 @@ function shallow_water_rosenbrock_time_stepper(
   X = MultiFieldFESpace([U, P])
 
   # assemble the mass matrices (RTMM mass matrix not needed)
-  H1MM, _, L2MM, H1MMchol, RTMMchol, L2MMchol =
-    setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
-                                      mass_matrix_solver=mass_matrix_solver)
+  H1MM, _, L2MM, H1MMns, RTMMns, L2MMns = setup_and_factorize_mass_matrices(dΩ, R, S, U, V, P, Q;
+                                                                            mass_matrix_solver=mass_matrix_solver)
 
   # Project the initial conditions onto the trial spaces
   b₁(q)   = ∫(q*h₀)dΩ
@@ -130,7 +127,8 @@ function shallow_water_rosenbrock_time_stepper(
   b₃(s)   = ∫(s*f₀)*dΩ
   rhs1    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs1))
-  solve!(get_free_dof_values(f),H1MMchol,get_free_dof_values(f))
+  solve!(get_free_dof_values(f),H1MMns,get_free_dof_values(f))
+  #consistent!(get_free_dof_values(f)) |> wait
 
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(Ω)
@@ -143,8 +141,8 @@ function shallow_water_rosenbrock_time_stepper(
   Bmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ + ∫(dt*λ*f*(v⋅⟂(u,n)))dΩ - ∫(dt*λ*g*(DIV(v)*p))dω + ∫(dt*λ*H₀*(q*DIV(u)))dω
   B = assemble_matrix(Bmat, X,Y)
 
-  Bchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
-  Mchol = numerical_setup(symbolic_setup(mass_matrix_solver,M),M)
+  Bns = numerical_setup(symbolic_setup(jacobian_matrix_solver,B),B)
+  Mns = numerical_setup(symbolic_setup(mass_matrix_solver,M),M)
   # leap frog matrices, using 2×dt
   lf = 1.0
   if leap_frog
@@ -152,13 +150,14 @@ function shallow_water_rosenbrock_time_stepper(
   end
   #Blf = M - lf*A
   Blfmat((u,p),(v,q)) = ∫(u⋅v)dΩ + ∫(p*q)dΩ + ∫(lf*dt*λ*f*(v⋅⟂(u,n)))dΩ - ∫(lf*dt*λ*g*(DIV(v)*p))dω + ∫(lf*dt*λ*H₀*(q*DIV(u)))dω
-  Blf = assemble_matrix(Blfmat, X,Y)
-  Blfchol = numerical_setup(symbolic_setup(jacobian_matrix_solver,Blf),Blf)
+  Blf   = assemble_matrix(Blfmat, X,Y)
+  Blfns = numerical_setup(symbolic_setup(jacobian_matrix_solver,Blf),Blf)
 
   # multifield initial condtions
   b₄((v,q)) = b₁(q) + b₂(v)
   rhs2  = assemble_vector(b₄, Y)
-  solve!(rhs2, Mchol, rhs2)
+  solve!(rhs2, Mns, rhs2)
+  #consistent!(get_free_dof_values(rhs2)) |> wait
   yn  = FEFunction(Y, rhs2)
 
   # project the bottom topography onto the L2 space
@@ -167,7 +166,8 @@ function shallow_water_rosenbrock_time_stepper(
     b₅(q) = ∫(q*t₀)dΩ
     rhs3  = assemble_vector(b₅,Q)
     topog = FEFunction(Q, copy(rhs3))
-    solve!(get_free_dof_values(topog),L2MMchol,get_free_dof_values(topog))
+    solve!(get_free_dof_values(topog),L2MMns,get_free_dof_values(topog))
+    #consistent!(get_free_dof_values(topog)) |> wait
   end
 
   un, hn = yn
@@ -181,7 +181,7 @@ function shallow_water_rosenbrock_time_stepper(
   # build the potential vorticity lhs operator once just to initialise
   bmm(a,b) = ∫(a*hn*b)dΩ
   H1h      = assemble_matrix(bmm, R, S)
-  H1hchol  = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
+  H1hns    = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
 
   function run_simulation(pvd=nothing)
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
@@ -205,13 +205,13 @@ function shallow_water_rosenbrock_time_stepper(
 
     # first step, no leap frog
     istep = 1
-    shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
+    shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hns, y_wrk,
                                         model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false, 
-                                        mass_matrix_solver, jacobian_matrix_solver, topog)
+                                        RTMMns, L2MMns, A, Bns, Blfns, dt, τ, false, 
+                                        mass_matrix_solver, topog)
 
     if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
       dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                       model, dΩ, dω, S, L2MM, H1MM,
                                       hn, un, wn, ϕ, F, g, istep, dt,
@@ -224,17 +224,17 @@ function shallow_water_rosenbrock_time_stepper(
       ym2=ym1
       ym1=yn
       yn=aux
-      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
+      shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hns, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog, 
-                                          mass_matrix_solver, jacobian_matrix_solver, topog)
+                                          RTMMns, L2MMns, A, Bns, Blfns, dt, τ, leap_frog, 
+                                          mass_matrix_solver, topog)
 
       # IMPORTANT NOTE: We need to extract un, hn out of yn at each iteration because
       #                 the association of yn with its object instance changes at the beginning of
       #                 each iteration
       un, hn = yn
       if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
         dump_diagnostics_shallow_water!(h_tmp, w_tmp,
                                         model, dΩ, dω, S, L2MM, H1MM,
                                         hn, un, wn, ϕ, F, g, istep, dt,
@@ -242,7 +242,7 @@ function shallow_water_rosenbrock_time_stepper(
                                         dump_diagnostics_on_screen)
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
-        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
+        compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
         pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
       end
     end

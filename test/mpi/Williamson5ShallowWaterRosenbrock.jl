@@ -12,7 +12,6 @@ module Williamson5ShallowWaterRosenbrock
   using GridapSolvers
   using GridapP4est
 
-  #include("GridapSolversFixes.jl")
   include("Williamson5InitialConditions.jl")
 
   function petsc_gamg_options()
@@ -38,7 +37,7 @@ module Williamson5ShallowWaterRosenbrock
   # neutrally stable for 0.5, L-stable for 1+sqrt(2)/2
   λ = 1.0 + 0.5*sqrt(2.0)
 
-  dt     = 480.0
+  dt     = 30.0
   nstep  = Int(24*60^2*20/dt) # 20 days
 
   function main(distribute,parts)
@@ -77,7 +76,6 @@ module Williamson5ShallowWaterRosenbrock
                                                      write_diagnostics=true,
                                                      write_diagnostics_freq=1,
                                                      dump_diagnostics_on_screen=true)
-
     end
   end
 
