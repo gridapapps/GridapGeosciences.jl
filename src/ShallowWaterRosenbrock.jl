@@ -10,7 +10,8 @@ function shallow_water_rosenbrock_time_step!(
   model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,         # in args
   RTMMchol, L2MMchol, Amat, Bchol, Blfchol,           # more in args
   dt, τ, leap_frog,
-  assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S))                                   # ...yet more in args
+  assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S),
+  topog=nothing)
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
   # https://github.com/BOM-Monash-Collaborations/articles/blob/main/energetically_balanced_time_integration/EnergeticallyBalancedTimeIntegration_SW.tex
@@ -29,7 +30,11 @@ function shallow_water_rosenbrock_time_step!(
   # 1.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*h₁)
   # 1.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
+  if topog==nothing
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁,g)
+  else
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁+topog,g)
+  end
   # 1.3: the potential vorticity
   compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
   # 1.4: assemble the momentum and continuity equation residuals
@@ -45,7 +50,11 @@ function shallow_water_rosenbrock_time_step!(
   # 2.1: the mass flux
   compute_mass_flux!(F,dΩ,V,RTMMchol,u₁*(2.0*h₁ + h₂)/6.0+u₂*(h₁ + 2.0*h₂)/6.0)
   # 2.2: the bernoulli function
-  compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
+  if topog==nothing
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂),g)
+  else
+    compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂)+topog,g)
+  end
   # 2.3: the potential vorticity
   compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n,assem)
   # 2.4: assemble the momentum and continuity equation residuals
@@ -77,6 +86,7 @@ function shallow_water_rosenbrock_time_stepper(
   λ, dt, τ, N;
   mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
   jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
+  tₒ=nothing,
   leap_frog=false,
   write_diagnostics=true,
   write_diagnostics_freq=1,
@@ -134,6 +144,15 @@ function shallow_water_rosenbrock_time_stepper(
   solve!(rhs2, Mchol, rhs2)
   yn  = FEFunction(Y, rhs2)
 
+  # project the bottom topography onto the L2 space
+  topog = nothing
+  if t₀ != nothing
+    b₄(q) = ∫(q*t₀)dΩ
+    rhs3  = assemble_vector(b₄,Q)
+    topog = FEFunction(Q, copy(rhs3))
+    solve!(get_free_dof_values(topog),L2MMchol,get_free_dof_values(topog))
+  end
+
   un, hn = yn
 
   hnv, fv, ynv = get_free_dof_values(hn,f,yn)
@@ -171,7 +190,7 @@ function shallow_water_rosenbrock_time_stepper(
     istep = 1
     shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                         model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false)
+                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false, topog)
 
     if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
       compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
@@ -189,7 +208,7 @@ function shallow_water_rosenbrock_time_stepper(
       yn=aux
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog)
+                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog, topog)
 
       # IMPORTANT NOTE: We need to extract un, hn out of yn at each iteration because
       #                 the association of yn with its object instance changes at the beginning of
