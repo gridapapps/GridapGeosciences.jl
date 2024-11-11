@@ -56,7 +56,7 @@ module Williamson5ShallowWaterRosenbrock
                                      num_uniform_refinements;
                                      radius=rₑ,
                                      adaptive=true,
-                                     order=0)
+                                     order=1)
 
       hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                      h₀, u₀, Ωₑ, gₑ, H₀,

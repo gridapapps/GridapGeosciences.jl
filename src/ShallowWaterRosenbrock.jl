@@ -86,7 +86,7 @@ function shallow_water_rosenbrock_time_stepper(
   λ, dt, τ, N;
   mass_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
   jacobian_matrix_solver::Gridap.Algebra.LinearSolver=Gridap.Algebra.BackslashSolver(),
-  tₒ=nothing,
+  t₀=nothing,
   leap_frog=false,
   write_diagnostics=true,
   write_diagnostics_freq=1,
@@ -147,8 +147,8 @@ function shallow_water_rosenbrock_time_stepper(
   # project the bottom topography onto the L2 space
   topog = nothing
   if t₀ != nothing
-    b₄(q) = ∫(q*t₀)dΩ
-    rhs3  = assemble_vector(b₄,Q)
+    b₅(q) = ∫(q*t₀)dΩ
+    rhs3  = assemble_vector(b₅,Q)
     topog = FEFunction(Q, copy(rhs3))
     solve!(get_free_dof_values(topog),L2MMchol,get_free_dof_values(topog))
   end
