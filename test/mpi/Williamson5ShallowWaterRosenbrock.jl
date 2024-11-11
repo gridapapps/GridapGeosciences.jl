@@ -12,7 +12,7 @@ module Williamson5ShallowWaterRosenbrock
   using GridapSolvers
   using GridapP4est
 
-  include("GridapSolversFixes.jl")
+  #include("GridapSolversFixes.jl")
   include("Williamson5InitialConditions.jl")
 
   function petsc_gamg_options()
@@ -64,7 +64,7 @@ module Williamson5ShallowWaterRosenbrock
 
       P          = JacobiLinearSolver()
       mm_solver  = GridapSolvers.CGSolver(P;rtol=1.e-6)
-      jac_solver = GridapSolvers.GMRESSolver(100;Pr=nothing,Pl=nothing,maxiter=2000,atol=1e-12,rtol=1.e-6,restart=true,m_add=20,verbose=false,name="GMRES")
+      jac_solver = GMRESSolver(100;Pr=nothing,Pl=nothing,maxiter=2000,atol=1e-12,rtol=1.e-6,restart=true,m_add=20,verbose=false,name="GMRES")
 
       hf, uf = shallow_water_rosenbrock_time_stepper(model, order, degree,
                                                      h₀, u₀, Ωₑ, gₑ, H₀,

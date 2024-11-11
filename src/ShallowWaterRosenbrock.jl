@@ -5,12 +5,23 @@ function assemble_residuals!(duh, dΩ, dω, Y, qAPVM, ϕ, F, n)
   Gridap.FESpaces.assemble_vector!(bₕᵤ, duh, Y)
 end
 
+function _compute_potential_vorticity!(q,dΩ,R,S,h,u,f,n,solver)
+  a(r,s) = ∫(s*h*r)dΩ
+  c(s)   = ∫(perp(n,∇(s))⋅(u) + s*f)dΩ
+  A      = assemble_matrix(a,R,S)
+  Ass    = symbolic_setup(solver,A)
+  Ans    = numerical_setup(Ass,A)
+  rhs    = assemble_vector(c,S)
+  solve!(get_free_dof_values(q),Ans,rhs)
+  consistent!(get_free_dof_values(q)) |> wait
+end
+
 function shallow_water_rosenbrock_time_step!(
   y₂, ϕ, F, q₁, q₂, duh₁, duh₂, H1h, H1hchol, y_wrk,  # in/out args
   model, dΩ, dω, Y, V, Q, R, S, f, g, y₁, y₀,         # in args
   RTMMchol, L2MMchol, Amat, Bchol, Blfchol,           # more in args
   dt, τ, leap_frog,
-  assem=SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},Vector{Float64},R,S),
+  mm_solver, jac_solver,
   topog=nothing)
   # energetically balanced second order rosenbrock shallow water solver
   # reference: eqns (24) and (39) of
@@ -36,7 +47,8 @@ function shallow_water_rosenbrock_time_step!(
     compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,u₁⋅u₁,h₁+topog,g)
   end
   # 1.3: the potential vorticity
-  compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
+  #compute_potential_vorticity!(q₁,H1h,H1hchol,dΩ,R,S,h₁,u₁,f,n,assem)
+  _compute_potential_vorticity!(q₁,dΩ,R,S,h₁,u₁,f,n,mm_solver)
   # 1.4: assemble the momentum and continuity equation residuals
   assemble_residuals!(duh₁, dΩ, dω, Y, q₁ - τ*u₁⋅∇(q₁), ϕ, F, n)
 
@@ -56,7 +68,8 @@ function shallow_water_rosenbrock_time_step!(
     compute_bernoulli_potential!(ϕ,dΩ,Q,L2MMchol,(u₁⋅u₁ + u₁⋅u₂ + u₂⋅u₂)/3.0,0.5*(h₁ + h₂)+topog,g)
   end
   # 2.3: the potential vorticity
-  compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n,assem)
+  #compute_potential_vorticity!(q₂,H1h,H1hchol,dΩ,R,S,h₂,u₂,f,n,assem)
+  _compute_potential_vorticity!(q₂,dΩ,R,S,h₂,u₂,f,n,mm_solver)
   # 2.4: assemble the momentum and continuity equation residuals
   assemble_residuals!(duh₂, dΩ, dω, Y, 0.5*(q₁ - τ*u₁⋅∇(q₁) + q₂ - τ*u₂⋅∇(q₂)), ϕ, F, n)
 
@@ -194,7 +207,8 @@ function shallow_water_rosenbrock_time_stepper(
     istep = 1
     shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                         model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false, topog)
+                                        RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, false, 
+                                        mass_matrix_solver, jacobian_matrix_solver, topog)
 
     if (write_diagnostics && write_diagnostics_freq>0 && mod(istep, write_diagnostics_freq) == 0)
       compute_diagnostic_vorticity!(wn, dΩ, S, H1MMchol, un, get_normal_vector(Ω))
@@ -212,7 +226,8 @@ function shallow_water_rosenbrock_time_stepper(
       yn=aux
       shallow_water_rosenbrock_time_step!(yn, ϕ, F, q1, q2, duh1, duh2, H1h, H1hchol, y_wrk,
                                           model, dΩ, dω, Y, V, Q, R, S, f, g, ym1, ym2,
-                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog, topog)
+                                          RTMMchol, L2MMchol, A, Bchol, Blfchol, dt, τ, leap_frog, 
+                                          mass_matrix_solver, jacobian_matrix_solver, topog)
 
       # IMPORTANT NOTE: We need to extract un, hn out of yn at each iteration because
       #                 the association of yn with its object instance changes at the beginning of
