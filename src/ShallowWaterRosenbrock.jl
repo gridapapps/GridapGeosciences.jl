@@ -51,7 +51,7 @@ function shallow_water_rosenbrock_time_step!(
 
   # Solve for du₁, dh₁ over a MultiFieldFESpace
   solve!(duh₁, Blfns, duh₁)
-  #consistent!(get_free_dof_values(duh₁)) |> wait
+  consistent!(duh₁) |> wait
 
   # update
   y₂v .=  y₀v .+ dt₁ .* duh₁
@@ -76,7 +76,7 @@ function shallow_water_rosenbrock_time_step!(
 
   # solve for du₂, dh₂
   solve!(duh₂, Bns, duh₂)
-  #consistent!(get_free_dof_values(duh₂)) |> wait
+  consistent!(duh₂) |> wait
 
   # update yⁿ⁺¹
   y₂v .= y₁v .+ dt .* duh₂
@@ -128,7 +128,7 @@ function shallow_water_rosenbrock_time_stepper(
   rhs1    = assemble_vector(b₃, S)
   f       = FEFunction(S, copy(rhs1))
   solve!(get_free_dof_values(f),H1MMns,get_free_dof_values(f))
-  #consistent!(get_free_dof_values(f)) |> wait
+  consistent!(get_free_dof_values(f)) |> wait
 
   # assemble the approximate MultiFieldFESpace Jacobian
   n = get_normal_vector(Ω)
@@ -157,7 +157,7 @@ function shallow_water_rosenbrock_time_stepper(
   b₄((v,q)) = b₁(q) + b₂(v)
   rhs2  = assemble_vector(b₄, Y)
   solve!(rhs2, Mns, rhs2)
-  #consistent!(get_free_dof_values(rhs2)) |> wait
+  consistent!(rhs2) |> wait
   yn  = FEFunction(Y, rhs2)
 
   # project the bottom topography onto the L2 space
@@ -167,7 +167,7 @@ function shallow_water_rosenbrock_time_stepper(
     rhs3  = assemble_vector(b₅,Q)
     topog = FEFunction(Q, copy(rhs3))
     solve!(get_free_dof_values(topog),L2MMns,get_free_dof_values(topog))
-    #consistent!(get_free_dof_values(topog)) |> wait
+    consistent!(get_free_dof_values(topog)) |> wait
   end
 
   un, hn = yn
@@ -243,7 +243,8 @@ function shallow_water_rosenbrock_time_stepper(
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
-        pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
+        #pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
+        writevtk(Ω,"output_$(lpad(step,4,"0"))",cellfields=["hn"=>hn,"u"=>un,"wn"=>wn])
       end
     end
     hn, un
