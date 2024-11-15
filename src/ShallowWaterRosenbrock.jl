@@ -183,7 +183,7 @@ function shallow_water_rosenbrock_time_stepper(
   H1h      = assemble_matrix(bmm, R, S)
   H1hns    = numerical_setup(symbolic_setup(mass_matrix_solver,H1h),H1h)
 
-  function run_simulation(pvd=nothing)
+  function run_simulation()
     diagnostics_file = joinpath(output_dir,"nswe__rosenbrock_diagnostics.csv")
 
     ϕ      = clone_fe_function(Q,hn)
@@ -202,6 +202,10 @@ function shallow_water_rosenbrock_time_stepper(
     if (write_diagnostics)
       initialize_csv(diagnostics_file,"time", "mass", "vorticity", "kinetic", "potential", "power")
     end
+    if (write_solution)
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
+      writevtk(Ω,"output_0000",cellfields=["hn"=>hn,"u"=>un,"wn"=>wn])
+    end
 
     # first step, no leap frog
     istep = 1
@@ -217,6 +221,10 @@ function shallow_water_rosenbrock_time_stepper(
                                       hn, un, wn, ϕ, F, g, istep, dt,
                                       diagnostics_file,
                                       dump_diagnostics_on_screen)
+    end
+    if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
+      compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
+      writevtk(Ω,"output_$(lpad(istep,4,"0"))",cellfields=["hn"=>hn,"u"=>un,"wn"=>wn])
     end
     # time step iteration loop
     for istep in 2:N
@@ -243,8 +251,7 @@ function shallow_water_rosenbrock_time_stepper(
       end
       if (write_solution && write_solution_freq>0 && mod(istep, write_solution_freq) == 0)
         compute_diagnostic_vorticity!(wn, dΩ, S, H1MMns, un, get_normal_vector(Ω))
-        #pvd[dt*Float64(istep)] = new_vtk_step(Ω,joinpath(output_dir,"n=$(istep)"),["hn"=>hn,"un"=>un,"wn"=>wn])
-        writevtk(Ω,"output_$(lpad(step,4,"0"))",cellfields=["hn"=>hn,"u"=>un,"wn"=>wn])
+        writevtk(Ω,"output_$(lpad(istep,4,"0"))",cellfields=["hn"=>hn,"u"=>un,"wn"=>wn])
       end
     end
     hn, un
@@ -253,10 +260,5 @@ function shallow_water_rosenbrock_time_stepper(
     rm(output_dir,force=true,recursive=true)
     mkdir(output_dir)
   end
-  if (write_solution)
-    pvdfile=joinpath(output_dir,"nswe_eq_ncells_$(num_cells(model))_order_$(order)_rosenbrock")
-    paraview_collection(run_simulation,pvdfile)
-  else
-    run_simulation()
-  end
+  run_simulation()
 end
