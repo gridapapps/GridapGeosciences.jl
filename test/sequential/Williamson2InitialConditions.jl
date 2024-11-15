@@ -9,6 +9,9 @@
 const α  = π/4.0              # deviation of the coriolis term from zonal forcing
 const U₀ = 38.61068276698372  # velocity scale
 const H₀ = 2998.1154702758267 # mean fluid depth
+const Rₑ = 6371220.0
+const gₑ = 9.80616
+const Ωₑ = 7.292e-5
 
 # Modified coriolis term
 function f₀(xyz)
