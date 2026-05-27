@@ -12,6 +12,8 @@ using P4est_wrapper
 using GridapP4est
 using PartitionedArrays
 
+import PartitionedArrays: getany
+
 import GridapDistributed: DistributedCellField, DistributedTriangulation
 import GridapDistributed: DistributedFaceLabeling
 import GridapDistributed: DistributedDiscreteModel, GenericDistributedDiscreteModel
@@ -50,7 +52,7 @@ include("PanelIds.jl")
 include("Vtk.jl")
 include("Triangulations.jl")
 
-import Gridap.FESpaces: FESpace
+import Gridap.FESpaces: FESpace, compute_cell_bases_changes
 import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace
 import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type, ParamTrianType
 include("GradConformingFESpaces.jl")
