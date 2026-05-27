@@ -106,14 +106,6 @@ function _get_value_type(cell_reffe::AbstractArray{<:GenericLagrangianRefFE})
   return eltype(T)
 end
 
-function _get_cell_shape_funs(T::Type{Float64},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
-  shapefuns = lazy_map(get_shapefuns,cell_reffe)
-  return shapefuns
-end
-
 function _generate_change_of_basis_matrices(model, cell_reffe;
                                            face_to_master_cell_id=_generate_face_to_master_cell_id(model))
   T=_get_value_type(cell_reffe)
@@ -127,84 +119,59 @@ function _generate_change_of_basis_matrices(model, cell_reffe;
   end
 end
 
-
-function _get_cell_shape_funs(T::Type{<:VectorValue},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
-  shapefuns = lazy_map(get_shapefuns,cell_reffe)
-  # VERY IMPORTANT: linear_combination works s.t. the i-th field in
-  # the output basis is the linear combination of the fields in input
-  # basis using the coefficients in the i-th COLUMN of the matrix.
-  # Thus, if we denote M as the change_of_basis_matrices, we are actually building
-  # \phi = M^T \psi
-  return lazy_map(linear_combination, change_of_basis_matrices, shapefuns)
+function _compute_cell_bases_changes(
+  ::Type{Float64},  
+  ::ReferenceFEName, 
+  ::IdentityPiolaMap, 
+  model::CubedSphereParametricDiscreteModel, 
+  cell_reffe, 
+  cell_Jt)
+  return nothing
 end
 
-function _get_cell_shape_funs(T::Type{<:TensorValue},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
+
+function _compute_cell_bases_changes(
+  ::Type{<:VectorValue},
+  ::ReferenceFEName, 
+  ::IdentityPiolaMap, 
+  model::CubedSphereParametricDiscreteModel, 
+  cell_reffe, 
+  cell_Jt)
+  change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe)
+  inv_change_of_basis_matrices = lazy_map(transpose, lazy_map(inv, change_of_basis_matrices))
+  (change_of_basis_matrices, inv_change_of_basis_matrices)
+end
+
+function _compute_cell_bases_changes(
+  ::Type{<:TensorValue},
+  ::ReferenceFEName, 
+  ::IdentityPiolaMap, 
+  model::CubedSphereParametricDiscreteModel, 
+  cell_reffe, 
+  cell_Jt)
   @notimplemented "GridapGeosciences.jl does not support grad-conforming tensor-valued finite elements"
 end
 
-function get_cell_shapefuns(model::AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel{Dc,Dp}},
-                            cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                            conformity::GradConformity,
-                            change_of_basis_matrices = _generate_change_of_basis_matrices(model.model, cell_reffe)) where {Dc,Dp}
-  get_cell_shapefuns(model.model, cell_reffe, conformity, change_of_basis_matrices)
+
+function compute_cell_bases_changes(
+  ref_name::ReferenceFEName, 
+  map::IdentityPiolaMap, 
+  model::CubedSphereParametricDiscreteModel, 
+  cell_reffe, 
+  cell_Jt)
+  T = _get_value_type(cell_reffe)
+  _compute_cell_bases_changes(T, ref_name, map, model, cell_reffe, cell_Jt)
 end
 
-function get_cell_shapefuns(model::CubedSphereParametricDiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                            ::GradConformity,
-                            change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe))
- T = _get_value_type(cell_reffe)
- _get_cell_shape_funs(T, model, cell_reffe, change_of_basis_matrices)
+function compute_cell_bases_changes(
+  ref_name::ReferenceFEName, 
+  map::IdentityPiolaMap, 
+  model::AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel{Dc,Dp}}, 
+  cell_reffe, 
+  cell_Jt) where {Dc,Dp}
+  T = _get_value_type(cell_reffe)
+  _compute_cell_bases_changes(T, ref_name, map, model.model, cell_reffe, cell_Jt)
 end
-
-function _get_cell_dof_basis(T::Type{Float64},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
-  dof_basis = lazy_map(get_dof_basis,cell_reffe)
-  return dof_basis
-end
-
-function _get_cell_dof_basis(T::Type{<:VectorValue},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
-  dof_basis = lazy_map(get_dof_basis,cell_reffe)
-  # IMPORTANT NOTE: Once we move to Gridap 0.20, we can replace collect∘transpose by transpose.
-  #                 This is because the linear_combination available in Gridap 0.19 only supports
-  #                 the case where the change of basis matrix is of type Matrix.
-  inv_change_of_basis_matrices = lazy_map(collect∘transpose, lazy_map(inv, change_of_basis_matrices))
-  return lazy_map(linear_combination, inv_change_of_basis_matrices, dof_basis)
-end
-
-function _get_cell_dof_basis(T::Type{<:TensorValue},
-                              model::CubedSphereParametricDiscreteModel,
-                              cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                              change_of_basis_matrices)
-  @notimplemented "GridapGeosciences.jl does not support grad-conforming tensor-valued finite elements"
-end
-
-function get_cell_dof_basis(model::AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel{Dc,Dp}},
-                            cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                            conformity::GradConformity,
-                            change_of_basis_matrices = _generate_change_of_basis_matrices(model.model, cell_reffe)) where {Dc,Dp}
-  get_cell_dof_basis(model.model, cell_reffe, conformity, change_of_basis_matrices)
-end
-
-function get_cell_dof_basis(model::CubedSphereParametricDiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                            ::GradConformity,
-                            change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe))
- T = _get_value_type(cell_reffe)
- _get_cell_dof_basis(T, model, cell_reffe, change_of_basis_matrices)
-end
-
 
 # We do not want to use CLagrangianFESpace for parametric models, because otherwise
 # we cannot implement the change of basis for the vector-valued case
@@ -213,7 +180,7 @@ const UnionParamTrianType{Dc,Dp} = Union{ParamTrianType{Dc,Dp},
                                          AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp}}}
 
 function _use_clagrangian(trian::UnionParamTrianType{Dc,Dp},
-                          cell_reffe,
+                          cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
                           conf::H1Conformity) where {Dc,Dp}
     return false
 end

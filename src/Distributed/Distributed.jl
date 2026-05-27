@@ -31,7 +31,7 @@ import GridapGeosciences.Geometry: ParametricModels, get_parametric_model
 import GridapGeosciences.Geometry: get_surface_normal
 
 using GridapGeosciences.Fields
-import GridapGeosciences.Fields: ForwardMap, Cartesian2SphericalMap
+import GridapGeosciences.Fields: CubedSphereForwardMap, Cartesian2SphericalMap
 
 using GridapGeosciences.Visualisation
 import GridapGeosciences.Visualisation: writevtk_with_cell_geomap, write_vtk_file_with_cell_geomap
@@ -51,7 +51,7 @@ include("Vtk.jl")
 include("Triangulations.jl")
 
 import Gridap.FESpaces: FESpace
-import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace, _setup_dmodel_and_dtrian
+import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace
 import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type, ParamTrianType
 include("GradConformingFESpaces.jl")
 

@@ -1,7 +1,7 @@
 name = "GridapGeosciences"
 uuid = "77ae386e-bde6-49b0-bd6e-9c07e8aee685"
 authors = ["Tamara Tambyah <tamara.tambyah@monash.edu>", "Alberto F. Martin <alberto.f.martin@anu.edu.au>", "Santiago Badia <santiago.badia@monash.edu>", "David R. Lee <davelee2804@gmail.com >", "Christopher Bladwell <c.bladwell@unsw.edu.au>"]
-version = "0.6.1"
+version = "0.6.2"
 
 [deps]
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
@@ -18,14 +18,14 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 FillArrays = "1.11"
-Gridap = "=0.19.11"
-GridapDistributed = "=0.4.13"
-GridapP4est = "=0.3.13"
-GridapSolvers = "=0.7.0"
+Gridap = "0.20.7"
+GridapDistributed = "0.4.16"
+GridapP4est = "0.3.14"
+GridapSolvers = "0.7.1"
 LinearAlgebra = "1"
 MPI = "0.20"
-P4est_wrapper = "0.2.2"
-PartitionedArrays = "0.3"
+P4est_wrapper = "0.2.5"
+PartitionedArrays = "0.3.4"
 StaticArrays = "1.9.8"
 Test = "1"
 julia = "1.10"

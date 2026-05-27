@@ -13,7 +13,7 @@ Example usage is:
 ```
 function ambient_sgrad(f::Function,forward_map::Field)
   function _gradf(x)
-    inverse_map  = InverseMap(forward_map)
+    inverse_map  = CubedSphereInverseMap(forward_map)
     αβ = inverse_map(x)
     sgrad(panel_f(f),forward_map)(αβ)
   end
@@ -24,7 +24,7 @@ f_cf = AmbientCellField(ambient_sgrad,Ω_ambient)
 ```
 
 
-The input function `f` takes an InverseMap object, and returns another function `_f`.
+The input function `f` takes an CubedSphereInverseMap object, and returns another function `_f`.
 Such function takes points in the ambient coordinate system of the manifold, and returns the
 ambient field evaluated at parametric points.
 Note, this will only work for manifolds where the inverse map can be defined analytically
