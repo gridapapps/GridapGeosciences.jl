@@ -42,9 +42,11 @@ panel_model = dpanel_model.models.item
 p_fe = 1
 Ω_panel = Triangulation(panel_model)
 
+u_cov_cf = ParametricCellField(covar_v_3D(uX),Ω_panel)
 ## FE spaces
-R = TestFESpace(panel_model, ReferenceFE(nedelec,Float64,p_fe);conformity=:Hcurl)
-H = TrialFESpace(R)
+R = TestFESpace(panel_model, ReferenceFE(nedelec,Float64,p_fe);conformity=:Hcurl,
+      dirichlet_tags=["top_boundary", "bottom_boundary"])
+H = TrialFESpace(R,u_cov_cf)
 
 ## metric information
 inv_metric_cf = ParametricCellField(inv_metric,Ω_panel)
@@ -52,7 +54,6 @@ metric_cf = ParametricCellField(metric,Ω_panel)
 meas_cf = ParametricCellField(sqrtg,Ω_panel)
 covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
 
-u_cov_cf = ParametricCellField(covar_v_3D(uX),Ω_panel)
 u_int = interpolate(u_cov_cf,H)
 
 curl_func(p,x) = curl(covar_v_3D(uX)(p))(x)
