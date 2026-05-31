@@ -88,3 +88,26 @@ cellfields = ["curlu"=> q1,
 writevtk_with_cell_geomap(latlon_geo_map_func(Ω_panel),Ω_panel,dir*"/sol",
         cellfields=cellfields,
         append=false)
+
+## First test. Evaluate dof_basis sign flip included
+
+dof_basis = Gridap.FESpaces.get_fe_dof_basis(H)
+
+# cell 1 face 1 dofs --- # cell 5 face 3 dofs (NOT OK)
+dof_basis(u_cov_cf)[1][[5,6,21,24]]
+dof_basis(u_cov_cf)[5][[13,14,39,48]] 
+
+# cell 1 face 2 dofs --- # cell 2 face 1 dofs (OK)
+dof_basis(u_cov_cf)[1][[11,12,27,30]]
+dof_basis(u_cov_cf)[2][[5,6,21,24]]
+
+## Second test. Evaluate dof_basis WITHOUT sign flip
+u_cov_cf_ref = Gridap.CellData.change_domain(u_cov_cf, dof_basis.domain_style)
+
+# cell 1 face 1 dofs --- # cell 5 face 3 dofs (Same sign ... I would expect a sign flip here!!!)
+lazy_map(evaluate,dof_basis.cell_dof.args[2],u_cov_cf_ref.cell_field)[1][[5,6,21,24]]
+lazy_map(evaluate,dof_basis.cell_dof.args[2],u_cov_cf_ref.cell_field)[5][[13,14,39,48]]
+
+# cell 1 face 2 dofs --- # cell 2 face 1 dofs (Different sign, ok, that makes sense ... )
+lazy_map(evaluate,dof_basis.cell_dof.args[2],u_cov_cf_ref.cell_field)[1][[11,12,27,30]]
+lazy_map(evaluate,dof_basis.cell_dof.args[2],u_cov_cf_ref.cell_field)[2][[5,6,21,24]]
