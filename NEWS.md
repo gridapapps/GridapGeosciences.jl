@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `ForwardMap` → `CubedSphereForwardMap` and `InverseMap` → `CubedSphereInverseMap` (and the corresponding source files), for clarity and to avoid name clashes.
 - Refactored serial `GradConformingFESpaces` to implement the new Gridap v0.20 hook `compute_cell_bases_changes` (dispatching on value type via the private helper `_compute_cell_bases_changes`) in place of the now-removed `get_cell_shapefuns` / `get_cell_dof_basis` overloads. The `collect∘transpose` workaround that was required by Gridap v0.19 has been dropped in favour of plain `transpose`.
 - Refactored distributed `GradConformingFESpaces` to implement `compute_cell_bases_changes` for `CubedSphereParametricDistributedDiscreteModel` and to use the new `DistributedSingleFieldFESpace` constructor API from GridapDistributed v0.4.14+, replacing the old `FESpace` overloads that depended on the now-removed `_setup_dmodel_and_dtrian` helper.
+- `benchmark/` to compare the grad-grad term in the intrinsic vs. extrinsic approach. Follow the instructions in `benchmark/README.md` to run locally. 
+- Added the followng tutorials to `Examples/`
+    * AmbientAdvectionSUPG.jl: to extrinsically solve the scalar transport equation with SUPG upwinding  
+    * AmbientAdvectionUpwinding.jl: to extrinsically solve the scalar transport equation with DG upwinding  
+    * LinearBoussinesq.jl: to solve the 3D linear Boussinesq equations 
+    * ThermalShallowWater.jl: to solve the 2D thermal shallow water equations
+
 
 ## [0.6.1]
 ### Added
