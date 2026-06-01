@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `benchmark/` to compare the grad-grad term in the intrinsic vs. extrinsic approach. Follow the instructions in `benchmark/README.md` to run locally. 
+- Added the followng tutorials to `Examples/`
+    * AmbientAdvectionSUPG.jl: to extrinsically solve the scalar transport equation with SUPG upwinding  
+    * AmbientAdvectionUpwinding.jl: to extrinsically solve the scalar transport equation with DG upwinding  
+    * LinearBoussinesq.jl: to solve the 3D linear Boussinesq equations 
+    * ThermalShallowWater.jl: to solve the 2D thermal shallow water equations
+
 
 ## [0.6.1]
 ### Added
