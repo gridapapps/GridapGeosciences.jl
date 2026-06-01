@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../../test/Examples/LinearBousineqEquations.jl"
+EditURL = "../../../test/Examples/LinearBoussinesq.jl"
 ```
 
 # Linearised Boussinesq equations on the cubed sphere manifold
