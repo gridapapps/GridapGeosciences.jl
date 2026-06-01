@@ -38,24 +38,24 @@ radius,thickness = 1.0, 0.19
 octree3_model = CubedSphere3DParametricOctreeDistributedDiscreteModel(ranks,radius,thickness;
                   num_horizontal_uniform_refinements=ℓ,
                   num_vertical_uniform_refinements=ℓ);
-panel_model = octree3_model.parametric_dmodel
+model = octree3_model.parametric_dmodel
 
 
 # ## Triangulation
 order = 1
-Ω_panel = Triangulation(panel_model)
-dΩ = Measure(Ω_panel,4*(order+1))
+Ω = Triangulation(model)
+dΩ = Measure(Ω,4*(order+1))
 
 # ## Finite element spaces
 # Define the finite element spaces, where the Hdiv space has no-flux boundary conditions:
-Q = TestFESpace(panel_model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+Q = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 P = TrialFESpace(Q)
 
-V = TestFESpace(panel_model, ReferenceFE(raviart_thomas,Float64,order);
+V = TestFESpace(model, ReferenceFE(raviart_thomas,Float64,order);
     conformity=:HDiv,dirichlet_tags=["bottom_boundary",  "top_boundary"])
 U = TrialFESpace(V,VectorValue(0.0,0.0,0.0))
 
-W = TestFESpace(panel_model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+W = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 B = TrialFESpace(W)
 
 Y = MultiFieldFESpace([V, Q, W])
@@ -108,10 +108,10 @@ end
 
 # Define the associated ParametricCellField, and interpolate the initial condition
 # into the finite element space
-h_cf = ParametricCellField(φ₀,Ω_panel)
-u_cf = ParametricCellField(piola(u₀),Ω_panel)
-b_cf = ParametricCellField(b₀,Ω_panel)
-omega_cf = ParametricCellField(ω,Ω_panel)
+h_cf = ParametricCellField(φ₀,Ω)
+u_cf = ParametricCellField(piola(u₀),Ω)
+b_cf = ParametricCellField(b₀,Ω)
+omega_cf = ParametricCellField(ω,Ω)
 
 xh0 = interpolate([u_cf,h_cf,b_cf],X)
 
@@ -124,21 +124,21 @@ end
 # ## Weak forms
 # To define the weak forms, we extract the metric information, and define the
 # pushforward of the surface normal vector:
-metric_cf = ParametricCellField(metric,Ω_panel)
-meas_cf = ParametricCellField(sqrtg,Ω_panel)
-covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+g = ParametricCellField(metric,Ω)
+meas = ParametricCellField(sqrtg,Ω)
+covariant_basis_cf = ParametricCellField(covariant_basis,Ω)
 _area_meas(p) = x->  forward_jacobian(p,x) ⋅ (inv_metric(p,x) ⋅ VectorValue(1,0,0))
 area_meas(p) = x-> norm(_area_meas(p)(x))
 normal_3D(p) = x-> (1/area_meas(p)(x) )*VectorValue(1,0,0)
-normal_3D_cf = ParametricCellField(normal_3D,Ω_panel)
+normal_3D_cf = ParametricCellField(normal_3D,Ω)
 
 # Mass term:
-mass(t, (dtu,dtp,dtb), (v,q,r)) = ( ∫( (v⋅ (metric_cf⋅ dtu) )*(1/meas_cf) )dΩ
-                                  + ∫( (q*dtp)*meas_cf )dΩ
-                                  + ∫( (r*dtb)*meas_cf )dΩ )
+mass(t, (dtu,dtp,dtb), (v,q,r)) = ( ∫( (v⋅ (g⋅ dtu) )*(1/meas) )dΩ
+                                  + ∫( (q*dtp)*meas )dΩ
+                                  + ∫( (r*dtb)*meas )dΩ )
 # Velocity residual:
 resu(t,(u,p,b),(v,q,r)) = (
-   ∫( omega_cf*( normal_3D_cf ×( metric_cf⋅u*(1/meas_cf)  ) )⋅(metric_cf⋅v)*(1/meas_cf)  )dΩ
+   ∫( omega_cf*( normal_3D_cf ×( g⋅u*(1/meas)  ) )⋅(g⋅v)*(1/meas)  )dΩ
   - ∫( p*(∇⋅v) )dΩ
   - ∫( b*(normal_3D_cf⋅v)  )dΩ
                           )
@@ -174,8 +174,8 @@ solT = solve(solver, opT, t0, tF, xh0)
 mkpath("output_path/results")
 
 uh,ph,bh = xh0
-uproj = covariant_basis_cf⋅(1/meas_cf*uh)
-writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,
+uproj = covariant_basis_cf⋅(1/meas*uh)
+writevtk_with_cell_geomap(geo_map_func(Ω),Ω,
     "output_path/results/results_0",
     cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false)
 
@@ -188,9 +188,9 @@ while !isnothing(it)
   println("t = $t")
 
   uh,ph,bh = xh
-  uproj = covariant_basis_cf⋅(1/meas_cf*uh)
+  uproj = covariant_basis_cf⋅(1/meas*uh)
 
-  writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,
+  writevtk_with_cell_geomap(geo_map_func(Ω),Ω,
     "output_path/results/results_$t",
     cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false)
   it = iterate(solT, state)

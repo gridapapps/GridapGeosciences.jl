@@ -19,12 +19,12 @@
 # [Brezzi et al. 2004](https://doi.org/10.1142/S0218202504003866).
 #
 #
-# The weak formulation in the parametric space is: find $\widetilde{u}_h \in \mathbb{V} \subset L^2(\mathcal{S})$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
+# The weak formulation in the parametric space is: find $\widetilde{u}_h \in \mathbb{V} \subset L^2(\gamma)$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
 # ```math
 # \begin{align*}
 # a(\widetilde{u}_h,\widetilde{v}_h) &+ s(\widetilde{u}_h,\widetilde{v}_h) = 0  , \\
-# a(\widetilde{u}_h,\widetilde{v}_h) &= \int_{\mathcal{S}} \partial_t \widetilde{u}_h \widetilde{v}_h
-# - \int_{\mathcal{S}} \widetilde{u}_h \widetilde{\beta} \cdot \nabla_{\mathcal{S}} \widetilde{v}_h
+# a(\widetilde{u}_h,\widetilde{v}_h) &= \int_{\gamma} \partial_t \widetilde{u}_h \widetilde{v}_h
+# - \int_{\gamma} \widetilde{u}_h \widetilde{\beta} \cdot \nabla_{\gamma} \widetilde{v}_h
 # +  \int_{\widetilde{\mathcal{E}}_0} \frac{1}{2} 	[ \widetilde{u}_h \widetilde{\beta} \cdot \widetilde{n} ][ \widetilde{v}_h ] 		ds \\
 # s({u}_h,{v}_h) 	&=\int_{\widetilde{\mathcal{E}}_0} \frac{1}{2}  |\widetilde{\beta}\cdot \widetilde{n}^+| [  \widetilde{u}_h ][   \widetilde{v}_h  ] ds
 # \end{align*}
@@ -42,35 +42,35 @@ using GridapSolvers
 # To obtain a refined 2D ambient model, we pass $\ell$ levels of refinement:
 radius = 1.0
 ℓ = 2
-ambient_model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
 
 # ## Triangulation and FE spaces
 # Triangulate the model, both volume and skeleton
 order = 1
 degree = 2*(order+1)
-Ω_ambient = Triangulation(ambient_model)
-dΩ = Measure(Ω_ambient,degree)
-Λ = SkeletonTriangulation(ambient_model)
+Ω = Triangulation(model)
+dΩ = Measure(Ω,degree)
+Λ = SkeletonTriangulation(model)
 dΛ = Measure(Λ,degree)
 n_Λ = get_normal_vector(Λ)
 
 
 # ## Finite element spaces
 # Extract the finite element spaces in the typical way:
-Q = TestFESpace(ambient_model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+Q = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 P = TransientTrialFESpace(Q)
 
 # ## Initial conditions and velocity field
 # The velocity field is a solid body rotation, that can be converted to a CellField
 # in the standard way:
 vX(x) = VectorValue(-x[2],x[1],0.0)
-vel =  CellField(vX,Ω_ambient)
+vel =  CellField(vX,Ω)
 
 # The initial condition is a gaussian bump, defined as an analytic function:
 u(x) = exp(-(x[2]^2 + x[3]^2))
 # We convert this initial condition to a CellField, and interpolate it into the
 # finite element space.
-u_cf = CellField(u,Ω_ambient)
+u_cf = CellField(u,Ω)
 uh0 = interpolate_everywhere(u_cf, P(0.0))
 
 
@@ -105,9 +105,9 @@ solT = solve(solver, opT, t0, tF, uh0)
 # Iterate the solution, and visualise the solution
 mkpath("output_path/results")
 createpvd("output_path/results") do pvd
-  pvd[0] = createvtk(Ω_ambient, "output_path/results/results_0" * ".vtu", cellfields=["u" => uh0],append=false)
+  pvd[0] = createvtk(Ω, "output_path/results/results_0" * ".vtu", cellfields=["u" => uh0],append=false)
   for (t, uh) in solT
     println("t = $t")
-    pvd[t] = createvtk(Ω_ambient, "output_path/results/results_$t" * ".vtu", cellfields=["u" => uh],append=false)
+    pvd[t] = createvtk(Ω, "output_path/results/results_$t" * ".vtu", cellfields=["u" => uh],append=false)
   end
 end

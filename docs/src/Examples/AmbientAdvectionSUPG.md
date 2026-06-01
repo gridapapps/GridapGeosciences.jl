@@ -22,14 +22,14 @@ We use a SUPG method to solve in the ambient space of the cubed sphere.
 For more information about the SUPG method for scalar transport, refer to
 [Brookes \& Huges 1982](https://doi.org/10.1016/0045-7825(82)90071-8).
 
-The weak formulation in the ambient space is: find $\widetilde{u}_h \in \mathbb{V} \subset H^1(\mathcal{S})$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
+The weak formulation in the ambient space is: find $\widetilde{u}_h \in \mathbb{V} \subset H^1(\gamma)$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
 ```math
 \begin{align*}
 a(\widetilde{u}_h,\widetilde{v}_h) &+ s(\widetilde{u}_h,\widetilde{v}_h) = 0  , \\
-a(\widetilde{u}_h,\widetilde{v}_h) &= \int_{\mathcal{S}} \partial_t \widetilde{u}_h \widetilde{v}_h
-+ \int_{\mathcal{S}} \widetilde{\beta} \cdot \nabla_{\mathcal{S}} \widetilde{u}_h ~\widetilde{v}_h    \\
-s(\widetilde{u}_h,\widetilde{v}_h) 	&= \int_{\mathcal{S}} \partial_t \widetilde{u}_h (\beta \cdot \nabla_{\mathcal{S}} \widetilde{v}_h)
-+ \int_{\mathcal{S}} \widetilde{\beta} \cdot \nabla_{\mathcal{S}} \widetilde{u}_h ~(\beta \cdot \nabla_{\mathcal{S}} \widetilde{v}_h )   \\
+a(\widetilde{u}_h,\widetilde{v}_h) &= \int_{\gamma} \partial_t \widetilde{u}_h \widetilde{v}_h
++ \int_{\gamma} \widetilde{\beta} \cdot \nabla_{\gamma} \widetilde{u}_h ~\widetilde{v}_h    \\
+s(\widetilde{u}_h,\widetilde{v}_h) 	&= \int_{\gamma} \partial_t \widetilde{u}_h (\beta \cdot \nabla_{\gamma} \widetilde{v}_h)
++ \int_{\gamma} \widetilde{\beta} \cdot \nabla_{\gamma} \widetilde{u}_h ~(\beta \cdot \nabla_{\gamma} \widetilde{v}_h )   \\
 \end{align*}
 ```
 
@@ -48,7 +48,7 @@ To obtain a refined 2D ambient model, we pass $\ell$ levels of refinement:
 ````julia 
 radius = 1.0
 ℓ = 2
-ambient_model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
 ````
 
 ## Triangulation and FE spaces
@@ -56,9 +56,9 @@ Triangulate the model and extract finite element spaces in the typical way:
 
 ````julia 
 order = 1
-Ω_ambient = Triangulation(ambient_model)
-dΩ = Measure(Ω_ambient,2*(order+1))
-Q = TestFESpace(ambient_model, ReferenceFE(lagrangian,Float64,order); conformity=:H1)
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2*(order+1))
+Q = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:H1)
 P = TransientTrialFESpace(Q)
 ````
 
@@ -68,7 +68,7 @@ in the standard way:
 
 ````julia 
 vX(x) = VectorValue(-x[2],x[1],0.0)
-vel =  CellField(vX,Ω_ambient)
+vel =  CellField(vX,Ω)
 ````
 
 The initial condition is a gaussian bump, defined as an analytic function:
@@ -81,7 +81,7 @@ We convert this initial condition to a CellField, and interpolate it into the
 finite element space.
 
 ````julia 
-u_cf = CellField(u,Ω_ambient)
+u_cf = CellField(u,Ω)
 uh0 = interpolate_everywhere(u_cf, P(0.0))
 ````
 
@@ -127,10 +127,10 @@ Iterate the solution, and visualise the solution
 ````julia 
 mkpath("output_path/results")
 createpvd("output_path/results") do pvd
-  pvd[0] = createvtk(Ω_ambient, "output_path/results/results_0" * ".vtu", cellfields=["u" => uh0],append=false)
+  pvd[0] = createvtk(Ω, "output_path/results/results_0" * ".vtu", cellfields=["u" => uh0],append=false)
   for (t, uh) in solT
     println("t = $t")
-    pvd[t] = createvtk(Ω_ambient, "output_path/results/results_$t" * ".vtu", cellfields=["u" => uh],append=false)
+    pvd[t] = createvtk(Ω, "output_path/results/results_$t" * ".vtu", cellfields=["u" => uh],append=false)
   end
 end
 ````
