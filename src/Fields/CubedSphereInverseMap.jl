@@ -31,19 +31,19 @@ Gridap.Arrays.evaluate!(cache,f::InverseMap3DGenerator,p::Integer) = f.inverse_m
 
 
 ## Given a forward_map, generate the corresponding inverse map
-function InverseMap(m::ForwardMap2D)
-  InverseMap(m.panel,m.radius)
+function CubedSphereInverseMap(m::ForwardMap2D)
+  CubedSphereInverseMap(m.panel,m.radius)
 end
 
-function InverseMap(m::ForwardMap3D)
-  InverseMap(m.panel,m.radius,m.thickness)
+function CubedSphereInverseMap(m::ForwardMap3D)
+  CubedSphereInverseMap(m.panel,m.radius,m.thickness)
 end
 
-function InverseMap(p::Integer,radius)
+function CubedSphereInverseMap(p::Integer,radius)
   return InverseMap2D(p, radius)
 end
 
-function InverseMap(p::Integer,radius,thickness)
+function CubedSphereInverseMap(p::Integer,radius,thickness)
   InverseMap3D(p, radius,thickness)
 end
 

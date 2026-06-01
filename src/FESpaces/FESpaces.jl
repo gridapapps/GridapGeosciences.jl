@@ -1,9 +1,9 @@
 module FESpaces
 
 import Gridap.ReferenceFEs: GenericLagrangianRefFE, GradConformity, get_prebasis,
-                            get_shapefuns, get_node_coordinates, get_polytope, num_dofs,
+                            get_node_coordinates, get_polytope, num_dofs,
                             get_face_own_dofs, get_face_own_nodes, num_faces, get_offset,
-                            get_dof_basis
+                            ReferenceFEName, IdentityPiolaMap
 
 import Gridap.Geometry: get_grid_topology, num_faces, num_cell_dims,
                         get_faces, num_cells, get_cell_map,
@@ -14,7 +14,7 @@ import Gridap.Arrays: array_cache, CachedMatrix, return_type, getindex!,
                       evaluate, evaluate!
 import GridapGeosciences.Geometry: CubedSphereParametricDiscreteModel, get_panel_ids, get_forward_map_generator
 import GridapGeosciences.Helpers: J, forward_pinv_jacobian
-import Gridap.FESpaces: get_cell_shapefuns, get_cell_dof_basis, _use_clagrangian, H1Conformity
+import Gridap.FESpaces: compute_cell_bases_changes, _use_clagrangian, H1Conformity
 import Gridap.Adaptivity: AdaptedDiscreteModel, AdaptedTriangulation
 import Gridap.Helpers: @notimplemented
 import Gridap.ReferenceFEs: linear_combination

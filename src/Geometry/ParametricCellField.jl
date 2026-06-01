@@ -22,7 +22,7 @@ f_cf = ParametricCellField(fX,Ω_panel)
 ```
 
 
-The input function `fX` takes an ForwardMap object, and returns another function `_f`.
+The input function `fX` takes a CubedSphereForwardMap object, and returns another function `_f`.
 Such function takes points in the local coordinate system of the chart, and returns the
 ambient field evaluated at parametric points.
 

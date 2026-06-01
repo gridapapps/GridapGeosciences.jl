@@ -12,7 +12,7 @@ import Gridap.Geometry: FaceToCellGlue, FaceCompressedVector, push_normal
 
 using GridapGeosciences.Fields
 import GridapGeosciences.Fields: MatMultField
-import GridapGeosciences.Fields: InverseMap
+import GridapGeosciences.Fields: CubedSphereInverseMap
 
 using GridapGeosciences.Helpers
 import GridapGeosciences.Helpers: inv_metric, forward_jacobian

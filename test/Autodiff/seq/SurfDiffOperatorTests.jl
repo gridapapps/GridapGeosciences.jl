@@ -55,14 +55,14 @@ thickness = 0.5
 ########## 2D
 ################################################################################
 αβ = CUBE_HALF_EDGE*Point(-1.0,-1.0)
-m = ForwardMap(panel_id,radius)
+m = CubedSphereForwardMap(panel_id,radius)
 test_operators(αβ,m)
 
 ################################################################################
 ########## 3D
 ################################################################################
 γαβ = Point(0.5,-CUBE_HALF_EDGE,-CUBE_HALF_EDGE)
-m = ForwardMap(panel_id,radius,thickness)
+m = CubedSphereForwardMap(panel_id,radius,thickness)
 test_operators(γαβ,m)
 
 

@@ -128,7 +128,7 @@ if return_vtk
   cellfields = map((x,y) -> x=>y, labels,panel_cfs)
 
   skel_panel_ids = get_panel_ids(trian)
-  skel_geo_map = lazy_map(p -> ForwardMap(p), skel_panel_ids.plus)
+  skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
   writevtk_with_cell_geomap(skel_geo_map,trian,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
 end
 ################################################################################
@@ -164,7 +164,7 @@ if return_vtk
   cellfields = map((x,y) -> x=>y, labels,panel_cfs)
 
   skel_panel_ids = get_panel_ids(Λ)
-  skel_geo_map = lazy_map(p -> ForwardMap(p), skel_panel_ids.plus)
+  skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
   writevtk_with_cell_geomap(skel_geo_map,Λ,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
 end
 
@@ -191,7 +191,7 @@ diff_cf = (abs((vel⋅ n_Λ).minus) .- abs((vel⋅ n_Λ).plus))
 
 if return_vtk
   skel_panel_ids = get_panel_ids(Λ)
-  skel_geo_map = lazy_map(p -> ForwardMap(p), skel_panel_ids.plus)
+  skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
   labels = ["upwind_plus","upwind_minus","upwind_diff"]
   panel_cfs = [abs((vel⋅ n_Λ).plus),abs((vel⋅ n_Λ).minus),abs((vel⋅ n_Λ).minus)-abs((vel⋅ n_Λ).plus)]
   cellfields = map((x,y) -> x=>y, labels,panel_cfs)

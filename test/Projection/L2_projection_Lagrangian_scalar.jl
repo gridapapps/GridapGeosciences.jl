@@ -61,7 +61,7 @@ end
 
 # function fS(p)
 #   function f(αβ)
-#     xyz = ForwardMap(p)(αβ)
+#     xyz = CubedSphereForwardMap(p)(αβ)
 #     xyz[1]*xyz[2]*xyz[3]
 #   end
 # end
@@ -69,7 +69,7 @@ end
 # ### f = sin(ϕ) = Z/R
 # function fS(p)
 #   function _f(αβ)
-#     X,Y,Z = ForwardMap(p)(αβ)
+#     X,Y,Z = CubedSphereForwardMap(p)(αβ)
 #     radius = sqrt(X^2 + Y^2 + Z^2)
 #     Z/radius
 #   end

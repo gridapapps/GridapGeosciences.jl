@@ -28,11 +28,11 @@ end
 
 Gridap.Arrays.evaluate!(cache,f::ForwardMap3DGenerator,p::Integer) = f.forward_maps[p]
 
-function ForwardMap(p::Integer,radius)
+function CubedSphereForwardMap(p::Integer,radius)
   return ForwardMap2D(p, radius)
 end
 
-function ForwardMap(p::Integer,radius,thickness)
+function CubedSphereForwardMap(p::Integer,radius,thickness)
   return ForwardMap3D(p, radius, thickness)
 end
 
