@@ -64,7 +64,7 @@ function SingleAmbientDiscreteModel(panel_model::UnstructuredDiscreteModel,radiu
   cmap = get_cell_map(panel_grid)
 
   ## map: alpha,beta -> manifold
-  fwd_map =  lazy_map(p -> ForwardMap(1,radius), collect(1:num_cells(panel_model)))
+  fwd_map =  lazy_map(p -> CubedSphereForwardMap(1,radius), collect(1:num_cells(panel_model)))
 
   ## map: reffe -> manifold
   geo_cmap = lazy_map(∘,fwd_map,cmap)

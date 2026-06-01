@@ -1,5 +1,5 @@
 """
-Test the evaluation of the ForwardMap and InverseMap in 2D and 3D
+Test the evaluation of the CubedSphereForwardMap and CubedSphereInverseMap in 2D and 3D
 """
 
 module ForwardInverseMapTests
@@ -20,8 +20,8 @@ thickness = 0.25
 pts_αβ = CUBE_HALF_EDGE.*[Point(-1.0,-1.0),Point(1.0,-1.0),Point(-1.0,1.0),Point(1.0,1.0)]
 
 for panel in collect(1:NPANELS)
-  fwd_maps = fill(ForwardMap(panel,radius),length(pts_αβ))
-  inv_maps = fill(InverseMap(panel,radius),length(pts_αβ))
+  fwd_maps = fill(CubedSphereForwardMap(panel,radius),length(pts_αβ))
+  inv_maps = fill(CubedSphereInverseMap(panel,radius),length(pts_αβ))
 
   pts_x = lazy_map(evaluate,fwd_maps,pts_αβ)
 
@@ -34,8 +34,8 @@ end
 for γ in [0.0, 0.5, 1.0]
   pts_γαβ = map(x->Point(1.0,x[1],x[2]) ,pts_αβ)
   for panel in collect(1:NPANELS)
-    fwd_maps = fill(ForwardMap(panel,radius,thickness),length(pts_γαβ))
-    inv_maps = fill(InverseMap(panel,radius,thickness),length(pts_γαβ))
+    fwd_maps = fill(CubedSphereForwardMap(panel,radius,thickness),length(pts_γαβ))
+    inv_maps = fill(CubedSphereInverseMap(panel,radius,thickness),length(pts_γαβ))
 
     pts_x = lazy_map(evaluate,fwd_maps,pts_γαβ)
 
@@ -54,8 +54,8 @@ end
 #### 2D test: test the auto-diff of the inverse_map for panel 1 aganist analytic expression
 panel = 1
 αβ = Point(CUBE_HALF_EDGE,CUBE_HALF_EDGE)
-m = ForwardMap(panel,radius)
-minv = InverseMap(m)
+m = CubedSphereForwardMap(panel,radius)
+minv = CubedSphereInverseMap(m)
 xyz = m(αβ)
 
 Jt_minv = ∇(minv)(xyz) # computed via auto-diff

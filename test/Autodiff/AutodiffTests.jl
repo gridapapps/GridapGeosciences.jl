@@ -4,7 +4,7 @@ using GridapGeosciences
 using Test
 
 
-forward_maps = map(p->ForwardMap(p),collect(1:6))
+forward_maps = map(p->CubedSphereForwardMap(p),collect(1:6))
 jacobians_transpose = map(m->gradient(m),forward_maps)
 jacobians = map(m->Operation(transpose)(gradient(m)),forward_maps)
 

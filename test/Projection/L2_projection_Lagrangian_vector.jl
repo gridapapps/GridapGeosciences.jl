@@ -74,7 +74,7 @@ end
 ### must be in the tangent space of the sphere
 # function uX(p)
 #   function _u(α)
-#     x = ForwardMap(p)(α)
+#     x = CubedSphereForwardMap(p)(α)
 #     VectorValue(-x[2],x[1],0.0)
 #   end
 # end
