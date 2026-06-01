@@ -155,9 +155,9 @@ function hodge_laplacian_vector(
   T = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe+1); conformity=:H1)
   S = TrialFESpace(T)
 
-  # For Gridap 0.19, we can use the standard nedelec constructor.
-  # Gridap Gridap 0.20, we need to set change_dof=false because ....
+  # For Gridap 0.19, we can use the standard nedelec constructor. That is, we would use:
   # R = TestFESpace(Ω_panel, ReferenceFE(nedelec,Float64,p_fe);conformity=:Hcurl)
+  # For Gridap 0.20, we need to set change_dof=false due to the new definition of dofs
   R = TestFESpace(Ω_panel, ReferenceFE(nedelec,Float64,p_fe; change_dof=false);conformity=:Hcurl)
   H = TrialFESpace(R)
 

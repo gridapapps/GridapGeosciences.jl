@@ -68,7 +68,7 @@ cmap = get_cell_map(get_grid(panel_model))
 param_pts = lazy_map(evaluate,cmap,ref_pts)
 
 # check domain style
-DomainStyle(q1) ## Referencce
+DomainStyle(q1) ## Reference
 DomainStyle(q2) ## Physical -> parametric domain
 
 # evaluate on points
@@ -78,7 +78,7 @@ q2_x = lazy_map(evaluate,get_data(q2),param_pts)./1
 q1_x[1]
 q2_x[1]
 
-### Plottting
+### Plotting
 cellfields = ["curlu"=> q1,
               "curlu_cf"=> q2,
               "diff_curl" =>q1-q2,
@@ -95,7 +95,7 @@ dof_basis = Gridap.FESpaces.get_fe_dof_basis(H)
 
 # cell 1 face 1 dofs --- # cell 5 face 3 dofs (NOT OK)
 dof_basis(u_cov_cf)[1][[5,6,21,24]]
-dof_basis(u_cov_cf)[5][[13,14,39,48]] 
+dof_basis(u_cov_cf)[5][[13,14,39,48]]
 
 # cell 1 face 2 dofs --- # cell 2 face 1 dofs (OK)
 dof_basis(u_cov_cf)[1][[11,12,27,30]]
