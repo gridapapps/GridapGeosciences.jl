@@ -8,7 +8,7 @@
 # ============================================================
 
 """
-    AtlasDiscreteModel{Dc,Da,G,A,P,O,T,L} <: Gridap.Geometry.DiscreteModel{Dc,Dc}
+    AtlasDiscreteModel{Dc,Da,G,A,P,O,T,L} <: Gridap.Geometry.DiscreteModel{Dc,Da}
 
 Combines an `AtlasGrid{Dc,Da}` (local Dc-dim geometry) with a `GridTopology{Dc,Dc}`
 and a `FaceLabeling`.  Ambient Da-dimensional coordinates are never stored; they are
@@ -22,7 +22,7 @@ struct AtlasDiscreteModel{Dc, Da,
                            G, A, P, C, O, M,
                            T <: Gridap.Geometry.GridTopology{Dc,Dc},
                            L <: Gridap.Geometry.FaceLabeling
-                           } <: Gridap.Geometry.DiscreteModel{Dc,Dc}
+                           } <: Gridap.Geometry.DiscreteModel{Dc,Da}
   atlas_grid    :: AtlasGrid{Dc,Da,G,A,P,C,O,M}
   grid_topology :: T
   face_labeling :: L

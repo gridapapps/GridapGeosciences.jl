@@ -104,7 +104,7 @@ end
 # ============================================================
 
 """
-    AtlasGrid{Dc,Da,G,A,P,C,O,M} <: Gridap.Geometry.Grid{Dc,Dc}
+    AtlasGrid{Dc,Da,G,A,P,C,O,M} <: Gridap.Geometry.Grid{Dc,Da}
 
 A DG-style grid for a `Dc`-dimensional manifold atlas.  Each fine cell stores its
 corners in the **local reference frame** of its coarse chart (Dc-dimensional).
@@ -144,7 +144,7 @@ struct AtlasGrid{Dc, Da,
                  P <: AbstractVector{<:Field},
                  C <: AbstractVector{<:Field},
                  O <: Gridap.Geometry.OrientationStyle,
-                 M <: ManifoldStyle} <: Gridap.Geometry.Grid{Dc,Dc}
+                 M <: ManifoldStyle} <: Gridap.Geometry.Grid{Dc,Da}
   param_grid         :: G
   cell_chart_coords  :: A
   cell_ambient_maps  :: P
