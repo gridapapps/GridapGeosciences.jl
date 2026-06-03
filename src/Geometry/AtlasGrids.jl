@@ -4,11 +4,6 @@
 # (Dc-dimensional, one coordinate system per coarse chart).  Ambient Da-dimensional
 # coords are NOT stored here; they are computed only in visualization_data.
 
-using Gridap
-using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
-using Gridap.Adaptivity, Gridap.Visualization
-import Gridap.TensorValues: symmetric_part, SymTensorValue
-
 # ============================================================
 # IdentityField
 # ============================================================
@@ -375,12 +370,6 @@ get_cell_ambient_maps(g::AtlasGrid)                = g.cell_ambient_maps
 get_cell_metric(g::AtlasGrid)                      = g.cell_metric
 get_cell_inv_metric(g::AtlasGrid)                  = lazy_map(inverse_metric_field, g.cell_metric)
 get_ambient_dim(::AtlasGrid{Dc,Da}) where {Dc,Da}  = Da
-
-# ============================================================
-# Coarse mesh library and convenience constructors
-# ============================================================
-
-include("CoarseMeshes.jl")
 
 """
     AtlasGrid(info::CoarseMeshInfo, num_refinements;

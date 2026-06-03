@@ -1,4 +1,4 @@
-# test_serial_cubed_sphere.jl
+module SerialCubedSphereTests
 #
 # Tests AtlasGrid / AtlasDiscreteModel on the cubed sphere (6 QUAD panels,
 # gnomonic projection) using the CubedSphereMesh coarse mesh library.
@@ -12,16 +12,11 @@
 #   3. Ambient coords lie on the sphere: ‖(X,Y,Z)‖ ≈ RADIUS
 #   4. writevtk produces a 3D sphere surface VTK file
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_serial_cubed_sphere.jl
 
 using Gridap
 using GridapGeosciences
 
-include("AtlasDiscreteModels.jl")
-
 const n_panels = 6   # cubed sphere has 6 panels
-
 const RADIUS  = 1.0
 const NUM_REF = 2    # 6 coarse cells → 6 × 4² = 96 fine cells
 
@@ -62,7 +57,7 @@ println("Local coord range check passed ✓")
 # 3.  Ambient coords on the sphere: ‖(X,Y,Z)‖ ≈ RADIUS
 # ─────────────────────────────────────────────────────────────────────────────
 
-phys_coords = _local_to_ambient(
+phys_coords = GridapGeosciences.Geometry._local_to_ambient(
   atlas_grid.cell_chart_coords,
   atlas_grid.cell_ambient_maps,
 )
@@ -83,3 +78,5 @@ writevtk(atlas_model, "output/cubed_sphere_serial")
 println("Written output/cubed_sphere_serial_2.vtu — open in Paraview ✓")
 
 println("test_serial_cubed_sphere: ALL CHECKS PASSED")
+
+end # module SerialCubedSphereTests

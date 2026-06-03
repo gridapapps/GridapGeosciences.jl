@@ -1,3 +1,5 @@
+module DarcyCubedSphereTests
+
 # test_darcy_cubed_sphere.jl
 #
 # Scalar Hodge Laplacian (Darcy) in mixed form on the unit sphere.
@@ -34,8 +36,7 @@
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
+using Test
 
 const RADIUS = 1.0
 const ORDER  = 1   # RT1/DG1 → expected rate 2
@@ -93,3 +94,5 @@ for i in 2:length(eu_errors)
   @assert rp > ORDER + 0.5 "p convergence rate $rp below expected $(ORDER+1)"
 end
 println("All convergence checks passed ✓")
+
+end # module DarcyCubedSphereTests

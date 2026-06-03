@@ -34,6 +34,7 @@ jobs:
         arch:
           - x64
         testcase:
+          - seq-atlas-discrete-models
           - seq-l2-projection
           - seq-laplacian
           # - seq-geophysical

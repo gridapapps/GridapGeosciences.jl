@@ -1,4 +1,4 @@
-# test_serial_mobius.jl
+module SerialMobiusTests
 #
 # Tests AtlasGrid / AtlasDiscreteModel on a 2-chart Möbius strip atlas using
 # the MobiusStripMesh coarse mesh library.
@@ -15,13 +15,9 @@
 # the left edge of C1 {1,3} is identified with the right edge of C2 {3,1}
 # (same nodes, reversed orientation) — this is the half-twist.
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_serial_mobius.jl
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
 
 const RADIUS    = 1.0
 const HALFWIDTH = 0.3
@@ -59,7 +55,7 @@ println("Local coord range check passed ✓")
 # 3.  Ambient coords within expected bounding box
 # ─────────────────────────────────────────────────────────────────────────────
 
-phys_coords = _local_to_ambient(atlas_grid.cell_chart_coords, atlas_grid.cell_ambient_maps)
+phys_coords = GridapGeosciences.Geometry._local_to_ambient(atlas_grid.cell_chart_coords, atlas_grid.cell_ambient_maps)
 for i in 1:Gridap.Geometry.num_cells(atlas_grid)
   for pt in phys_coords[i]
     r_xy = sqrt(pt[1]^2 + pt[2]^2)
@@ -94,3 +90,5 @@ println("Twist seam check passed ✓")
 mkpath("output")
 writevtk(atlas_model, "output/mobius")
 println("Written output/mobius_2.vtu — open in Paraview ✓")
+
+end # module SerialMobiusTests

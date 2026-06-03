@@ -1,4 +1,4 @@
-# test_metric_fields.jl
+module MetricFieldsTests
 #
 # Validates the concrete metric and inverse-metric Fields against the generic
 # JtJ formula for all three built-in shapes.
@@ -8,13 +8,13 @@
 #   2. ConcreteInvMetricField(x) ≈ inv(JtJ(∇chart_map)(x))
 #   3. g(x) ⋅ g⁻¹(x)            ≈ I₂   (self-consistency)
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_metric_fields.jl
+
 
 using Gridap
+using Gridap.Fields
 import Gridap.TensorValues: symmetric_part, SymTensorValue
-
-include("AtlasDiscreteModels.jl")
+using GridapGeosciences
+using Test
 
 const ATOL = 1e-12
 
@@ -90,7 +90,7 @@ end
 # All 6 panels share the same metric formula — verify this too by checking
 # that the metric is panel-independent (all panels give the same value).
 
-let r = 1.2, half = cube_half_edge
+let r = 1.2, half = GridapGeosciences.Geometry.CUBE_HALF_EDGE
   pts = [
     Point(0.0, 0.0),
     Point(half/2, half/3),
@@ -98,7 +98,7 @@ let r = 1.2, half = cube_half_edge
     Point(-0.6*half, -0.4*half),
   ]
 
-  for p in 1:n_panels
+  for p in 1:GridapGeosciences.Geometry.NPANELS
     check_shape(
       "CubedSphere panel $p (r=$r)",
       CubedSphereMap(p, r),
@@ -112,7 +112,7 @@ let r = 1.2, half = cube_half_edge
   # across all panels (gnomonic projection is isometric per panel).
   for pt in pts
     g1 = g_jtj(CubedSphereMap(1, r), pt)
-    for p in 2:n_panels
+    for p in 2:GridapGeosciences.Geometry.NPANELS
       gp = g_jtj(CubedSphereMap(p, r), pt)
       err = norm(g1 - gp)
       @assert err < ATOL "CubedSphere metric differs between panels 1 and $p at $pt: err=$err"
@@ -122,3 +122,5 @@ let r = 1.2, half = cube_half_edge
 end
 
 println("test_metric_fields: ALL CHECKS PASSED")
+
+end # module MetricFieldsTests

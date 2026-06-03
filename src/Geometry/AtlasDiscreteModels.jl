@@ -3,8 +3,6 @@
 # Defines AtlasDiscreteModel{Dc,Da}: wraps an AtlasGrid with topology and face labeling.
 # Ambient Da-dimensional coordinates are computed HERE (visualization_data only).
 
-include("AtlasGrids.jl")   # also includes CoarseMeshes.jl
-
 # ============================================================
 # AtlasDiscreteModel
 # ============================================================
@@ -162,8 +160,6 @@ end
 # Convenience constructors via CoarseMeshInfo / CoarseMesh
 # ============================================================
 
-# AtlasGrid equivalents live in AtlasGrids.jl (after include("CoarseMeshes.jl")).
-
 # ----------------------------------------------------------
 # AtlasDiscreteModel
 # ----------------------------------------------------------
@@ -235,8 +231,6 @@ end
 #     αβ -> begin x = fwd(αβ); cos(x[3]) + x[1] end
 #   end
 #   u_cf = ParametricCellField(u_exact_factory, Ω)
-
-import GridapGeosciences: ParametricCellField
 
 function ParametricCellField(
     f     :: Function,

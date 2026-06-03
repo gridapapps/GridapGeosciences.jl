@@ -1,15 +1,12 @@
-# test_serial_cylinder.jl
+module SerialCylinderTests
 #
 # Tests AtlasGrid / AtlasDiscreteModel on the cylinder atlas using the
 # CylinderMesh coarse mesh (default: 4 cells around × 1 row).
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_serial_cylinder.jl
+
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
 
 const RADIUS = 1.0
 const HEIGHT = 1.0
@@ -47,7 +44,7 @@ println("Local coord (θ,z) range check passed ✓")
 # 3.  Ambient coords: r = RADIUS, z ∈ [0, HEIGHT]
 # ─────────────────────────────────────────────────────────────────────────────
 
-phys_coords = _local_to_ambient(
+phys_coords = GridapGeosciences.Geometry._local_to_ambient(
   atlas_grid.cell_chart_coords,
   atlas_grid.cell_ambient_maps,
 )
@@ -110,3 +107,5 @@ println("Face label propagation check passed ✓  ($expected_bdry bottom, $expec
 mkpath("output")
 writevtk(atlas_model, "output/cylinder")
 println("Written output/cylinder_2.vtu — open in Paraview ✓")
+
+end # module SerialCylinderTests

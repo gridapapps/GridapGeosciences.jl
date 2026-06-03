@@ -4,6 +4,10 @@ using Test
 TESTCASE = get(ENV, "TESTCASE", "seq")
 
 # Sequential tests
+if TESTCASE ∈ ("all", "seq", "seq-atlas-discrete-models")
+  include("AtlasDiscreteModels/seq/runtests.jl")
+end
+
 if TESTCASE ∈ ("all", "seq", "seq-l2-projection")
   include("Projection/seq/runtests.jl")
 end

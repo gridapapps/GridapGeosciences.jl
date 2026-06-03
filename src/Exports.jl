@@ -44,6 +44,39 @@ end
 @publish Geometry perp
 @publish Geometry AmbientModels
 
+# BEGIN AtlasDiscreteModels-specific exports
+# At the present moment, I am solely exporting the symbols
+# that are used in the tests. But we should eventually give 
+# a deeper thought to this
+@publish Geometry AtlasDiscreteModel 
+@publish Geometry AtlasGrid 
+@publish Geometry IntrinsicManifold
+@publish Geometry ExtrinsicManifold
+@publish Geometry MetricCellField
+
+@publish Geometry CylinderMesh
+@publish Geometry CylinderChartMap 
+@publish Geometry CylinderMetricField
+@publish Geometry CylinderInvMetricField 
+@publish Geometry MobiusStripMesh
+@publish Geometry MobiusChartMap
+@publish Geometry MobiusMetricField
+@publish Geometry MobiusInvMetricField
+@publish Geometry CubedSphereMesh
+@publish Geometry CubedSphereMap
+@publish Geometry CubedSphereMetricField
+@publish Geometry CubedSphereInvMetricField
+
+@publish Geometry get_coarse_mesh
+@publish Geometry get_cell_ambient_maps
+@publish Geometry get_cell_metric
+@publish Geometry get_cell_inv_metric
+@publish Geometry JtJ
+@publish Geometry get_atlas_grid
+@publish Geometry get_ambient_dim
+# END AtlasDiscreteModels-specific exports
+
+
 @publish ODEs DAEFEOperator
 
 @publish Visualisation writevtk_with_cell_geomap

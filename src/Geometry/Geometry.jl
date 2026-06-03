@@ -57,4 +57,28 @@ export dagger, perp
 
 export AmbientModels
 
+
+## AtlasDiscreteModels new machinery (will eventually replace enterily what we have above)
+## Some definitions in the below included julia source files must be moved to other
+## GridapGeosciences modules for consistency, e.g., to GridapGeosciences.Fields
+using Gridap
+using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
+using Gridap.Adaptivity, Gridap.Visualization
+import Gridap.TensorValues: symmetric_part, SymTensorValue
+include("CoarseMeshes.jl")
+include("AtlasGrids.jl") 
+include("AtlasDiscreteModels.jl")
+
+export AtlasGrid, AtlasDiscreteModel
+export IntrinsicManifold, ExtrinsicManifold
+export MetricCellField
+
+export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
+export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
+export CubedSphereMesh, CubedSphereMap, CubedSphereMetricField, CubedSphereInvMetricField
+export get_atlas_grid
+export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
+export get_coarse_mesh
+export JtJ
+
 end

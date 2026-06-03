@@ -1,3 +1,5 @@
+module DarcyCylinderTests
+
 # test_darcy_cylinder.jl
 #
 # Augmented mixed Darcy on the cylinder.
@@ -29,14 +31,10 @@
 #   So: l((v,q)) = ∫(u_exact·v + f·q)dΩ  (no boundary term!)
 #
 # Expected L2 convergence rate: k+1 for both u and p.
-#
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_darcy_cylinder.jl
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
+using Test
 
 const RADIUS = 1.0
 const HEIGHT = 2π
@@ -101,3 +99,5 @@ for i in 2:length(ep_errors)
   @assert rp > ORDER + 0.5 "p convergence rate $rp below expected $(ORDER+1)"
 end
 println("All convergence checks passed ✓")
+
+end # module DarcyCylinderTests

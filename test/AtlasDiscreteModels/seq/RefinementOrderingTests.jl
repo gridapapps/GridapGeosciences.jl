@@ -1,4 +1,4 @@
-# test_refinement_ordering.jl
+module RefinementOrderingTests
 #
 # Verifies that Gridap.Adaptivity.refine(model, n) produces parent-major cell
 # ordering when applied to an UnstructuredDiscreteModel of QUADs.
@@ -21,8 +21,6 @@
 #   4. refine(CartesianDiscreteModel, 4): lexicographic ordering, NOT parent-major
 #      (demonstrates why the Unstructured conversion in _build_atlas_grid is required)
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_refinement_ordering.jl
 
 using Gridap
 
@@ -115,3 +113,5 @@ println("CartesianDiscreteModel gives lexicographic (non-parent-major) ordering 
 println("  -> the UnstructuredDiscreteModel conversion in _build_atlas_grid is required")
 
 println("test_refinement_ordering: ALL CHECKS PASSED")
+
+end # module RefinementOrderingTests

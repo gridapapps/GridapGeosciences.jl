@@ -7,11 +7,6 @@
 # DiscreteModel (with face labels), per-cell local-frame corner coordinates,
 # and default ambient maps.
 #
-# No dependency on GridapGeosciences — suitable for eventual upstreaming to Gridap.
-
-const n_panels       = 6
-const cube_half_edge = π/4
-
 # ============================================================
 # CoarseMeshInfo
 # ============================================================
@@ -744,14 +739,14 @@ function get_coarse_mesh(m::CubedSphereMesh)
   model  = Gridap.Geometry.UnstructuredDiscreteModel(grid, topo, labels)
 
   panel_corners = [
-    Point(-cube_half_edge, -cube_half_edge),   # BL
-    Point( cube_half_edge, -cube_half_edge),   # BR
-    Point(-cube_half_edge,  cube_half_edge),   # TL
-    Point( cube_half_edge,  cube_half_edge),   # TR
+    Point(-CUBE_HALF_EDGE, -CUBE_HALF_EDGE),   # BL
+    Point( CUBE_HALF_EDGE, -CUBE_HALF_EDGE),   # BR
+    Point(-CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TL
+    Point( CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TR
   ]
-  cell_chart_coords = fill(panel_corners, n_panels)
-  ambient_maps      = [CubedSphereMap(p, m.radius) for p in 1:n_panels]
-  metric_fields     = fill(CubedSphereMetricField(m.radius), n_panels)
+  cell_chart_coords = fill(panel_corners, NPANELS)
+  ambient_maps      = [CubedSphereMap(p, m.radius) for p in 1:NPANELS]
+  metric_fields     = fill(CubedSphereMetricField(m.radius), NPANELS)
 
   CoarseMeshInfo(model, cell_chart_coords, ambient_maps, metric_fields)
 end

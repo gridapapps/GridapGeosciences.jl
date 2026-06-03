@@ -1,15 +1,13 @@
-# test_get_cell_map.jl
+module GetCellMapTests
+
 #
 # Smoke test: AtlasGrid.get_cell_map returns the composed
 # (ref element → chart → ambient) map, not a bilinear interpolation.
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_get_cell_map.jl
 
 using Gridap
 using GridapGeosciences
 
-include("AtlasDiscreteModels.jl")
 
 const RADIUS  = 1.0
 const HEIGHT  = 1.0
@@ -50,3 +48,5 @@ end
 println("All $ncells cell maps: centre + corner on-surface check passed ✓")
 
 println("test_get_cell_map: ALL CHECKS PASSED")
+
+end 

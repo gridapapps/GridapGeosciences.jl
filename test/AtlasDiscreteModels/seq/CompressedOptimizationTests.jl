@@ -1,3 +1,5 @@
+module CompressedOptimizationTests
+
 # test_compressed_optimization.jl
 #
 # Verifies that the lazy_map optimization chain produces CompressedArrays with
@@ -21,8 +23,8 @@
 
 using Gridap
 using Gridap.Arrays: CompressedArray, Reindex
-
-include("AtlasDiscreteModels.jl")
+using GridapGeosciences
+using Test
 
 # ── 1. Basic Reindex → CompressedArray ───────────────────────────────────────
 
@@ -30,10 +32,10 @@ let v = [10.0, 20.0, 30.0],
     ptrs = [1, 2, 3, 1, 2, 3, 1]
 
   ca = lazy_map(Reindex(v), ptrs)
-  @assert ca isa CompressedArray "lazy_map(Reindex(Vector), ptrs) returned $(typeof(ca)), expected CompressedArray"
-  @assert ca.values === v
-  @assert ca.ptrs   === ptrs
-  @assert ca[1] == 10.0 && ca[4] == 10.0 && ca[3] == 30.0
+  @assert ca isa CompressedArray || "lazy_map(Reindex(Vector), ptrs) returned $(typeof(ca)), expected CompressedArray"
+  @test ca.values === v
+  @test ca.ptrs   === ptrs
+  @test ca[1] == 10.0 && ca[4] == 10.0 && ca[3] == 30.0
   println("Basic Reindex: lazy_map(Reindex(v), ptrs) isa CompressedArray ✓")
 end
 
@@ -45,8 +47,8 @@ let vals = [1.0, 2.0, 3.0],
   ca   = CompressedArray(vals, ptrs)
   ca2  = lazy_map(x -> x^2, ca)
   @assert ca2 isa CompressedArray "lazy_map(f, CompressedArray) returned $(typeof(ca2)), expected CompressedArray"
-  @assert length(ca2.values) == 3
-  @assert ca2[1] == 1.0 && ca2[3] == 4.0 && ca2[5] == 9.0
+  @test length(ca2.values) == 3
+  @test ca2[1] == 1.0 && ca2[3] == 4.0 && ca2[5] == 9.0
   println("Basic f(CompressedArray): lazy_map(f, ca) isa CompressedArray ✓")
 end
 
@@ -60,13 +62,13 @@ function check_compressed_chain(shape_name, mesh, n_charts_expected, nref=1)
   amaps = get_cell_ambient_maps(g)
   @assert amaps isa CompressedArray "[$shape_name] cell_ambient_maps isa $(typeof(amaps)), expected CompressedArray"
   @assert length(amaps.values) == n_charts_expected "[$shape_name] cell_ambient_maps.values has $(length(amaps.values)) entries, expected $n_charts_expected"
-  @assert length(amaps) == n_cells
+  @test length(amaps) == n_cells
 
   # ── cell_metric ───────────────────────────────────────────────────────────
   cmet = g.cell_metric
   @assert cmet isa CompressedArray "[$shape_name] cell_metric isa $(typeof(cmet)), expected CompressedArray"
   @assert length(cmet.values) == n_charts_expected "[$shape_name] cell_metric.values has $(length(cmet.values)) entries, expected $n_charts_expected"
-  @assert length(cmet) == n_cells
+  @test length(cmet) == n_cells
 
   # ── lazy_map(gradient, amaps) ─────────────────────────────────────────────
   grads = lazy_map(gradient, amaps)
@@ -98,6 +100,8 @@ check_compressed_chain("Cylinder (r=1.5)", CylinderMesh(1.5), 9)
 check_compressed_chain("Möbius strip (R=1.0, W=0.3)", MobiusStripMesh(1.0, 0.3), 2)
 
 # CubedSphereMesh: 6 panels
-check_compressed_chain("CubedSphere (r=1.2)", CubedSphereMesh(1.2), n_panels)
+check_compressed_chain("CubedSphere (r=1.2)", CubedSphereMesh(1.2), GridapGeosciences.Geometry.NPANELS)
 
 println("test_compressed_optimization: ALL CHECKS PASSED")
+
+end # module CompressedOptimizationTests

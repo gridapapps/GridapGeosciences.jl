@@ -1,4 +1,5 @@
-# test_poisson_cylinder.jl
+module PoissonCylinderTests
+
 #
 # Solves the Poisson equation −Δ_S u = f on a cylinder surface using
 # AtlasDiscreteModel and P2 Lagrangian elements.
@@ -12,13 +13,10 @@
 #
 # Expected L2 convergence rate: 3 for P2 elements.
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_poisson_cylinder.jl
+
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
 
 const RADIUS = 1.0
 const HEIGHT = 2π
@@ -59,3 +57,5 @@ for i in 2:length(errors)
   @assert rate > 2.8 "Convergence rate $rate < 2.8 at level $i"
 end
 println("All convergence checks passed ✓")
+
+end # module PoissonCylinderTests 

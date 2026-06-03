@@ -1,4 +1,4 @@
-# test_poisson_cylinder_intrinsic.jl
+module PoissonCylinderIntrinsicTests
 #
 # Intrinsic Poisson (Laplace-Beltrami) on the cylinder using IntrinsicManifold().
 # Chart-local coordinates are the physical cylinder parameters (θ,z) ∈ [0,2π]×[0,h],
@@ -23,13 +23,9 @@
 #
 # Expected L2 convergence rate: p + 1  (≈ 3 for Q2)
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_poisson_cylinder_intrinsic.jl
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
 
 radius = 1.0
 height = 1.0
@@ -102,3 +98,5 @@ for i in 2:length(errors)
   @assert rate > order + 0.5 "Convergence rate $rate below expected $(order+1)"
 end
 println("All convergence checks passed ✓")
+
+end # module PoissonCylinderIntrinsicTests

@@ -1,4 +1,5 @@
-# test_quadrature_cylinder.jl
+module QuadratureCylinderTests
+
 #
 # Quadrature convergence test on the cylinder.
 #
@@ -28,13 +29,9 @@
 # numerical quadrature of the bilinear form and the RHS.  As quadrature
 # order increases with the mesh fixed, the error should converge to machine zero.
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_quadrature_cylinder.jl
 
 using Gridap
 using GridapGeosciences
-
-include("AtlasDiscreteModels.jl")
 
 const R = 1.0
 const H = 2π
@@ -72,3 +69,5 @@ for qorder in 2:10
   err    = sqrt(sum(∫(e * e) * dΩ_ref))
   println("  $qorder       $err")
 end
+
+end # module QuadratureCylinderTests

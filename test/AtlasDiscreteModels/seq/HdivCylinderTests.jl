@@ -1,4 +1,4 @@
-# test_hdiv_cylinder.jl
+module HdivCylinderTests
 #
 # Diagnostic H(div) tests for RT elements on the cylinder.
 # No pressure, no BoundaryTriangulation.
@@ -19,13 +19,10 @@
 #        Tangent ✓   div_S = cos(z)   u·n = 0 on both caps → no BC term
 #        Expected rate: ORDER + 1
 #
-# Run:
-#   julia --project=. AtlasDiscreteModels/test_hdiv_cylinder.jl
 
 using Gridap
 using GridapGeosciences
 
-include("AtlasDiscreteModels.jl")
 
 const RADIUS = 1.0
 const HEIGHT = 2π
@@ -83,3 +80,5 @@ for i in 2:length(eu_errors)
   @assert r > ORDER + 0.5 "Convergence rate $r below expected $(ORDER+1)"
 end
 println("All H(div) checks passed ✓")
+
+end # module HdivCylinderTests
