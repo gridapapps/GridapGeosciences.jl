@@ -145,22 +145,22 @@ on demand only during visualization.
 """
 struct AtlasGrid{Dc, Da,
                  G <: Gridap.Geometry.Grid{Dc,Dc},
-                 A <: AbstractVector,
+                 A <: AbstractVector{<:AbstractVector{<:Point{Dc}}},
                  P <: AbstractVector{<:Field},
-                 C <: AbstractVector,
+                 C <: AbstractVector{<:Field},
                  O <: Gridap.Geometry.OrientationStyle,
                  M <: ManifoldStyle} <: Gridap.Geometry.Grid{Dc,Dc}
   param_grid         :: G
   cell_chart_coords  :: A
-  cell_ambient_maps :: P
+  cell_ambient_maps  :: P
   cell_metric        :: C
   orientation_style  :: O
 
   function AtlasGrid(
     param_grid         :: Gridap.Geometry.Grid{Dc,Dc},
-    cell_chart_coords  :: AbstractVector,
+    cell_chart_coords  :: AbstractVector{<:AbstractVector{<:Point{Dc}}},
     cell_ambient_maps  :: AbstractVector{<:Field},
-    cell_metric        :: AbstractVector,
+    cell_metric        :: AbstractVector{<:Field},
     orientation_style  :: Gridap.Geometry.OrientationStyle,
     manifold_style     :: ManifoldStyle,
   ) where Dc
@@ -371,7 +371,7 @@ Gridap.Geometry.get_cell_node_ids(g::AtlasGrid) =
 # ----------------------------------------------------------
 
 get_param_grid(g::AtlasGrid)                       = g.param_grid
-get_cell_ambient_maps(g::AtlasGrid)               = g.cell_ambient_maps
+get_cell_ambient_maps(g::AtlasGrid)                = g.cell_ambient_maps
 get_cell_metric(g::AtlasGrid)                      = g.cell_metric
 get_cell_inv_metric(g::AtlasGrid)                  = lazy_map(inverse_metric_field, g.cell_metric)
 get_ambient_dim(::AtlasGrid{Dc,Da}) where {Dc,Da}  = Da
