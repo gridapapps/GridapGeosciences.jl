@@ -1,5 +1,4 @@
-# DistributedAtlasDiscreteModels.jl
-#
+
 # Distributed atlas discrete model built on p4est / GridapP4est.
 # Extends AtlasGrid/AtlasDiscreteModel from AtlasGrids.jl/AtlasDiscreteModels.jl
 # to the distributed setting via OctreeDistributedDiscreteModel.
@@ -11,19 +10,7 @@
 #   - The p4est infrastructure provides (α,β) coords per fine cell directly;
 #     these are stored as-is into cell_chart_coords.
 #
-# Run (e.g. 4 MPI processes):
-#   mpiexec -n 4 julia --project=. <script>
 
-include("AtlasDiscreteModels.jl")
-
-using GridapGeosciences
-using GridapDistributed
-using GridapDistributed: GenericDistributedDiscreteModel, get_cell_gids
-using GridapP4est
-using GridapP4est: OctreeDistributedDiscreteModel
-using GridapDistributed: local_views
-
-import GridapGeosciences.Distributed: _generate_octree_dmodel_alpha_beta_coordinates_and_panels
 
 # ============================================================
 # AtlasOctreeDistributedDiscreteModel

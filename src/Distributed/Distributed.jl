@@ -83,4 +83,12 @@ export get_octree_refined_models, get_3D_octree_refined_models
 export get_octree_ambient_refined_models, get_3D_octree_ambient_refined_models
 
 export CellField
+
+## AtlasDiscreteModels-related stuff
+import GridapGeosciences.Geometry: ManifoldStyle
+import GridapGeosciences.Geometry: CoarseMeshInfo
+import GridapGeosciences.Geometry: CoarseMesh
+include("AtlasOctreeDistributedDiscreteModels.jl")
+
+
 end
