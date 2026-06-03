@@ -57,7 +57,7 @@ function AtlasDiscreteModel(
     coarse_model    :: Gridap.Geometry.DiscreteModel{Dc,Dc},
     coarse_chart_coords,
     ambient_maps,
-    num_refinements :: Int = 1;
+    num_refinements :: Int;
     metric_fields     = nothing,
     orientation_style = nothing,
     manifold_style    = ExtrinsicManifold(),
