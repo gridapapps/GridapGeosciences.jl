@@ -89,6 +89,7 @@ import GridapGeosciences.Geometry: ManifoldStyle
 import GridapGeosciences.Geometry: CoarseMeshInfo
 import GridapGeosciences.Geometry: CoarseMesh
 include("AtlasOctreeDistributedDiscreteModels.jl")
+export AtlasOctreeDistributedDiscreteModel
 
 
 end

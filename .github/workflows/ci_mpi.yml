@@ -37,6 +37,7 @@ jobs:
         arch:
           - x64
         testcase:
+          - mpi-atlas-discrete-models
           - mpi-l2-projection
           - mpi-laplacian
           # - mpi-geophysical

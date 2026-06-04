@@ -49,6 +49,10 @@ if TESTCASE ∈ ("all", "seq", "seq-autodiff")
 end
 
 # MPI tests
+if TESTCASE ∈ ("all", "mpi", "mpi-atlas-discrete-models")
+   include("AtlasDiscreteModels/mpi/runtests.jl")
+end
+
 if TESTCASE ∈ ("all", "mpi", "mpi-l2-projection")
    include("Projection/mpi/runtests.jl")
 end

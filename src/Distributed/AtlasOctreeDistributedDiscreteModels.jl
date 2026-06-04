@@ -35,9 +35,9 @@ via `_local_to_ambient` (defined in AtlasDiscreteModels.jl).
 """
 struct AtlasOctreeDistributedDiscreteModel{
   A <: OctreeDistributedDiscreteModel{2,2},
-  B <: GenericDistributedDiscreteModel{2,2},
+  B <: GenericDistributedDiscreteModel{2,3},
   M <: ManifoldStyle,
-} <: GridapDistributed.DistributedDiscreteModel{2,2}
+} <: GridapDistributed.DistributedDiscreteModel{2,3}
   octree_dmodel :: A
   dmodel        :: B
 end

@@ -144,6 +144,8 @@ end
 @publish Distributed get_3D_octree_ambient_refined_models
 @publish Distributed CellField
 
+@publish Distributed AtlasOctreeDistributedDiscreteModel
+
 @publish MultilevelTools ModelHierarchy
 @publish MultilevelTools adapt_model
 
