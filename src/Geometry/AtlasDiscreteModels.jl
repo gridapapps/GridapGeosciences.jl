@@ -82,6 +82,7 @@ end
 Gridap.Geometry.get_grid(m::AtlasDiscreteModel)          = m.atlas_grid
 Gridap.Geometry.get_grid_topology(m::AtlasDiscreteModel) = m.grid_topology
 Gridap.Geometry.get_face_labeling(m::AtlasDiscreteModel) = m.face_labeling
+Gridap.Geometry.num_point_dims(m::AtlasDiscreteModel)    = num_point_dims(get_grid(m))
 
 # ----------------------------------------------------------
 # Custom API
