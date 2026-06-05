@@ -161,7 +161,11 @@ struct AtlasGrid{Dc, Da,
   ) where Dc
     sample_pt = cell_chart_coords[1][1]
     fwd0      = cell_ambient_maps[1]
-    Da        = Gridap.TensorValues.num_components(Gridap.Arrays.return_type(fwd0, sample_pt))
+    if (manifold_style isa IntrinsicManifold)
+       Da = Dc
+    else
+       Da = Gridap.TensorValues.num_components(Gridap.Arrays.return_type(fwd0, sample_pt))
+    end
     n = Gridap.Geometry.num_cells(param_grid)
     @check length(cell_chart_coords)  == n  "cell_chart_coords has $(length(cell_chart_coords)) entries but param_grid has $n cells"
     @check length(cell_ambient_maps)  == n  "cell_ambient_maps has $(length(cell_ambient_maps)) entries but param_grid has $n cells"
@@ -174,6 +178,9 @@ struct AtlasGrid{Dc, Da,
     M = typeof(manifold_style)
     new{Dc,Da,G,A,P,C,O,M}(param_grid, cell_chart_coords, cell_ambient_maps, cell_metric, orientation_style)
   end
+
+
+
 end
 
 # ----------------------------------------------------------
