@@ -103,20 +103,21 @@ end
 # decomposes into lazy_map(evaluate, cell_ambient_maps, chart_coord_arrays) during
 # FE assembly (ApplyOptimizations.jl), so the array path is in the hot path.
 
+@inline _cyl_map(r, x) = Point(r*cos(x[1]), r*sin(x[1]), x[2])
+@inline _cyl_jac(r, x) = TensorValue{2,3,Float64}(-r*sin(x[1]), 0.0, r*cos(x[1]), 0.0, 0.0, 1.0)
+
 struct CylinderChartMap <: Field
   radius :: Float64
 end
-Gridap.Arrays.evaluate!(cache, m::CylinderChartMap, x::Point) =
-  Point(m.radius*cos(x[1]), m.radius*sin(x[1]), x[2])
-function Gridap.Arrays.return_cache(m::CylinderChartMap, xs::AbstractArray{<:Point})
+Gridap.Arrays.evaluate!(_, m::CylinderChartMap, x::Point) = _cyl_map(m.radius, x)
+function Gridap.Arrays.return_cache(_::CylinderChartMap, xs::AbstractArray{<:Point})
   CachedArray(similar(xs, Point{3,Float64}))
 end
 function Gridap.Arrays.evaluate!(cache, m::CylinderChartMap, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
   r = m.radius
   @inbounds for i in eachindex(xs)
-    x = xs[i]
-    cache.array[i] = Point(r*cos(x[1]), r*sin(x[1]), x[2])
+    cache.array[i] = _cyl_map(r, xs[i])
   end
   cache.array
 end
@@ -124,14 +125,12 @@ end
 function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CylinderChartMap}, xs::AbstractArray{<:Point})
   CachedArray(similar(xs, TensorValue{2,3,Float64}))
 end
-Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CylinderChartMap}, x::Point) =
-  TensorValue{2,3,Float64}(-f.object.radius*sin(x[1]), 0.0, f.object.radius*cos(x[1]), 0.0, 0.0, 1.0)
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CylinderChartMap}, x::Point) = _cyl_jac(f.object.radius, x)
 function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CylinderChartMap}, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
   r = f.object.radius
   @inbounds for i in eachindex(xs)
-    x = xs[i]
-    cache.array[i] = TensorValue{2,3,Float64}(-r*sin(x[1]), 0.0, r*cos(x[1]), 0.0, 0.0, 1.0)
+    cache.array[i] = _cyl_jac(r, xs[i])
   end
   cache.array
 end
@@ -141,31 +140,32 @@ end
 # Pullback metric g = diag(r², 1) — constant in chart coordinates.
 # Inverse g⁻¹ = diag(1/r², 1).
 
+@inline _cyl_metric(r)     = SymTensorValue{2,Float64,3}(r^2,   0.0, 1.0)
+@inline _cyl_inv_metric(r) = SymTensorValue{2,Float64,3}(1/r^2, 0.0, 1.0)
+
 struct CylinderMetricField <: Field
   radius :: Float64
 end
-Gridap.Arrays.evaluate!(cache, m::CylinderMetricField, x::Point) =
-  SymTensorValue{2,Float64,3}(m.radius^2, 0.0, 1.0)
+Gridap.Arrays.evaluate!(_, m::CylinderMetricField, x::Point) = _cyl_metric(m.radius)
 function Gridap.Arrays.return_cache(m::CylinderMetricField, xs::AbstractArray{<:Point})
-  CachedArray(fill(SymTensorValue{2,Float64,3}(m.radius^2, 0.0, 1.0), size(xs)))
+  CachedArray(fill(_cyl_metric(m.radius), size(xs)))
 end
 function Gridap.Arrays.evaluate!(cache, m::CylinderMetricField, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
-  fill!(cache.array, SymTensorValue{2,Float64,3}(m.radius^2, 0.0, 1.0))
+  fill!(cache.array, _cyl_metric(m.radius))
   cache.array
 end
 
 struct CylinderInvMetricField <: Field
   radius :: Float64
 end
-Gridap.Arrays.evaluate!(cache, m::CylinderInvMetricField, x::Point) =
-  SymTensorValue{2,Float64,3}(1/m.radius^2, 0.0, 1.0)
+Gridap.Arrays.evaluate!(_, m::CylinderInvMetricField, x::Point) = _cyl_inv_metric(m.radius)
 function Gridap.Arrays.return_cache(m::CylinderInvMetricField, xs::AbstractArray{<:Point})
-  CachedArray(fill(SymTensorValue{2,Float64,3}(1/m.radius^2, 0.0, 1.0), size(xs)))
+  CachedArray(fill(_cyl_inv_metric(m.radius), size(xs)))
 end
 function Gridap.Arrays.evaluate!(cache, m::CylinderInvMetricField, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
-  fill!(cache.array, SymTensorValue{2,Float64,3}(1/m.radius^2, 0.0, 1.0))
+  fill!(cache.array, _cyl_inv_metric(m.radius))
   cache.array
 end
 
@@ -299,36 +299,15 @@ end
 
 # ── MobiusChartMap ────────────────────────────────────────────────────────────
 
-struct MobiusChartMap <: Field
-  radius :: Float64; half_width :: Float64; theta_offset :: Float64
+@inline function _mobius_map(R, W, offset, x)
+  θ = π*(x[1] + offset)/2
+  ρ = R + W*x[2]*cos(θ/2)
+  Point(ρ*cos(θ), ρ*sin(θ), W*x[2]*sin(θ/2))
 end
-function Gridap.Arrays.evaluate!(cache, m::MobiusChartMap, x::Point)
-  θ = π*(x[1] + m.theta_offset)/2
-  ρ = m.radius + m.half_width*x[2]*cos(θ/2)
-  Point(ρ*cos(θ), ρ*sin(θ), m.half_width*x[2]*sin(θ/2))
-end
-function Gridap.Arrays.return_cache(m::MobiusChartMap, xs::AbstractArray{<:Point})
-  CachedArray(similar(xs, Point{3,Float64}))
-end
-function Gridap.Arrays.evaluate!(cache, m::MobiusChartMap, xs::AbstractArray{<:Point})
-  setsize!(cache, size(xs))
-  @inbounds for i in eachindex(xs)
-    x = xs[i]
-    θ = π*(x[1] + m.theta_offset)/2
-    ρ = m.radius + m.half_width*x[2]*cos(θ/2)
-    cache.array[i] = Point(ρ*cos(θ), ρ*sin(θ), m.half_width*x[2]*sin(θ/2))
-  end
-  cache.array
-end
-
-function Gridap.Arrays.return_cache(_::FieldGradient{1,<:MobiusChartMap}, xs::AbstractArray{<:Point})
-  CachedArray(similar(xs, TensorValue{2,3,Float64}))
-end
-function Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:MobiusChartMap}, x::Point)
-  m = f.object
-  θ    = π*(x[1] + m.theta_offset)/2
-  t    = x[2]; W = m.half_width
-  ρ    = m.radius + W*t*cos(θ/2)
+@inline function _mobius_jac(R, W, offset, x)
+  θ    = π*(x[1] + offset)/2
+  t    = x[2]
+  ρ    = R + W*t*cos(θ/2)
   dρds = -W*t*sin(θ/2)*(π/4)
   dρdt =  W*cos(θ/2)
   TensorValue{2,3,Float64}(
@@ -337,21 +316,46 @@ function Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:MobiusChartMap}, x::Poi
     W*t*cos(θ/2)*(π/4),             W*sin(θ/2),
   )
 end
+@inline function _mobius_metric(R, W, offset, x)
+  θ   = π*(x[1] + offset)/2
+  ρ   = R + W*x[2]*cos(θ/2)
+  g11 = (π/4)^2 * W^2 * x[2]^2 + (π/2)^2 * ρ^2
+  SymTensorValue{2,Float64,3}(g11, 0.0, W^2)
+end
+@inline function _mobius_inv_metric(R, W, offset, x)
+  θ   = π*(x[1] + offset)/2
+  ρ   = R + W*x[2]*cos(θ/2)
+  g11 = (π/4)^2 * W^2 * x[2]^2 + (π/2)^2 * ρ^2
+  SymTensorValue{2,Float64,3}(1/g11, 0.0, 1/W^2)
+end
+
+struct MobiusChartMap <: Field
+  radius :: Float64; half_width :: Float64; theta_offset :: Float64
+end
+Gridap.Arrays.evaluate!(_, m::MobiusChartMap, x::Point) =
+  _mobius_map(m.radius, m.half_width, m.theta_offset, x)
+function Gridap.Arrays.return_cache(_::MobiusChartMap, xs::AbstractArray{<:Point})
+  CachedArray(similar(xs, Point{3,Float64}))
+end
+function Gridap.Arrays.evaluate!(cache, m::MobiusChartMap, xs::AbstractArray{<:Point})
+  setsize!(cache, size(xs))
+  R, W, offset = m.radius, m.half_width, m.theta_offset
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _mobius_map(R, W, offset, xs[i])
+  end
+  cache.array
+end
+
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:MobiusChartMap}, xs::AbstractArray{<:Point})
+  CachedArray(similar(xs, TensorValue{2,3,Float64}))
+end
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:MobiusChartMap}, x::Point) =
+  _mobius_jac(f.object.radius, f.object.half_width, f.object.theta_offset, x)
 function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:MobiusChartMap}, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
-  m = f.object
+  R, W, offset = f.object.radius, f.object.half_width, f.object.theta_offset
   @inbounds for i in eachindex(xs)
-    x = xs[i]
-    θ    = π*(x[1] + m.theta_offset)/2
-    t    = x[2]; W = m.half_width
-    ρ    = m.radius + W*t*cos(θ/2)
-    dρds = -W*t*sin(θ/2)*(π/4)
-    dρdt =  W*cos(θ/2)
-    cache.array[i] = TensorValue{2,3,Float64}(
-      dρds*cos(θ) - ρ*sin(θ)*(π/2),  dρdt*cos(θ),
-      dρds*sin(θ) + ρ*cos(θ)*(π/2),  dρdt*sin(θ),
-      W*t*cos(θ/2)*(π/4),             W*sin(θ/2),
-    )
+    cache.array[i] = _mobius_jac(R, W, offset, xs[i])
   end
   cache.array
 end
@@ -370,23 +374,16 @@ end
 struct MobiusMetricField <: Field
   radius :: Float64; half_width :: Float64; theta_offset :: Float64
 end
-function Gridap.Arrays.evaluate!(cache, m::MobiusMetricField, x::Point)
-  θ   = π*(x[1] + m.theta_offset)/2
-  ρ   = m.radius + m.half_width*x[2]*cos(θ/2)
-  g11 = (π/4)^2 * m.half_width^2 * x[2]^2 + (π/2)^2 * ρ^2
-  SymTensorValue{2,Float64,3}(g11, 0.0, m.half_width^2)
-end
-function Gridap.Arrays.return_cache(m::MobiusMetricField, xs::AbstractArray{<:Point})
+Gridap.Arrays.evaluate!(_, m::MobiusMetricField, x::Point) =
+  _mobius_metric(m.radius, m.half_width, m.theta_offset, x)
+function Gridap.Arrays.return_cache(_::MobiusMetricField, xs::AbstractArray{<:Point})
   CachedArray(similar(xs, SymTensorValue{2,Float64,3}))
 end
 function Gridap.Arrays.evaluate!(cache, m::MobiusMetricField, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
+  R, W, offset = m.radius, m.half_width, m.theta_offset
   @inbounds for i in eachindex(xs)
-    x = xs[i]
-    θ   = π*(x[1] + m.theta_offset)/2
-    ρ   = m.radius + m.half_width*x[2]*cos(θ/2)
-    g11 = (π/4)^2 * m.half_width^2 * x[2]^2 + (π/2)^2 * ρ^2
-    cache.array[i] = SymTensorValue{2,Float64,3}(g11, 0.0, m.half_width^2)
+    cache.array[i] = _mobius_metric(R, W, offset, xs[i])
   end
   cache.array
 end
@@ -394,23 +391,16 @@ end
 struct MobiusInvMetricField <: Field
   radius :: Float64; half_width :: Float64; theta_offset :: Float64
 end
-function Gridap.Arrays.evaluate!(cache, m::MobiusInvMetricField, x::Point)
-  θ   = π*(x[1] + m.theta_offset)/2
-  ρ   = m.radius + m.half_width*x[2]*cos(θ/2)
-  g11 = (π/4)^2 * m.half_width^2 * x[2]^2 + (π/2)^2 * ρ^2
-  SymTensorValue{2,Float64,3}(1/g11, 0.0, 1/m.half_width^2)
-end
-function Gridap.Arrays.return_cache(m::MobiusInvMetricField, xs::AbstractArray{<:Point})
+Gridap.Arrays.evaluate!(_, m::MobiusInvMetricField, x::Point) =
+  _mobius_inv_metric(m.radius, m.half_width, m.theta_offset, x)
+function Gridap.Arrays.return_cache(_::MobiusInvMetricField, xs::AbstractArray{<:Point})
   CachedArray(similar(xs, SymTensorValue{2,Float64,3}))
 end
 function Gridap.Arrays.evaluate!(cache, m::MobiusInvMetricField, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
+  R, W, offset = m.radius, m.half_width, m.theta_offset
   @inbounds for i in eachindex(xs)
-    x = xs[i]
-    θ   = π*(x[1] + m.theta_offset)/2
-    ρ   = m.radius + m.half_width*x[2]*cos(θ/2)
-    g11 = (π/4)^2 * m.half_width^2 * x[2]^2 + (π/2)^2 * ρ^2
-    cache.array[i] = SymTensorValue{2,Float64,3}(1/g11, 0.0, 1/m.half_width^2)
+    cache.array[i] = _mobius_inv_metric(R, W, offset, xs[i])
   end
   cache.array
 end
