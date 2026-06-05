@@ -98,7 +98,7 @@ end
 # ── CylinderChartMap ─────────────────────────────────────────────────────────
 #
 # Chart map (θ,z) → (r·cosθ, r·sinθ, z) and its explicit Jacobian.
-# gradient(CylinderChartMap) overrides Gridap's default FieldGradient path.
+# Gradient is exposed via FieldGradient{1,<:CylinderChartMap} (return_cache/evaluate!).
 # Array evaluate! methods are required: lazy_map(∘, cell_ambient_maps, chart_maps)
 # decomposes into lazy_map(evaluate, cell_ambient_maps, chart_coord_arrays) during
 # FE assembly (ApplyOptimizations.jl), so the array path is in the hot path.
@@ -121,25 +121,20 @@ function Gridap.Arrays.evaluate!(cache, m::CylinderChartMap, xs::AbstractArray{<
   cache.array
 end
 
-struct CylinderChartMapGrad <: Field
-  radius :: Float64
-end
-Gridap.Arrays.evaluate!(cache, m::CylinderChartMapGrad, x::Point) =
-  TensorValue{2,3,Float64}(-m.radius*sin(x[1]), 0.0, m.radius*cos(x[1]), 0.0, 0.0, 1.0)
-function Gridap.Arrays.return_cache(m::CylinderChartMapGrad, xs::AbstractArray{<:Point})
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CylinderChartMap}, xs::AbstractArray{<:Point})
   CachedArray(similar(xs, TensorValue{2,3,Float64}))
 end
-function Gridap.Arrays.evaluate!(cache, m::CylinderChartMapGrad, xs::AbstractArray{<:Point})
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CylinderChartMap}, x::Point) =
+  TensorValue{2,3,Float64}(-f.object.radius*sin(x[1]), 0.0, f.object.radius*cos(x[1]), 0.0, 0.0, 1.0)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CylinderChartMap}, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
-  r = m.radius
+  r = f.object.radius
   @inbounds for i in eachindex(xs)
     x = xs[i]
     cache.array[i] = TensorValue{2,3,Float64}(-r*sin(x[1]), 0.0, r*cos(x[1]), 0.0, 0.0, 1.0)
   end
   cache.array
 end
-
-Gridap.Fields.gradient(f::CylinderChartMap) = CylinderChartMapGrad(f.radius)
 
 # ── CylinderMetricField ───────────────────────────────────────────────────────
 #
@@ -326,10 +321,11 @@ function Gridap.Arrays.evaluate!(cache, m::MobiusChartMap, xs::AbstractArray{<:P
   cache.array
 end
 
-struct MobiusChartMapGrad <: Field
-  radius :: Float64; half_width :: Float64; theta_offset :: Float64
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:MobiusChartMap}, xs::AbstractArray{<:Point})
+  CachedArray(similar(xs, TensorValue{2,3,Float64}))
 end
-function Gridap.Arrays.evaluate!(cache, m::MobiusChartMapGrad, x::Point)
+function Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:MobiusChartMap}, x::Point)
+  m = f.object
   θ    = π*(x[1] + m.theta_offset)/2
   t    = x[2]; W = m.half_width
   ρ    = m.radius + W*t*cos(θ/2)
@@ -341,11 +337,9 @@ function Gridap.Arrays.evaluate!(cache, m::MobiusChartMapGrad, x::Point)
     W*t*cos(θ/2)*(π/4),             W*sin(θ/2),
   )
 end
-function Gridap.Arrays.return_cache(m::MobiusChartMapGrad, xs::AbstractArray{<:Point})
-  CachedArray(similar(xs, TensorValue{2,3,Float64}))
-end
-function Gridap.Arrays.evaluate!(cache, m::MobiusChartMapGrad, xs::AbstractArray{<:Point})
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:MobiusChartMap}, xs::AbstractArray{<:Point})
   setsize!(cache, size(xs))
+  m = f.object
   @inbounds for i in eachindex(xs)
     x = xs[i]
     θ    = π*(x[1] + m.theta_offset)/2
@@ -361,9 +355,6 @@ function Gridap.Arrays.evaluate!(cache, m::MobiusChartMapGrad, xs::AbstractArray
   end
   cache.array
 end
-
-Gridap.Fields.gradient(f::MobiusChartMap) =
-  MobiusChartMapGrad(f.radius, f.half_width, f.theta_offset)
 
 # ── MobiusMetricField ─────────────────────────────────────────────────────────
 #
@@ -581,26 +572,19 @@ function Gridap.Arrays.evaluate!(cache, m::CubedSphereMap, xs::AbstractArray{<:P
   cache.array
 end
 
-struct CubedSphereMapGrad <: Field
-  panel  :: Int
-  radius :: Float64
-end
-
-Gridap.Arrays.evaluate!(cache, m::CubedSphereMapGrad, x::Point{2}) =
-  _csphere_jac(m.panel, m.radius, x)
-function Gridap.Arrays.return_cache(m::CubedSphereMapGrad, xs::AbstractArray{<:Point{2}})
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CubedSphereMap}, xs::AbstractArray{<:Point{2}})
   CachedArray(similar(xs, TensorValue{2,3,Float64}))
 end
-function Gridap.Arrays.evaluate!(cache, m::CubedSphereMapGrad, xs::AbstractArray{<:Point{2}})
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CubedSphereMap}, x::Point{2}) =
+  _csphere_jac(f.object.panel, f.object.radius, x)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CubedSphereMap}, xs::AbstractArray{<:Point{2}})
   setsize!(cache, size(xs))
-  p, r = m.panel, m.radius
+  p, r = f.object.panel, f.object.radius
   @inbounds for i in eachindex(xs)
     cache.array[i] = _csphere_jac(p, r, xs[i])
   end
   cache.array
 end
-
-Gridap.Fields.gradient(m::CubedSphereMap) = CubedSphereMapGrad(m.panel, m.radius)
 
 # ── CubedSphereMetricField ────────────────────────────────────────────────────
 #
