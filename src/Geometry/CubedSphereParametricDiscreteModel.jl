@@ -144,19 +144,20 @@ returns an array of refined serial models where
 
 const ParametricModels{Dc,Dp} = Union{CubedSphereParametricDiscreteModel{Dc,Dp},AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel}}
 
-function get_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
-  panel_model = coarse_parametric_model(radius)
-  panel_models = Vector{ParametricModels}(undef,n_ref_lvls)
-  for n in n_ref_lvls:-1:1
-    panel_model = Gridap.Adaptivity.refine(panel_model)
-    panel_models[n] = panel_model
+function get_refined_models(n_ref_lvls::Int,
+                            radius::Real,
+                            coarse_model=false)
+  coarse_mesh = CubedSphereMesh(radius)
+  models = Vector{AtlasDiscreteModel{2,2}}(undef,n_ref_lvls)
+  for (i,n) in enumerate(n_ref_lvls:-1:1)
+    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=IntrinsicManifold())
+    models[i] = model
   end
   if coarse_model
-    push!(panel_models,coarse_parametric_model(radius))
+    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=IntrinsicManifold()))
   end
-  panel_models
+  models
 end
-
 
 """
 perp

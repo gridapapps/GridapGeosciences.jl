@@ -1,4 +1,4 @@
-function L2_projection_Lagrangian_vector(panel_model,
+function L2_projection_Lagrangian_vector(atlas_model,
                                          p_fe::Int,
                                          dir::String,
                                          vecX::Function,
@@ -7,8 +7,8 @@ function L2_projection_Lagrangian_vector(panel_model,
                                          return_vtk=true;
                                          _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   @check conf in [:L2, :H1] "\n Must be L2 or H1 conformity"
 
@@ -16,23 +16,23 @@ function L2_projection_Lagrangian_vector(panel_model,
 
   degree = 4*(p_fe+1)
 
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
-
-  vec_contra_cf = ParametricCellField(contra_v(vecX),Ω_panel)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = sqrt∘det∘metric_cf
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  vec_contra_cf = (pinvJ∘covariant_basis_cf)⋅(vecX∘ambient_map_cf)
   vec_proj_cf = covariant_basis_cf⋅vec_contra_cf
 
   reffe  = ReferenceFE(lagrangian,VectorValue{Dc, Float64},p_fe)
-  V = TestFESpace(Ω_panel, reffe; conformity=conf)
+  V = TestFESpace(Ω_atlas, reffe; conformity=conf)
   U = TrialFESpace(V)
 
   if Dc == 3
-    V = TestFESpace(Ω_panel, reffe; conformity=conf,
+    V = TestFESpace(Ω_atlas, reffe; conformity=conf,
                 dirichlet_tags=["top_boundary", "bottom_boundary"])
     U = TrialFESpace(V,vec_contra_cf)
   end
@@ -63,40 +63,10 @@ function L2_projection_Lagrangian_vector(panel_model,
               "u_int", "e_int"]
 
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
+    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
 
   return  el2_proj,el2_interp,false
 
 end
-
-### must be in the tangent space of the sphere
-# function uX(p)
-#   function _u(α)
-#     x = CubedSphereForwardMap(p)(α)
-#     VectorValue(-x[2],x[1],0.0)
-#   end
-# end
-
-# MPI.Init()
-# ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))
-
-# n_ref_lvls = 4
-# ps = [1,2]
-# ls = LUSolver()
-
-# dir = datadir("InterpolationConvergence")
-# !isdir(dir) && mkdir(dir)
-
-# Dc = 3
-# models = (Dc == 2) ? get_octree_refined_models(ranks,n_ref_lvls,radius) : get_3D_octree_refined_models(ranks,n_ref_lvls-1)
-
-# Dc = 2
-# models = get_refined_models(n_ref_lvls)
-# for conf in [:L2, :H1]
-#   _dir = dir*"/vector_func_$(Dc)D_"*String(conf)
-#   !isdir(_dir) && mkdir(_dir)
-#   p_convergence_test(ranks,ps,models,L2_projection_Lagrangian_vector,_dir,uX,conf,ls,true)
-#   plot_convergence_from_saved(_dir,"convergence",["L2Proj","Interp" ])
-# end

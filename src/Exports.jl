@@ -53,6 +53,8 @@ end
 @publish Geometry IntrinsicManifold
 @publish Geometry ExtrinsicManifold
 @publish Geometry MetricCellField
+@publish Geometry InvMetricCellField
+@publish Geometry AmbientMapCellField
 
 @publish Geometry CylinderMesh
 @publish Geometry CylinderChartMap 
@@ -106,6 +108,8 @@ end
 @publish Helpers forward_jacobian
 @publish Helpers covariant_basis
 @publish Helpers forward_pinv_jacobian
+
+@publish Helpers pinvJ
 
 @publish Distributed CubedSphere2DParametricOctreeDistributedDiscreteModel
 @publish Distributed CubedSphere3DParametricOctreeDistributedDiscreteModel

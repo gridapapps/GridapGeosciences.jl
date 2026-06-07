@@ -72,6 +72,8 @@ include("AtlasDiscreteModels.jl")
 export AtlasGrid, AtlasDiscreteModel
 export IntrinsicManifold, ExtrinsicManifold
 export MetricCellField
+export InvMetricCellField
+export AmbientMapCellField
 
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField

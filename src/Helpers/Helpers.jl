@@ -30,6 +30,6 @@ export tangent_vec
 export contra_v
 export piola
 export xyz2θϕr
-
+export pinvJ
 
 end

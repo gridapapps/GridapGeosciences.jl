@@ -1,4 +1,4 @@
-function L2_projection_Hdiv(panel_model,
+function L2_projection_Hdiv(atlas_model,
                             p_fe::Int,
                             dir::String,
                             vecX::Function,
@@ -6,30 +6,31 @@ function L2_projection_Hdiv(panel_model,
                             return_vtk=false;
                             _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
   degree = 4*(p_fe+1)
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = sqrt∘det∘metric_cf
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   ### Piola mapping for Hdiv fields
-  vec_piola_cf = ParametricCellField(piola(vecX),Ω_panel)
-  vec_proj_cf_piola = covariant_basis_cf⋅ ( 1/meas_cf* vec_piola_cf )
+  vec_piola_cf = meas_cf*((pinvJ∘covariant_basis_cf)⋅(vecX∘ambient_map_cf))
+  vec_proj_cf_piola = covariant_basis_cf⋅ ( 1.0/meas_cf* vec_piola_cf )
 
   reffe = ReferenceFE(raviart_thomas,Float64,p_fe)
-  V = TestFESpace(panel_model, reffe; conformity=:HDiv)
+  V = TestFESpace(atlas_model, reffe; conformity=:HDiv)
   U = TrialFESpace(V)
 
   if Dc == 3
-    V = TestFESpace(panel_model, reffe; conformity=:Hdiv,dirichlet_tags=["top_boundary", "bottom_boundary"])
+    V = TestFESpace(atlas_model, reffe; conformity=:Hdiv,dirichlet_tags=["top_boundary", "bottom_boundary"])
     U = TrialFESpace(V,vec_piola_cf)
   end
 
@@ -54,7 +55,7 @@ function L2_projection_Hdiv(panel_model,
               "uh"=>vec_proj_h,
               "eu"=>vec_proj_cf_piola-vec_proj_h  ]
 
-    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
+    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
 

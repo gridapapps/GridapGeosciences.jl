@@ -277,3 +277,10 @@ function InvMetricCellField(
   model = Gridap.Geometry.get_background_model(trian)
   Gridap.CellData.GenericCellField(get_cell_inv_metric(model), trian, Gridap.CellData.PhysicalDomain())
 end
+
+function AmbientMapCellField(
+    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel},
+) where {Dc,Dp}
+  model = Gridap.Geometry.get_background_model(trian)
+  Gridap.CellData.GenericCellField(get_cell_ambient_maps(model), trian, Gridap.CellData.PhysicalDomain())
+end
