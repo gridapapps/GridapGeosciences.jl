@@ -73,7 +73,7 @@ sgrad_cf_ambient = AmbientCellField(ambient_sgrad(ambient_f),Ω_ambient)
 skew_grad_ambient = n_ambient × sgrad_cf_ambient
 
 f_cf_panel = ParametricCellField(panel_f,Ω_panel)
-skew_grad_panel = J_cf ⋅( perp(gradient(f_cf_panel))   )*(1/meas_cf)
+skew_grad_panel = J_cf ⋅( perp(gradient(f_cf_panel))   )*(1.0/meas_cf)
 
 ### Test the maximum cellwise difference of ∇ᵧ^† f is machine eps
 dif = skew_grad_ambient(pts_ambient) .- skew_grad_panel(pts_panel)
@@ -86,7 +86,7 @@ max_dif = map(x->maximum(norm.(x)),dif)
 ################################################################################
 detg_cf = ParametricCellField(detg,Ω_panel)
 _in = detg_cf*(inv_metric_cf⋅perp(u_cf_panel))
-skew_div_panel = -(1/meas_cf)*divergence(_in)
+skew_div_panel = -(1.0/meas_cf)*divergence(_in)
 
 vcrossk(x) = ambient_vec(x) × normal_vec(x)
 skew_div_ambient = AmbientCellField(ambient_surfdiv(vcrossk),Ω_ambient)

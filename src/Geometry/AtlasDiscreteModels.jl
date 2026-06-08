@@ -285,3 +285,7 @@ function AmbientMapCellField(
   model = Gridap.Geometry.get_background_model(trian)
   Gridap.CellData.GenericCellField(get_cell_ambient_maps(model), trian, Gridap.CellData.PhysicalDomain())
 end
+
+function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
+   model.atlas_grid.cell_ambient_maps.values[1].radius
+end

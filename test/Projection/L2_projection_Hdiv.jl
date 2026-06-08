@@ -37,17 +37,17 @@ function L2_projection_Hdiv(atlas_model,
   ## Interpolation
   uh_interp = interpolate(vec_piola_cf,U)
   _e = vec_piola_cf - uh_interp
-  e_interp =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1/meas_cf) )dΩ_error))
+  e_interp =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1.0/meas_cf) )dΩ_error))
 
   ## L2 projection
-  a(u,v) = ∫( u⋅( metric_cf⋅v)*(1/meas_cf) )dΩ
-  l(v) = ∫( vec_piola_cf⋅(metric_cf⋅v)*(1/meas_cf) )dΩ
+  a(u,v) = ∫( u⋅( metric_cf⋅v)*(1.0/meas_cf) )dΩ
+  l(v) = ∫( vec_piola_cf⋅(metric_cf⋅v)*(1.0/meas_cf) )dΩ
   op = AffineFEOperator(a,l,U,V)
   uh_l2proj = solve(ls,op)
 
-  vec_proj_h = covariant_basis_cf ⋅((1/meas_cf) * uh_l2proj)
+  vec_proj_h = covariant_basis_cf ⋅((1.0/meas_cf) * uh_l2proj)
   _e = vec_piola_cf - uh_l2proj
-  e_l2proj =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1/meas_cf) )dΩ_error))
+  e_l2proj =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1.0/meas_cf) )dΩ_error))
 
   if return_vtk
     cellfields = [

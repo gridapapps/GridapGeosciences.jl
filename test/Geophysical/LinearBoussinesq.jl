@@ -126,7 +126,7 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
 
   h_cf = ParametricCellField(h,Ω_panel)
   u_cf = ParametricCellField(piola(vX),Ω_panel)
-  u_proj_cf = covariant_basis_cf ⋅(1/meas_cf * u_cf  )
+  u_proj_cf = covariant_basis_cf ⋅(1.0/meas_cf * u_cf  )
   b_cf = ParametricCellField(b,Ω_panel)
   omega_cf = ParametricCellField(f,Ω_panel)
 
@@ -140,10 +140,10 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
   normal_3D(p) = x-> (1/area_meas(p)(x) )*VectorValue(1,0,0)
   normal_3D_cf = ParametricCellField(normal_3D,Ω_panel)
 
-  coriolis_term((u,p,b),(v,q,r)) = ∫( omega_cf*( normal_3D_cf ×( metric_cf⋅u*(1/meas_cf)  ) )⋅(metric_cf⋅v)*(1/meas_cf)  )dΩ
+  coriolis_term((u,p,b),(v,q,r)) = ∫( omega_cf*( normal_3D_cf ×( metric_cf⋅u*(1.0/meas_cf)  ) )⋅(metric_cf⋅v)*(1.0/meas_cf)  )dΩ
   bouyancy_term(b,v) = ∫( b*(normal_3D_cf⋅v)  )dΩ # v ∈ Hdiv, b ∈ L2
 
-  biform_u((u,p,b),(v,q,r)) = ( ∫( (u⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ
+  biform_u((u,p,b),(v,q,r)) = ( ∫( (u⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ
                               + coriolis_term((u,p,b),(v,q,r))
                               - ∫( p*(∇⋅v) )dΩ
                               - bouyancy_term(b,v)
@@ -163,7 +163,7 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
   nΓ = get_normal_vector(Γ)
 
   liformX((v,q,r)) = (
-    ∫( (u_int⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ
+    ∫( (u_int⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ
   + ∫( gradient(p_int)⋅v )dΩ # assume regularity to IBP
   + coriolis_term((u_int,p_int,b_int),(v,q,r)) # coriolis term
   - bouyancy_term(b_int,v)
@@ -184,10 +184,10 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
   uh,ph,bh = xh
 
 
-  uh_proj = covariant_basis_cf ⋅ (1/meas_cf*uh)
+  uh_proj = covariant_basis_cf ⋅ (1.0/meas_cf*uh)
 
   _e = u_cf - uh
-  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1/meas_cf) )dΩ_error))
+  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1.0/meas_cf) )dΩ_error))
 
   _e = h_cf - ph
   e_p = sqrt(sum(∫( (_e*_e)*meas_cf )dΩ_error))

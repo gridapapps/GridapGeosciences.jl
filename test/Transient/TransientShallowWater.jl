@@ -47,12 +47,12 @@ _tF = TF/_τ
 
 
 
-function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},<:GridapDistributed.DistributedDiscreteModel{2,2}},
+function transient_shallow_water_solver(atlas_model::Union{<:DiscreteModel{2,2},<:GridapDistributed.DistributedDiscreteModel{2,2}},
   p_fe::Int,dir::String,h::Function,vX::Function,f::Function,b::Function,
   CFL=0.1,lss=(LUSolver(),LUSolver());_i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
@@ -60,17 +60,17 @@ function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},
 
   ## finite element solver
   degree = 4*(p_fe+1)
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  R = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe+1); conformity=:H1)
+  R = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe+1); conformity=:H1)
   H = TransientTrialFESpace(R)
 
-  Q = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
+  Q = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
   P = TransientTrialFESpace(Q)
 
-  V = TestFESpace(Ω_panel, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
+  V = TestFESpace(Ω_atlas, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
   U = TransientTrialFESpace(V)
 
   X_prog = TransientMultiFieldFESpace([U,P]) # u, p
@@ -80,16 +80,17 @@ function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},
   Y_diag = MultiFieldFESpace([R,V,Q]) # q, F, Φ
 
   # metric information
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  meas_cf = sqrt∘det∘metric_cf
 
   ## initial conditions
-  u_cf = ParametricCellField(piola(vX),Ω_panel)
+  u_cf = meas_cf*((pinvJ∘transpose∘∇(ambient_map_cf))⋅(vX∘ambient_map_cf))
   u_int = interpolate(u_cf,U)
 
-  h_cf = ParametricCellField(h,Ω_panel)
-  b_cf = ParametricCellField(b,Ω_panel)
+  h_cf = h∘ambient_map_cf
+  b_cf = b∘ambient_map_cf
   h_int = interpolate(h_cf-b_cf,P)
 
   xh0 = interpolate_everywhere([u_int,h_int],X_prog(0.0))
@@ -97,45 +98,45 @@ function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},
   tF = _tF
 
   ## transient weak form
-  cor_cf = ParametricCellField(f,Ω_panel)
+  cor_cf = f∘ambient_map_cf
   gravity = _g
-  b_cf = ParametricCellField(b,Ω_panel)
+  b_cf = b∘ambient_map_cf
 
   #### DIAGNOSTIC VARIABLES
   # vorticity
   Aperp = [0 -1
            1 0]
   Rperp = TensorValue(Aperp)
-  Rperp_cf = CellField(Rperp,Ω_panel)
+  Rperp_cf = CellField(Rperp,Ω_atlas)
 
 
   resq(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( q*p*w*meas_cf  )dΩ - ∫( cor_cf*w*meas_cf  )dΩ - ∫( (( (Rperp_cf⋅u)⋅inv_metric_cf)⋅∇(w))*meas_cf  )dΩ
 
   # mass flux
-  resF(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( (F⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ - ∫( p*(u⋅(metric_cf⋅v))*(1/meas_cf)   )dΩ
+  resF(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( (F⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ - ∫( p*(u⋅(metric_cf⋅v))*(1.0/meas_cf)   )dΩ
 
   # Bernoulli potential
-  resΦ(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( Φ*ψ*meas_cf  )dΩ - ∫( gravity*(p+b_cf)*ψ*meas_cf  )dΩ - ∫( 0.5*( u ⋅(metric_cf⋅u) )ψ*(1/meas_cf)  )dΩ
+  resΦ(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( Φ*ψ*meas_cf  )dΩ - ∫( gravity*(p+b_cf)*ψ*meas_cf  )dΩ - ∫( 0.5*( u ⋅(metric_cf⋅u) )ψ*(1.0/meas_cf)  )dΩ
 
   res_y(t,((u,p),(q,F,Φ)),(w,v,ψ)) = resq(((u,p),(q,F,Φ)),(w,v,ψ)) + resF(((u,p),(q,F,Φ)),(w,v,ψ)) + resΦ(((u,p),(q,F,Φ)),(w,v,ψ))
-  jac_y(t,((u,p),(q,F,Φ)),(dq,dF,dΦ),(w,v,ψ)) = ∫( dq*p*w*meas_cf  )dΩ + ∫( (dF⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ + ∫( dΦ*ψ*meas_cf  )dΩ
+  jac_y(t,((u,p),(q,F,Φ)),(dq,dF,dΦ),(w,v,ψ)) = ∫( dq*p*w*meas_cf  )dΩ + ∫( (dF⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ + ∫( dΦ*ψ*meas_cf  )dΩ
 
 
   #### PROGNOSTIC VARIABLES
 
   # equation for depth and velocity:
-  mass(t,(dut,dpt),(v,r)) = ∫( (dut⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ + ∫( (dpt*r)*meas_cf )dΩ
+  mass(t,(dut,dpt),(v,r)) = ∫( (dut⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ + ∫( (dpt*r)*meas_cf )dΩ
 
   res_p(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = ∫( r*(∇⋅F) )dΩ
   res_u(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = (  ∫( ( q*( (Rperp_cf⋅ F)⋅v))  )dΩ
                                 + ∫( -τ*( (q-q0)/dt )*( (Rperp_cf⋅ F)⋅v)   )dΩ
-                                + ∫( -τ*(u⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1/meas_cf)   )dΩ
+                                + ∫( -τ*(u⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1.0/meas_cf)   )dΩ
                                 - ∫( Φ*(∇⋅v) )dΩ
                     )
 
   res_x(t,((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = res_u(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) + res_p(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0))
-  jac_x(t,((u,p),(q,F,Φ)),(du,dp),(v,r),(q0,F0,Φ0)) = ∫( -τ*(du⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1/meas_cf)   )dΩ
-  jac_xt(t,((u,p),(q,F,Φ)),(dut,dpt),(v,r),(q0,F0,Φ0)) =  ∫( (dut⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ + ∫( (dpt*r)*meas_cf )dΩ
+  jac_x(t,((u,p),(q,F,Φ)),(du,dp),(v,r),(q0,F0,Φ0)) = ∫( -τ*(du⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1.0/meas_cf)   )dΩ
+  jac_xt(t,((u,p),(q,F,Φ)),(dut,dpt),(v,r),(q0,F0,Φ0)) =  ∫( (dut⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ + ∫( (dpt*r)*meas_cf )dΩ
 
 
   opT = TransientSemilinearFEOperator(mass,res_x,(jac_x,jac_xt),X_prog,Y_prog)
@@ -143,7 +144,7 @@ function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},
   opDAE = DAEFEOperator(opT,opFE,ls_diag)
 
   # transient parameters
-  _dt = dx(panel_model)*CFL/(p_fe*sqrt(gravity*_H_0))
+  _dt = dx(atlas_model)*CFL/(p_fe*sqrt(gravity*_H_0))
   nsteps = tF/ _dt
   dt = tF/floor(nsteps)
   τ = dt/2
@@ -172,7 +173,7 @@ function transient_shallow_water_solver(panel_model::Union{<:DiscreteModel{2,2},
   uhF,phF = xhF
 
   _e = uh0 - uhF
-  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1/meas_cf) )dΩ_error))
+  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1.0/meas_cf) )dΩ_error))
 
   _e = ph0 - phF
   e_p = sqrt(sum(∫( (_e*_e)*meas_cf )dΩ_error))
@@ -193,10 +194,10 @@ function main(model;_i_am_main=true)
   dir = @__DIR__
   p = 1
   CFL = 0.1
-  h = panel_to_cartesian(h₀(0.0))
-  vX = panel_to_cartesian(tangent_vec(u₀(0.0)))
-  f = panel_to_cartesian(f₀(0.0))
-  b = panel_to_cartesian(topography)
+  h = h₀(0.0)
+  vX = tangent_vec(u₀(0.0))
+  f = f₀(0.0)
+  b = topography
 
   ## the error test here is for 3 levels of refinement only
   lvl = nref(model)
