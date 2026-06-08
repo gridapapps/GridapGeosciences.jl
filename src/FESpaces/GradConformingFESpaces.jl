@@ -189,12 +189,12 @@ end
 
 # We do not want to use CLagrangianFESpace for parametric models, because otherwise
 # we cannot implement the change of basis for the vector-valued case
-const ParamTrianType{Dc,Dp,G,A,P,C,O,M} = BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}
-const UnionParamTrianType{Dc,Dp,G,A,P,C,O} = Union{ParamTrianType{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold},
-                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}}
+const ParamTrianType{Dc,Dp,G,A,P,C,O} = BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}
+const UnionParamTrianType{Dc,Dp,G,A,P,C,O} = Union{ParamTrianType{Dc,Dp,G,A,P,C,O},
+                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp,G,A,P,C,O}}}
 
 function _use_clagrangian(trian::UnionParamTrianType,
                           cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                          conf::H1Conformity) where {Dc,Dp}
+                          conf::H1Conformity)
     return false
 end
