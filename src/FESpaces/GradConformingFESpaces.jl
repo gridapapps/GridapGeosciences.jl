@@ -1,5 +1,5 @@
-function _generate_face_to_master_cell_id(model::AtlasDiscreteModel{Dc};
-                                          cell_l2g::AbstractVector{Int}=IdentityVector(num_cells(model))) where Dc
+function _generate_face_to_master_cell_id(model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold};
+                                          cell_l2g::AbstractVector{Int}=IdentityVector(num_cells(model))) where {Dc, Da, G, A, P, C, O}
   
   grid_topology = get_grid_topology(model)
   face_to_master_cell_id = Vector{Vector{Int}}(undef, Dc)
@@ -100,13 +100,8 @@ function evaluate!(cache,k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
          node_lids_master = face_own_nodes[offset+pos_master]
          for (inode, node_slave) in enumerate(node_lids_slave)
            node_master = node_lids_master[inode]
-           
            JM = evaluate(grad_cell_ambient_maps[master_cell_id], master_reffe_node_coordinates[node_master])
-           JSinv = evaluate(pinv_grad_cell_ambient_maps[cell_id], reffe_node_coordinates[node_slave])
-
-           # JM = J(cell_ambient_maps(master_cell_panel),master_reffe_node_coordinates[node_master])
-           # JSinv = forward_pinv_jacobian(cell_ambient_maps(current_cell_panel),reffe_node_coordinates[node_slave])
-           
+           JSinv = evaluate(pinv_grad_cell_ambient_maps[cell_id], reffe_node_coordinates[node_slave])           
            coeffs = JSinv⋅JM
            dof_lids_slave_current_node = findall(x->x==node_slave,reffe.reffe.dofs.dof_to_node)
            change_matrix[dof_lids_slave_current_node,dof_lids_slave_current_node] .= Array(coeffs)
@@ -142,9 +137,9 @@ function _compute_cell_bases_changes(
   ::Type{Float64},  
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel, 
+  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O,<:IntrinsicManifold}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   return nothing
 end
 
@@ -153,9 +148,9 @@ function _compute_cell_bases_changes(
   ::Type{<:VectorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel, 
+  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe)
   inv_change_of_basis_matrices = lazy_map(transpose, lazy_map(inv, change_of_basis_matrices))
   (change_of_basis_matrices, inv_change_of_basis_matrices)
@@ -165,9 +160,9 @@ function _compute_cell_bases_changes(
   ::Type{<:TensorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel, 
+  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   @notimplemented "GridapGeosciences.jl does not support grad-conforming tensor-valued finite elements"
 end
 
@@ -175,9 +170,9 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::AtlasDiscreteModel, 
+  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   T = _get_value_type(cell_reffe)
   _compute_cell_bases_changes(T, ref_name, map, model, cell_reffe, cell_Jt)
 end
@@ -185,20 +180,20 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp}}, 
+  model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}, 
   cell_reffe, 
-  cell_Jt) where {Dc,Dp}
+  cell_Jt) where {Dc,Dp,G,A,P,C,O}
   T = _get_value_type(cell_reffe)
   _compute_cell_bases_changes(T, ref_name, map, model.model, cell_reffe, cell_Jt)
 end
 
 # We do not want to use CLagrangianFESpace for parametric models, because otherwise
 # we cannot implement the change of basis for the vector-valued case
-const ParamTrianType{Dc,Dp} = BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp}}
-const UnionParamTrianType{Dc,Dp} = Union{ParamTrianType{Dc,Dp},
-                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp}}}
+const ParamTrianType{Dc,Dp,G,A,P,C,O,M} = BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}
+const UnionParamTrianType{Dc,Dp,G,A,P,C,O} = Union{ParamTrianType{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold},
+                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}}
 
-function _use_clagrangian(trian::UnionParamTrianType{Dc,Dp},
+function _use_clagrangian(trian::UnionParamTrianType,
                           cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
                           conf::H1Conformity) where {Dc,Dp}
     return false

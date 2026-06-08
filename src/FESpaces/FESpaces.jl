@@ -14,7 +14,7 @@ import Gridap.Arrays: array_cache, CachedMatrix, return_type, getindex!,
                       evaluate, evaluate!
 import GridapGeosciences.Geometry: CubedSphereParametricDiscreteModel, AtlasDiscreteModel,
                                    get_panel_ids, get_forward_map_generator, get_cell_ambient_maps,
-                                   AmbientMapCellField
+                                   AmbientMapCellField, IntrinsicManifold
 import GridapGeosciences.Helpers: J, forward_pinv_jacobian, pinvJ
 import Gridap.Geometry: Triangulation
 import Gridap.FESpaces: compute_cell_bases_changes, _use_clagrangian, H1Conformity
