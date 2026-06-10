@@ -50,7 +50,7 @@ function transient_wave_solver(atlas_model::Union{<:DiscreteModel{2,2},<:GridapD
   ## initial conditions
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   metric_cf = MetricCellField(Ω_atlas)
-  meas_cf = sqrt∘det∘metric_cf
+  meas_cf = MeasureCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   h_cf = h∘ambient_map_cf

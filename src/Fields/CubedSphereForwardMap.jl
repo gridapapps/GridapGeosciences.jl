@@ -39,7 +39,7 @@ end
 const ForwardMap2Dor3D = Union{ForwardMap2D, ForwardMap3D}
 const ForwardMap2Dor3DGenerator = Union{ForwardMap2DGenerator, ForwardMap3DGenerator}
 
-J(m::ForwardMap2D,x) = _evaluate_forward_jacobian_2d(m.panel,m.radius,x)
+J(m,x) = _evaluate_forward_jacobian_2d(m.panel,m.radius,x)
 J(m::ForwardMap3D,x) = _evaluate_forward_jacobian_3d(m.panel,m.radius,m.thickness,x)
 
 ################################################################################

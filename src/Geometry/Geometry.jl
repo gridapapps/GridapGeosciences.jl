@@ -73,6 +73,7 @@ export AtlasGrid, AtlasDiscreteModel
 export IntrinsicManifold, ExtrinsicManifold
 export MetricCellField
 export InvMetricCellField
+export MeasureCellField
 export AmbientMapCellField
 export Δs
 export ∇s

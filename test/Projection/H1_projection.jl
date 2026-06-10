@@ -34,15 +34,15 @@ function interpolation(panel_model,p_fe::Int,dir::String,func::Function,return_v
 
   println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,10*p_fe)
+  Ω_atlas = Triangulation(panel_model)
+  dΩ = Measure(Ω_atlas,10*p_fe)
   panel_ids = get_panel_ids(panel_model)
 
-  f_panel_cf = ParametricCellField(func,Ω_panel,panel_ids)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel,panel_ids)
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_panel,panel_ids)
+  f_panel_cf = ParametricCellField(func,Ω_atlas,panel_ids)
+  meas_cf = ParametricCellField(sqrtg,Ω_atlas,panel_ids)
+  inv_metric_cf = ParametricCellField(inv_metric,Ω_atlas,panel_ids)
 
-  slap_panel_cf =  ParametricCellField(surflap(func),Ω_panel,panel_ids)
+  slap_panel_cf =  ParametricCellField(surflap(func),Ω_atlas,panel_ids)
 
   i_am_main(ranks) && println("Zeromean: ", sum(∫(f_panel_cf*meas_cf)dΩ))
 
@@ -69,7 +69,7 @@ function interpolation(panel_model,p_fe::Int,dir::String,func::Function,return_v
     panel_cfs = [f_panel_cf, f_uh,  _e, gradient(f_uh) ]
     labels = ["u","uh", "e" , "grad"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_"*String(:H1),
+    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_"*String(:H1),
             cellfields=cellfields,append=false)
   # end
 

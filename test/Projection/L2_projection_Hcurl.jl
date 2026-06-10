@@ -22,17 +22,17 @@ function L2_projection_Hcurl(panel_model,
 
   _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc; degree = $(degree)")
 
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(panel_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_panel)
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+  inv_metric_cf = ParametricCellField(inv_metric,Ω_atlas)
+  metric_cf = ParametricCellField(metric,Ω_atlas)
+  meas_cf = ParametricCellField(sqrtg,Ω_atlas)
+  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_atlas)
 
   ## covariant components
-  vec_cov_cf = ParametricCellField(covar_v_3D(vecX),Ω_panel)
+  vec_cov_cf = ParametricCellField(covar_v_3D(vecX),Ω_atlas)
   vec_proj_cf = covariant_basis_cf⋅ ( inv_metric_cf ⋅ vec_cov_cf)
 
 
@@ -61,7 +61,7 @@ function L2_projection_Hcurl(panel_model,
     cellfields=["uproj"=> vec_proj_cf,
               "uprojh"=>vec_proj_h,
               "eproj"=>vec_proj_cf-vec_proj_h, ]
-    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
+    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
 

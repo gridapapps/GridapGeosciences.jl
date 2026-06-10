@@ -54,6 +54,7 @@ end
 @publish Geometry ExtrinsicManifold
 @publish Geometry MetricCellField
 @publish Geometry InvMetricCellField
+@publish Geometry MeasureCellField
 @publish Geometry AmbientMapCellField
 @publish Geometry Δs
 @publish Geometry ∇s

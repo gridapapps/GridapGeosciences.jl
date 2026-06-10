@@ -264,6 +264,10 @@ function MetricCellField(
   Gridap.CellData.GenericCellField(get_cell_metric(model), trian, Gridap.CellData.PhysicalDomain())
 end
 
+function MeasureCellField(trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+    sqrt∘det∘MetricCellField(trian)
+end
+
 """
     InvMetricCellField(trian)
 
@@ -290,16 +294,16 @@ function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:Cu
    model.atlas_grid.cell_ambient_maps.values[1].radius
 end
 
-## f is an scalar-valued ambient-space function
-function Δs(f::Function, 
-            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
-                                        Da, 
-                                        G, 
-                                        A, 
-                                        P, 
-                                        C, 
-                                        O, 
-                                        <:IntrinsicManifold}}) where {Dc, Da, G, A, P, C, O}
+function _fm(f, m)
+   function fm(m)
+     αβ -> begin
+         x = m(αβ)
+         f(x)
+     end
+   end
+end
+
+function _Δs_no_ad(f, Ω_atlas)
   # surflap(f::Function) = m -> surflap(f,m)
   # surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
   # W(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
@@ -308,7 +312,7 @@ function Δs(f::Function,
   f_cf = f∘ambient_map_cf
   metric_cf = MetricCellField(Ω_atlas)
   inv_metric_cf = InvMetricCellField(Ω_atlas)
-  meas_cf = sqrt∘det∘metric_cf
+  meas_cf = MeasureCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
   gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
 
@@ -355,7 +359,53 @@ function Δs(f::Function,
   div_wcf_third_term = meas_cf*(inv_metric_cf ⊙ gradient_gradient_cf)
   div_wcf = div_wcf_first_term + div_wcf_second_term + div_wcf_third_term
   1.0/meas_cf * div_wcf
+end 
+
+function _Δs_ad(f, Ω_atlas)
+  # surflap(f::Function) = m -> surflap(f,m)
+  # surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
+  # W(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(surflap(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
 end
+
+## f is an scalar-valued ambient-space function
+function Δs(f::Function, 
+            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        P, 
+                                        C, 
+                                        O, 
+                                        <:IntrinsicManifold}};
+                                        use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+    use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
+end
+
+function _∇s_no_ad(f, Ω_atlas)
+  # sgrad(f::Function) = m -> sgrad(f,m)
+  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
+  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
+  covariant_basis_cf⋅(inv_metric_cf⋅gradient_f_cf)
+end 
+
+function _∇s_ad(f, Ω_atlas)
+  # sgrad(f::Function) = m -> sgrad(f,m)
+  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
+  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(sgrad(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end 
+
 
 function ∇s(f::Function, 
             Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
@@ -365,14 +415,8 @@ function ∇s(f::Function,
                                         P, 
                                         C, 
                                         O, 
-                                        <:IntrinsicManifold}}) where {Dc, Da, G, A, P, C, O}
-  # sgrad(f::Function) = m -> sgrad(f,m)
-  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
-  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
-  ambient_map_cf = AmbientMapCellField(Ω_atlas)
-  inv_metric_cf = InvMetricCellField(Ω_atlas)
-  covariant_basis_cf = transpose∘∇(ambient_map_cf)
-  gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
-  covariant_basis_cf⋅(inv_metric_cf⋅gradient_f_cf)
+                                        <:IntrinsicManifold}};
+                                        use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
 end 
 

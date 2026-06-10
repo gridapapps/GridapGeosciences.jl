@@ -33,34 +33,34 @@ function hodge_laplacian_scalar(atlas_model,
   end
   @check degree > 0 "Zero quad!!"
 
-  Ω_panel = Triangulation(atlas_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
   # FE spaces
-  Q = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
+  Q = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
   if Dc == 2
    _i_am_main && println("zeromean constraint in 2D ")
-    Q = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2, constraint=:zeromean)
+    Q = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2, constraint=:zeromean)
   end
   P = TrialFESpace(Q)
 
-  V = TestFESpace(Ω_panel, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
+  V = TestFESpace(Ω_atlas, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
   U = TrialFESpace(V)
 
   Y = MultiFieldFESpace([V, Q])
   X = MultiFieldFESpace([U, P])
 
   # metric information
-  ambient_map_cf = AmbientMapCellField(Ω_panel)
-  metric_cf = MetricCellField(Ω_panel)
-  meas_cf = sqrt∘det∘metric_cf
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   # manufactured RHS
   f_panel_cf = f∘ambient_map_cf
-  sigma_cf = ∇s(f,Ω_panel)
-  slap_panel_cf = Δs(f,Ω_panel)
+  sigma_cf = ∇s(f,Ω_atlas;use_automatic_differentiation=false)
+  slap_panel_cf = Δs(f,Ω_atlas;use_automatic_differentiation=false)
   rhs = -slap_panel_cf
   f_int = interpolate(f_panel_cf,P)
 
@@ -111,7 +111,7 @@ function hodge_laplacian_scalar(atlas_model,
     "eu"=> (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (-sigma_cf),
     "ph"=>ph, "p"=>f_panel_cf, "e"=>ph-f_panel_cf
                   ]
-    writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
   return el2_u, el2_p, false

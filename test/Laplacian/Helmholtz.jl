@@ -25,20 +25,20 @@ function helmholtz_solver(atlas_model,
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   degree = 6*(p_fe+1)
-  Ω_panel = Triangulation(atlas_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
   V = TestFESpace(atlas_model, ReferenceFE(lagrangian,Float64,p_fe); conformity=:H1)
   U = TrialFESpace(V)
 
-  ambient_map_cf = AmbientMapCellField(Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
   f_cf = f∘ambient_map_cf
-  metric_cf = MetricCellField(Ω_panel)
-  inv_metric_cf = InvMetricCellField(Ω_panel)
-  meas_cf = sqrt∘det∘metric_cf
+  metric_cf = MetricCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
 
-  rhs_cf = f_cf + Δs(f,Ω_panel)
+  rhs_cf = f_cf + Δs(f,Ω_atlas)
 
   helmholtz_biform(u,v) = ∫(u*v*meas_cf)dΩ - ∫( ( gradient(v)⋅ (inv_metric_cf⋅ gradient(u) ) )*meas_cf )dΩ
 
@@ -78,7 +78,7 @@ function helmholtz_solver(atlas_model,
     panel_cfs = [f_cf,uh,f_cf-uh]
     labels = ["u","uh","eu"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",cellfields=cellfields,append=false)
+    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",cellfields=cellfields,append=false)
   end
 
   return e, false, false

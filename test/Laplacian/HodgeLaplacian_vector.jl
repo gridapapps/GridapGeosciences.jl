@@ -54,8 +54,8 @@ function hodge_laplacian_vector(
   @check degree > 0 "Zero quad!!"
 
   ## finite element solver
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
+  Ω_atlas = Triangulation(panel_model)
+  dΩ = Measure(Ω_atlas,degree)
   Ω_error = Triangulation(panel_model)
   dΩ_error = Measure(Ω_error,2*degree)
 
@@ -65,10 +65,10 @@ function hodge_laplacian_vector(
   nΓ = get_normal_vector(Γ)
 
   ## metric information
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_panel)
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+  inv_metric_cf = ParametricCellField(inv_metric,Ω_atlas)
+  metric_cf = ParametricCellField(metric,Ω_atlas)
+  meas_cf = ParametricCellField(sqrtg,Ω_atlas)
+  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_atlas)
 
 
 
@@ -127,15 +127,15 @@ function hodge_laplacian_vector(
 
   ### Rhs function
   rhs(p) = x-> curlw_cov(p)(x) - graddiv_cov(p)(x)
-  rhs_cov_cf = ParametricCellField(rhs,Ω_panel)
+  rhs_cov_cf = ParametricCellField(rhs,Ω_atlas)
 
-  u_cov_cf = ParametricCellField(ucov,Ω_panel)
-  ccurlu_cov_cf = ParametricCellField(curlw_cov,Ω_panel)
-  un_cf = ParametricCellField(unX,Ω_panel)
-  curlu_cross = ParametricCellField(wcrossk_cov,Ω_panel)
-  curlu_cf = ParametricCellField(curlu,Ω_panel)
+  u_cov_cf = ParametricCellField(ucov,Ω_atlas)
+  ccurlu_cov_cf = ParametricCellField(curlw_cov,Ω_atlas)
+  un_cf = ParametricCellField(unX,Ω_atlas)
+  curlu_cross = ParametricCellField(wcrossk_cov,Ω_atlas)
+  curlu_cf = ParametricCellField(curlu,Ω_atlas)
 
-  sdiv_cf =  ParametricCellField(surfdiv(contra_v_3D(uX)),Ω_panel)
+  sdiv_cf =  ParametricCellField(surfdiv(contra_v_3D(uX)),Ω_atlas)
   sigma_cf = -sdiv_cf
 
 
@@ -146,19 +146,19 @@ function hodge_laplacian_vector(
   #               "sigma"=>-sdiv_cf,
   #               "rhs"=>rhs_cov_cf
   #               ]
-  # writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/sol",
+  # writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/sol",
   #         cellfields=cellfields,
   #         append=false)
 
 
   ## FE spaces
-  T = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe+1); conformity=:H1)
+  T = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe+1); conformity=:H1)
   S = TrialFESpace(T)
 
   # For Gridap 0.19, we can use the standard nedelec constructor. That is, we would use:
-  # R = TestFESpace(Ω_panel, ReferenceFE(nedelec,Float64,p_fe);conformity=:Hcurl)
+  # R = TestFESpace(Ω_atlas, ReferenceFE(nedelec,Float64,p_fe);conformity=:Hcurl)
   # For Gridap 0.20, we need to set change_dof=false due to the new definition of dofs
-  R = TestFESpace(Ω_panel, ReferenceFE(nedelec,Float64,p_fe; change_dof=false);conformity=:Hcurl)
+  R = TestFESpace(Ω_atlas, ReferenceFE(nedelec,Float64,p_fe; change_dof=false);conformity=:Hcurl)
   H = TrialFESpace(R)
 
   sigma_int = interpolate(sigma_cf,S)
@@ -207,7 +207,7 @@ function hodge_laplacian_vector(
     "eu"=>covariant_basis_cf ⋅ (inv_metric_cf⋅uh)-covariant_basis_cf ⋅ (inv_metric_cf⋅u_cov_cf),
     "sh"=>sh, "s"=>sigma_cf, "e"=>sh-sigma_cf
                   ]
-    writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
 

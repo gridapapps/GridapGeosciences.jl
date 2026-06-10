@@ -21,7 +21,7 @@ function L2_projection_Lagrangian_vector(atlas_model,
   dΩ_error = Measure(Ω_atlas,2*degree)
 
   metric_cf = MetricCellField(Ω_atlas)
-  meas_cf = sqrt∘det∘metric_cf
+  meas_cf = MeasureCellField(Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
   vec_contra_cf = (pinvJ∘covariant_basis_cf)⋅(vecX∘ambient_map_cf)

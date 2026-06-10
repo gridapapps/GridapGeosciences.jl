@@ -7,7 +7,6 @@ using Gridap.Algebra, Gridap.FESpaces
 using LinearAlgebra
 using FillArrays
 
-
 include("CubedSphereForwardMap.jl")
 include("CubedSphereInverseMap.jl")
 include("MatMultField.jl")

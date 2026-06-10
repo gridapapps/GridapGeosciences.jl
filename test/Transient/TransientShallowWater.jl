@@ -83,7 +83,7 @@ function transient_shallow_water_solver(atlas_model::Union{<:DiscreteModel{2,2},
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   metric_cf = MetricCellField(Ω_atlas)
   inv_metric_cf = InvMetricCellField(Ω_atlas)
-  meas_cf = sqrt∘det∘metric_cf
+  meas_cf = MeasureCellField(Ω_atlas)
 
   ## initial conditions
   u_cf = meas_cf*((pinvJ∘transpose∘∇(ambient_map_cf))⋅(vX∘ambient_map_cf))
