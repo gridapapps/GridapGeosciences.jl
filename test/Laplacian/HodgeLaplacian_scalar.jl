@@ -14,20 +14,17 @@ using GridapGeosciences
 using GridapP4est
 using Test
 
-function fX(forward_map)
-  function _f(α)
-    xyz = forward_map(α)
-    θϕr   = xyz2θϕr(xyz)
-    sin(θϕr[2])
-  end
+function fX(xyz)
+  θϕr = xyz2θϕr(xyz)
+  sin(θϕr[2])
 end
 
-function hodge_laplacian_scalar(panel_model,
+function hodge_laplacian_scalar(atlas_model,
   p_fe::Int,dir::String,f::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
   degree = 4*(p_fe+1)
@@ -36,7 +33,7 @@ function hodge_laplacian_scalar(panel_model,
   end
   @check degree > 0 "Zero quad!!"
 
-  Ω_panel = Triangulation(panel_model)
+  Ω_panel = Triangulation(atlas_model)
   dΩ = Measure(Ω_panel,degree)
   dΩ_error = Measure(Ω_panel,2*degree)
 
@@ -55,20 +52,20 @@ function hodge_laplacian_scalar(panel_model,
   X = MultiFieldFESpace([U, P])
 
   # metric information
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_panel)
+  metric_cf = MetricCellField(Ω_panel)
+  meas_cf = sqrt∘det∘metric_cf
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   # manufactured RHS
-  f_panel_cf = ParametricCellField(f,Ω_panel)
-  sigma_cf = ParametricCellField(sgrad(f),Ω_panel)
-  slap_panel_cf =  ParametricCellField(surflap(f),Ω_panel)
+  f_panel_cf = f∘ambient_map_cf
+  sigma_cf = ∇s(f,Ω_panel)
+  slap_panel_cf = Δs(f,Ω_panel)
   rhs = -slap_panel_cf
   f_int = interpolate(f_panel_cf,P)
 
-  biform_u((u,p),(v,q)) = ∫( (u⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ - ∫( p*(∇⋅v) )dΩ
+  biform_u((u,p),(v,q)) = ∫( (u⋅(metric_cf⋅v))*(1.0/meas_cf) )dΩ - ∫( p*(∇⋅v) )dΩ
   biform_p((u,p),(v,q)) = ∫( q*(∇⋅u) )dΩ
-
   biformX((u,p),(v,q)) = biform_u((u,p),(v,q)) + biform_p((u,p),(v,q))
 
 
@@ -82,7 +79,7 @@ function hodge_laplacian_scalar(panel_model,
       return v -> _liformX(v)
     elseif Dc == 3
       # in 3D, account for the boundary term from IBP
-      Γ = BoundaryTriangulation(panel_model;tags=["bottom_boundary","top_boundary"])
+      Γ = BoundaryTriangulation(atlas_model;tags=["bottom_boundary","top_boundary"])
       dΓ = Measure(Γ,degree)
       nΓ = get_normal_vector(Γ)
       boundary((v,q)) = ∫( -f_int*(v⋅nΓ) )dΓ
@@ -103,24 +100,21 @@ function hodge_laplacian_scalar(panel_model,
   _e = f_panel_cf - ph
   el2_p = sqrt(sum(∫( (_e*_e)*meas_cf  )dΩ_error))
 
-  _e = (covariant_basis_cf⋅(1/meas_cf*uh)) - (- sigma_cf ) ### u = -∇p
+  _e = (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (- sigma_cf ) ### u = -∇p
   el2_u = sqrt(sum(∫( (_e⋅_e)*meas_cf  )dΩ_error))
 
  _i_am_main && println("eu = $(el2_u), es = $(el2_p)")
 
   if return_vtk
     cellfields =  ["u"=> -sigma_cf ,
-    "uh"=>covariant_basis_cf⋅(1/meas_cf*uh),
-    "eu"=> (covariant_basis_cf⋅(1/meas_cf*uh)) - (-sigma_cf),
+    "uh"=>covariant_basis_cf⋅(1.0/meas_cf*uh),
+    "eu"=> (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (-sigma_cf),
     "ph"=>ph, "p"=>f_panel_cf, "e"=>ph-f_panel_cf
                   ]
     writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
-
-
   return el2_u, el2_p, false
-
 end
 
 
@@ -128,13 +122,9 @@ end
 #### Auto convergence test
 ################################################################################
 function main(models::AbstractArray;ps=[2],_i_am_main=true)
-
   ls = LUSolver()
   dir = @__DIR__
   p_convergence_auto_test(ps,models,hodge_laplacian_scalar,dir,fX,ls;_i_am_main=_i_am_main)
 end
-
-
-
 
 end # module

@@ -55,6 +55,8 @@ end
 @publish Geometry MetricCellField
 @publish Geometry InvMetricCellField
 @publish Geometry AmbientMapCellField
+@publish Geometry Δs
+@publish Geometry ∇s
 
 @publish Geometry CylinderMesh
 @publish Geometry CylinderChartMap 

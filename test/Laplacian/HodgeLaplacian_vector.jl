@@ -171,12 +171,12 @@ function hodge_laplacian_vector(
   biform_x((s,u),(t,v)) = (
                   ∫( (s*t)*meas_cf  )dΩ
                 - ∫( ∇(t)⋅(inv_metric_cf⋅u)*meas_cf  )dΩ
-                + ∫( curl(u)⋅(metric_cf⋅curl(v))*(1/meas_cf) )dΩ
+                + ∫( curl(u)⋅(metric_cf⋅curl(v))*(1.0/meas_cf) )dΩ
                 + ∫( gradient(s)⋅(inv_metric_cf⋅v)*meas_cf )dΩ
                   )
   liform_x((t,v)) = (
                 ∫( rhs_cov_cf⋅(inv_metric_cf⋅v)*meas_cf  )dΩ
-                + ∫( v⋅( ( metric_cf⋅curlu_cf )×nΓ    )*(1/meas_cf)     )dΓ
+                + ∫( v⋅( ( metric_cf⋅curlu_cf )×nΓ    )*(1.0/meas_cf)     )dΓ
                 - ∫(( t*(u_cov_cf⋅(inv_metric_cf⋅nΓ)) )*(meas_cf)  )dΓ
                   )
 

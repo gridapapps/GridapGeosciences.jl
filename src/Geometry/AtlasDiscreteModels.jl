@@ -289,3 +289,90 @@ end
 function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
    model.atlas_grid.cell_ambient_maps.values[1].radius
 end
+
+## f is an scalar-valued ambient-space function
+function Δs(f::Function, 
+            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        P, 
+                                        C, 
+                                        O, 
+                                        <:IntrinsicManifold}}) where {Dc, Da, G, A, P, C, O}
+  # surflap(f::Function) = m -> surflap(f,m)
+  # surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
+  # W(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
+
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  f_cf = f∘ambient_map_cf
+  metric_cf = MetricCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  meas_cf = sqrt∘det∘metric_cf
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
+
+  ## BEGIN Machinery to compute gradient(meas_cf)
+  deriv_sqrt= x -> 0.5/sqrt(x)
+  function deriv_det(x)
+    Gridap.TensorValues.SymTensorValue(x[2,2],-x[2,1],x[1,1])
+  end
+  # v_l = A_ij * B_kij
+  # How to express this contraction in terms of tensor operations? 
+  function contract_rank_2_rank_3(A,B)
+    x1 = A[1,1]*B[1,1,1] + A[1,2]*B[1,1,2] + A[2,1]*B[1,2,1] + A[2,2]*B[1,2,2]
+    x2 = A[1,1]*B[2,1,1] + A[1,2]*B[2,1,2] + A[2,1]*B[2,2,1] + A[2,2]*B[2,2,2]
+   VectorValue(x1,x2)
+  end
+  grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*
+                       Operation(contract_rank_2_rank_3)(deriv_det∘metric_cf,gradient(metric_cf))
+  ## END Machinery to compute gradient(meas_cf)
+
+  ## BEGIN Machinery to compute gradient_gradient(f_cf)
+  # A_ij = v_k * B_ijk
+  # How to express this contraction in terms of Gridap's tensor operations? 
+  function contract_rank_1_rank_3(v,B)
+    x11 = v[1]*B[1,1,1] + v[2]*B[1,1,2] + v[3]*B[1,1,3]
+    x12 = v[1]*B[1,2,1] + v[2]*B[1,2,2] + v[3]*B[1,2,3]
+    x21 = v[1]*B[2,1,1] + v[2]*B[2,1,2] + v[3]*B[2,1,3]
+    x22 = v[1]*B[2,2,1] + v[2]*B[2,2,2] + v[3]*B[2,2,3]
+    TensorValue(x11,x21,x12,x22)
+  end
+  gradient_gradient_cf = ∇(ambient_map_cf)⋅(∇∇(f)∘ambient_map_cf)⋅covariant_basis_cf + 
+                          Operation(contract_rank_1_rank_3)(∇(f)∘ambient_map_cf,
+                                                            ∇∇(ambient_map_cf))
+  ## END Machinery to compute gradient_gradient(f_cf)
+
+  # w_cf = meas_cf*(inv_metric_cf⋅gradient_f_cf)
+  # divergence(w_cf) = 
+  #   grad(meas_cf)⋅( inv_metric_cf⋅gradient_f_cf ) + (1)
+  #   meas_cf*divergence(inv_metric_cf⋅gradient_f_cf) (2+3) = 
+  #   grad(meas_cf)⋅( inv_metric_cf⋅gradient_f_cf ) +   (1)
+  #   meas_cf*divergence(inv_metric_cf)⋅gradient_f_cf + (2)
+  #   meas_cf*(inv_metric_cf ⊙ gradient(gradient_f_cf)) (3)
+  div_wcf_first_term = grad_meas_cf⋅(inv_metric_cf⋅gradient_f_cf)
+  div_wcf_second_term = meas_cf*(divergence(inv_metric_cf)⋅gradient_f_cf)
+  div_wcf_third_term = meas_cf*(inv_metric_cf ⊙ gradient_gradient_cf)
+  div_wcf = div_wcf_first_term + div_wcf_second_term + div_wcf_third_term
+  1.0/meas_cf * div_wcf
+end
+
+function ∇s(f::Function, 
+            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        P, 
+                                        C, 
+                                        O, 
+                                        <:IntrinsicManifold}}) where {Dc, Da, G, A, P, C, O}
+  # sgrad(f::Function) = m -> sgrad(f,m)
+  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
+  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
+  covariant_basis_cf⋅(inv_metric_cf⋅gradient_f_cf)
+end 
+

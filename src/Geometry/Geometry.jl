@@ -64,7 +64,7 @@ export AmbientModels
 using Gridap
 using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
 using Gridap.Adaptivity, Gridap.Visualization
-import Gridap.TensorValues: symmetric_part, SymTensorValue
+import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue
 include("CoarseMeshes.jl")
 include("AtlasGrids.jl") 
 include("AtlasDiscreteModels.jl")
@@ -74,6 +74,8 @@ export IntrinsicManifold, ExtrinsicManifold
 export MetricCellField
 export InvMetricCellField
 export AmbientMapCellField
+export Δs
+export ∇s
 
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField

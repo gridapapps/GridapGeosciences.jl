@@ -12,9 +12,9 @@ if TESTCASE ∈ ("all", "seq", "seq-l2-projection")
   include("Projection/seq/runtests.jl")
 end
 
-#if TESTCASE ∈ ("all", "seq", "seq-laplacian")
-#  include("Laplacian/seq/runtests.jl")
-#end
+if TESTCASE ∈ ("all", "seq", "seq-laplacian")
+  include("Laplacian/seq/runtests.jl")
+end
 
 if TESTCASE ∈ ("all", "seq", "seq-geophysical")
   include("Geophysical/seq/runtests.jl")
