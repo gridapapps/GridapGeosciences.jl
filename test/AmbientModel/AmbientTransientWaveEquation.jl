@@ -26,17 +26,17 @@ end
 
 
 function transient_wave_solver(
-  ambient_model::Union{AmbientModels,CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel}},
+  extrinsic_atlas_model,
   p_fe::Int,dir::String,h::Function,vX::Function,CFL=0.1,ls=LUSolver(),tF=2*π;_i_am_main=true)
 
-  Dc = num_cell_dims(ambient_model)
-  lvl = nref(ambient_model)
+  Dc = num_cell_dims(extrinsic_atlas_model)
+  lvl = nref(extrinsic_atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   ## finite element solver
   degree = 5*(p_fe+1)
-  Ω_ambient = Triangulation(ambient_model)
+  Ω_ambient = Triangulation(extrinsic_atlas_model)
   dΩ = Measure(Ω_ambient,degree)
   dΩ_error = Measure(Ω_ambient,2*degree)
 
@@ -50,9 +50,7 @@ function transient_wave_solver(
   X = MultiFieldFESpace([U, P])
 
   ## initial conditions
-  h_cf = CellField(h,Ω_ambient)
-  u_cf = CellField(vX,Ω_ambient)
-  xh0 = interpolate([u_cf,h_cf],X)
+  xh0 = interpolate([vX,h],X)
   t0 = 0.0
 
 
@@ -65,7 +63,7 @@ function transient_wave_solver(
   opT = TransientSemilinearFEOperator(mass, res,(jac,jac_t), X, Y, constant_mass=true)
 
   # transient parameters
-  _dt = dx(ambient_model)*CFL/p_fe
+  _dt = dx(extrinsic_atlas_model)*CFL/p_fe
   nsteps = tF/ _dt
   dt = tF/floor(nsteps)
 

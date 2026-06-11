@@ -28,17 +28,17 @@ _T = T/_τ
 _u0 = u_0/L*_τ
 
 function linear_shallow_water_solver(
-  ambient_model::Union{AmbientModels,CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel},CubedSphereAmbientDistributedDiscreteModel{3,3,<:CubedSphereAmbientDiscreteModel}},
+  extrinsic_atlas_model,
   p_fe::Int,dir::String,h::Function,vX::Function,f::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
-  Dc = num_cell_dims(ambient_model)
-  lvl = nref(ambient_model)
+  Dc = num_cell_dims(extrinsic_atlas_model)
+  lvl = nref(extrinsic_atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   degree = 5*(p_fe+1)
-  Ω_ambient = Triangulation(ambient_model)
+  Ω_ambient = Triangulation(extrinsic_atlas_model)
   dΩ = Measure(Ω_ambient,degree)
   dΩ_error = Measure(Ω_ambient,2*degree)
 
@@ -51,17 +51,12 @@ function linear_shallow_water_solver(
   Y = MultiFieldFESpace([V, Q])
   X = MultiFieldFESpace([U, P])
 
-
-  h_cf = CellField(h,Ω_ambient)
-  u_cf = CellField(vX,Ω_ambient)
-  cor_cf = CellField(f,Ω_ambient)
-
-  p_int = interpolate(h_cf,P)
-  u_int = interpolate(u_cf,U)
+  p_int = interpolate(h,P)
+  u_int = interpolate(vX,U)
 
   ## Here we construct the coriolis term on the surface: ∫( ̃f ( ̃k × ̃u  )  )dΩ
   n_surf = get_surface_normal(Ω_ambient)
-  coriolis_term((u,p),(v,q)) = ∫( cor_cf*( ( n_surf × u)⋅v)  )dΩ
+  coriolis_term((u,p),(v,q)) = ∫( f*( ( n_surf × u)⋅v)  )dΩ
 
   ## construct bilinear form using coriolis_term
   biform_u((u,p),(v,q)) = ( ∫( u⋅v )dΩ
@@ -88,7 +83,7 @@ function linear_shallow_water_solver(
       return v -> _liformX(v)
     elseif Dc == 3
       # in 3D, account for the boundary term from IBP
-      Γ = BoundaryTriangulation(ambient_model;tags=["bottom_boundary","top_boundary"])
+      Γ = BoundaryTriangulation(extrinsic_atlas_model;tags=["bottom_boundary","top_boundary"])
       dΓ = Measure(Γ,degree)
       nΓ = get_normal_vector(Γ)
       boundary((v,q)) = ∫( (v⋅nΓ)*p_int )dΓ
@@ -100,14 +95,14 @@ function linear_shallow_water_solver(
   op = AffineFEOperator(biformX,get_liform(Dc),X,Y)
   uh,ph = solve(ls,op)
 
-  _e = u_cf - uh
+  _e = vX - uh
   e_u =  sqrt(sum(∫( _e⋅_e )dΩ_error))
 
-  _e = h_cf - ph
+  _e = h - ph
   e_p = sqrt(sum(∫( _e*_e )dΩ_error))
 
   if return_vtk
-    panel_cfs = [ph, uh, uh-u_cf,ph-h_cf]
+    panel_cfs = [ph, uh, uh-vX,ph-h]
     labels = ["p","u_proj","eu","ep"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
     writevtk(Ω_ambient,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_D$Dc",

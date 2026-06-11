@@ -162,7 +162,7 @@ end
 ########## 3D ########
 ################################################################################
 # unit normal
-normal_vec(XYZ) = 1/sqrt(XYZ[1]*XYZ[1] + XYZ[2]*XYZ[2] + XYZ[3]*XYZ[3])*VectorValue(XYZ[1],XYZ[2],XYZ[3])
+normal_vec(XYZ) = 1.0/sqrt(XYZ[1]*XYZ[1] + XYZ[2]*XYZ[2] + XYZ[3]*XYZ[3])*VectorValue(XYZ[1],XYZ[2],XYZ[3])
 
 
 ## IMPORTANT NOTE: We cannot annotate γαβ as a VectorValue{3} because Forward AD

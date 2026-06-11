@@ -16,36 +16,33 @@ import GridapGeosciences.Geometry: ParametricModels
 import GridapGeosciences.Geometry: AmbientModels
 
 function compute_surface_area(
-  ambient_model::Union{AmbientModels,CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel}},
+  ambient_model::AtlasDiscreteModel{2,3},
   degree::Int)
   Ω = Triangulation(ambient_model)
   dΩ = Measure(Ω,degree)
-
   surface_area = sum( ∫( 1.0 )dΩ )
   return surface_area
 end
 
 function compute_surface_area(
-  model::Union{ParametricModels,CubedSphere2DParametricDistributedDiscreteModel},
+  model::AtlasDiscreteModel{2,2},
   degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
-
-  meas_cf = ParametricCellField(sqrtg,Ω)
+  meas_cf = MeasureCellField(Ω)
   surface_area = sum( ∫( 1.0*meas_cf )dΩ )
   return surface_area
 end
 
 
-function main(ambient_models::AbstractArray;_i_am_main=true)
+function main(parametric_models::AbstractArray,ambient_models::AbstractArray;_i_am_main=true)
   for degree in collect([2,4,6,8])
-    for (ambient_model) in ambient_models
-      panel_model = get_parametric_model(ambient_model)
-      radius = get_radius(panel_model)
+    for (parametric_model,ambient_model) in zip(parametric_models,ambient_models)
+      radius = get_radius(parametric_model)
       extact_area = 4*π*radius^2
 
-      ### panel_model
-      panel_area = compute_surface_area(panel_model, degree)
+      ### parametric_model
+      panel_area = compute_surface_area(parametric_model, degree)
       e_panel = abs(panel_area-extact_area)/extact_area
       _i_am_main && println("Parametric error:", e_panel)
       @test e_panel < 1e-2
@@ -61,7 +58,6 @@ function main(ambient_models::AbstractArray;_i_am_main=true)
       @test e_comparison < 1e-12
     end
   end
-
 end
 
 

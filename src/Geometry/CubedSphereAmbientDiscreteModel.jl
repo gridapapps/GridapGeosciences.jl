@@ -142,6 +142,14 @@ function get_surface_normal(trian::BodyFittedTriangulation{Dc,3,<:CubedSphereAmb
   change_domain(ns,DomainStyle(ns),ReferenceDomain())
 end
 
+function get_surface_normal(trian::BodyFittedTriangulation{Dc,3,<:AtlasDiscreteModel}) where {Dc}
+  ns = CellField(normal_vec,trian)
+  ## This cellfield is, by default, on the physical domain
+  ## Change to the reference domain. Recall the ambient model has junk nodes
+  ## So being on the reference domain means the evaluatation at pts is via ref points
+  change_domain(ns,DomainStyle(ns),ReferenceDomain())
+end
+
 function get_surface_normal(trian::BodyFittedTriangulation{Dc,Dp,<:CubedSphereParametricDiscreteModel}) where {Dc,Dp}
   @notimplemented """\n get_surface_normal not defined for parametric models
   """
