@@ -80,7 +80,7 @@ export ∇s
 
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
-export CubedSphereMesh, CubedSphereMap, CubedSphereMetricField, CubedSphereInvMetricField
+export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
 export get_atlas_grid
 export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
 export get_coarse_mesh

@@ -117,24 +117,17 @@ end
 
 
 function get_ambient_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
-
-  ambient_model = coarse_ambient_model(radius)
-  model0 = ambient_model
-
-  ambient_models = Vector{AmbientModels}(undef,n_ref_lvls)
-  for n in n_ref_lvls:-1:1
-    ambient_model = Gridap.Adaptivity.refine(ambient_model)
-    ambient_models[n] = ambient_model
+  coarse_mesh = CubedSphereMesh(radius)
+  models = Vector{AtlasDiscreteModel{2,3}}(undef,n_ref_lvls)
+  for (i,n) in enumerate(n_ref_lvls:-1:1)
+    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=ExtrinsicManifold())
+    models[i] = model
   end
-
   if coarse_model
-    push!(ambient_models,model0)
+    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=ExtrinsicManifold()))
   end
-  ambient_models
-
+  models
 end
-
-
 
 """
 get_surface_normal

@@ -19,17 +19,12 @@ e_ambient, = AmbientHodgeLaplacianScalarTests.hodge_laplacian_scalar(
 
 
 include("../../Laplacian/HodgeLaplacian_scalar.jl")
-function fX_ambient(forward_map)
-  function _f(αβ)
-    x = forward_map(αβ)
-    AmbientHodgeLaplacianScalarTests.fX(x)
-  end
-end
 
-panel_model = get_parametric_model(ambient_model)
+intrinsic_models = get_refined_models(n_ref_lvls,radius)
+intrinsic_model = intrinsic_models[1]
 e_panel, = HodgeLaplacianScalarTests.hodge_laplacian_scalar(
-              panel_model,p_fe,dir,
-              fX_ambient)
+              intrinsic_model,p_fe,dir,
+              AmbientHodgeLaplacianScalarTests.fX)
 
 e_comparison = e_ambient - e_panel
 println(e_comparison)

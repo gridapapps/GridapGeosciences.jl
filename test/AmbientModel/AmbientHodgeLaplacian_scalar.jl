@@ -22,12 +22,12 @@ end
 
 
 function hodge_laplacian_scalar(
-  ambient_model::Union{AmbientModels,CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel},CubedSphereAmbientDistributedDiscreteModel{3,3,<:CubedSphereAmbientDiscreteModel}},
+  extrinsic_ambient_model,
   p_fe::Int,dir::String,f::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
-  Dc = num_cell_dims(ambient_model)
-  lvl = nref(ambient_model)
+  Dc = num_cell_dims(extrinsic_ambient_model)
+  lvl = nref(extrinsic_ambient_model)
  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
   degree = 4*(p_fe+1)
@@ -36,7 +36,7 @@ function hodge_laplacian_scalar(
   end
   @check degree > 0 "Zero quad!!"
 
-  Ω_ambient = Triangulation(ambient_model)
+  Ω_ambient = Triangulation(extrinsic_ambient_model)
   dΩ = Measure(Ω_ambient,degree)
   dΩ_error = Measure(Ω_ambient,2*degree)
 
@@ -55,9 +55,8 @@ function hodge_laplacian_scalar(
   X = MultiFieldFESpace([U, P])
 
   # manufactured RHS
-  f_ambient_cf = CellField(f,Ω_ambient)
-  sigma_cf = AmbientCellField(ambient_sgrad(f),Ω_ambient)
-  slap_cf = AmbientCellField(ambient_surflap(f),Ω_ambient)
+  sigma_cf = ∇s(f,Ω_ambient)
+  slap_cf = Δs(f,Ω_ambient)
   rhs_cf = -slap_cf
 
   f_int = interpolate(f,P)
@@ -73,13 +72,13 @@ function hodge_laplacian_scalar(
 
     # the manufactured solution
     _liformX((v,q)) = ∫( (rhs_cf*q) )dΩ
-    # _liformX((v,q)) = biformX((-sigma_cf,f_ambient_cf),(v,q))
+    # _liformX((v,q)) = biformX((-sigma_cf,f),(v,q))
 
     if Dc == 2
       return v -> _liformX(v)
     elseif Dc == 3
       # in 3D, account for the boundary term from IBP
-      Γ = BoundaryTriangulation(ambient_model;tags=["bottom_boundary","top_boundary"])
+      Γ = BoundaryTriangulation(extrinsic_ambient_model;tags=["bottom_boundary","top_boundary"])
       dΓ = Measure(Γ,degree)
       nΓ = get_normal_vector(Γ)
       boundary((v,q)) = ∫( -f_int*(v⋅nΓ) )dΓ
@@ -97,7 +96,7 @@ function hodge_laplacian_scalar(
   xh = FEFunction(X,x)
   uh,ph = xh
 
-  _e = f_ambient_cf - ph
+  _e = f - ph
   el2_p = sqrt(sum(∫( _e*_e  )dΩ_error))
 
   _e = uh - (- sigma_cf ) ### u = -∇p
@@ -109,9 +108,9 @@ function hodge_laplacian_scalar(
     cellfields =  ["u"=> -sigma_cf ,
     "uh"=>uh,
     "eu"=> uh - (-sigma_cf),
-    "ph"=>ph, "p"=>f_ambient_cf, "e"=>ph-f_ambient_cf
+    "ph"=>ph, "p"=>f, "e"=>ph-f
                   ]
-    writevtk(Ω_ambient,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk(Ω_ambient,dir*"/extrinsic_ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
 

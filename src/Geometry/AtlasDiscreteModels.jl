@@ -290,6 +290,26 @@ function AmbientMapCellField(
   Gridap.CellData.GenericCellField(get_cell_ambient_maps(model), trian, Gridap.CellData.PhysicalDomain())
 end
 
+# Right now only supported by AtlasDiscreteModel of the sphere
+function InvAmbientMapCellField(
+    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        <:AbstractVector{<:CubedSphereMap}, 
+                                        C, 
+                                        O, 
+                                        <:ExtrinsicManifold}}) where {Dc,Da,G,A,C,O}
+  model = Gridap.Geometry.get_background_model(trian)
+  cell_ambient_maps = get_cell_ambient_maps(model)
+  ptrs = cell_ambient_maps.ptrs 
+  ambient_maps = cell_ambient_maps.values
+  radius = ambient_maps[1].radius
+  inv_ambient_maps = [CubedSphereInvMap(panel, radius) for panel in 1:length(ambient_maps)]
+  cell_inv_ambient_maps = CompressedArray(inv_ambient_maps, ptrs)
+  Gridap.CellData.GenericCellField(cell_inv_ambient_maps, trian, Gridap.CellData.PhysicalDomain())
+end
+
 function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
    model.atlas_grid.cell_ambient_maps.values[1].radius
 end
@@ -385,6 +405,31 @@ function Δs(f::Function,
     use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
 end
 
+function _compose(parametric_space_quantity, inv_ambient_map_cell_field)
+    # Not able to do Δs_parametric_space ∘ InvAmbientMapCellField(Ω_atlas) with Gridap
+    # I perform the composition manually with lazy_map below as a workaround.
+    parametric_space_data = Gridap.CellData.get_data(parametric_space_quantity)
+    inv_ambient_map_data = Gridap.CellData.get_data(inv_ambient_map_cell_field)
+    composed_data = lazy_map(∘, parametric_space_data, inv_ambient_map_data)
+    CellData.GenericCellField(composed_data, 
+                              Gridap.Geometry.get_triangulation(inv_ambient_map_cell_field), 
+                              Gridap.CellData.PhysicalDomain())
+end
+
+function Δs(f::Function, 
+            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        P, 
+                                        C, 
+                                        O, 
+                                        <:ExtrinsicManifold}};
+                                        use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+    Δs_parametric_space = use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
+    _compose(Δs_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
 function _∇s_no_ad(f, Ω_atlas)
   # sgrad(f::Function) = m -> sgrad(f,m)
   # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
@@ -418,5 +463,19 @@ function ∇s(f::Function,
                                         <:IntrinsicManifold}};
                                         use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+end 
+
+function ∇s(f::Function, 
+            Ω_atlas::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+                                        Da, 
+                                        G, 
+                                        A, 
+                                        P, 
+                                        C, 
+                                        O, 
+                                        <:ExtrinsicManifold}};
+                                        use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end 
 
