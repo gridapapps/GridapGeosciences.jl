@@ -342,29 +342,17 @@ function _Δs_no_ad(f, Ω_atlas)
     Gridap.TensorValues.SymTensorValue(x[2,2],-x[2,1],x[1,1])
   end
   # v_l = A_ij * B_kij
-  # How to express this contraction in terms of tensor operations? 
-  function contract_rank_2_rank_3(A,B)
-    x1 = A[1,1]*B[1,1,1] + A[1,2]*B[1,1,2] + A[2,1]*B[1,2,1] + A[2,2]*B[1,2,2]
-    x2 = A[1,1]*B[2,1,1] + A[1,2]*B[2,1,2] + A[2,1]*B[2,2,1] + A[2,2]*B[2,2,2]
-   VectorValue(x1,x2)
-  end
+  cpAB = (A,B)->contracted_product(Val(2), A, permutedims(B,(2,3,1)))
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*
-                       Operation(contract_rank_2_rank_3)(deriv_det∘metric_cf,gradient(metric_cf))
+                   Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
   ## END Machinery to compute gradient(meas_cf)
 
   ## BEGIN Machinery to compute gradient_gradient(f_cf)
   # A_ij = v_k * B_ijk
-  # How to express this contraction in terms of Gridap's tensor operations? 
-  function contract_rank_1_rank_3(v,B)
-    x11 = v[1]*B[1,1,1] + v[2]*B[1,1,2] + v[3]*B[1,1,3]
-    x12 = v[1]*B[1,2,1] + v[2]*B[1,2,2] + v[3]*B[1,2,3]
-    x21 = v[1]*B[2,1,1] + v[2]*B[2,1,2] + v[3]*B[2,1,3]
-    x22 = v[1]*B[2,2,1] + v[2]*B[2,2,2] + v[3]*B[2,2,3]
-    TensorValue(x11,x21,x12,x22)
-  end
+  cpvB=(v,B)->contracted_product(Val(1), v, permutedims(B,(3,1,2)))
   gradient_gradient_cf = ∇(ambient_map_cf)⋅(∇∇(f)∘ambient_map_cf)⋅covariant_basis_cf + 
-                          Operation(contract_rank_1_rank_3)(∇(f)∘ambient_map_cf,
-                                                            ∇∇(ambient_map_cf))
+                                            Operation(cpvB)(∇(f)∘ambient_map_cf,
+                                            ∇∇(ambient_map_cf))
   ## END Machinery to compute gradient_gradient(f_cf)
 
   # w_cf = meas_cf*(inv_metric_cf⋅gradient_f_cf)

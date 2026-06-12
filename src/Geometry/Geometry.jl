@@ -63,7 +63,7 @@ export AmbientModels
 using Gridap
 using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
 using Gridap.Adaptivity, Gridap.Visualization
-import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue
+import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
 include("CoarseMeshes.jl")
 include("AtlasGrids.jl") 
 include("AtlasDiscreteModels.jl")
