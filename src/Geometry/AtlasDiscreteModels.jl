@@ -479,3 +479,42 @@ function ∇s(f::Function,
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end 
 
+function get_surface_normal(trian::BodyFittedTriangulation{Dc,3,<:AtlasDiscreteModel}) where {Dc}
+  ns = CellField(normal_vec,trian)
+  ## This cellfield is, by default, on the physical domain
+  ## Change to the reference domain. Recall the ambient model has junk nodes
+  ## So being on the reference domain means the evaluatation at pts is via ref points
+  change_domain(ns,DomainStyle(ns),ReferenceDomain())
+end
+
+
+function get_refined_models(n_ref_lvls::Int,
+                            radius::Real,
+                            coarse_model=false)
+  coarse_mesh = CubedSphereMesh(radius)
+  models = Vector{AtlasDiscreteModel{2,2}}(undef,n_ref_lvls)
+  for (i,n) in enumerate(n_ref_lvls:-1:1)
+    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=IntrinsicManifold())
+    models[i] = model
+  end
+  if coarse_model
+    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=IntrinsicManifold()))
+  end
+  models
+end
+
+function get_ambient_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
+  coarse_mesh = CubedSphereMesh(radius)
+  models = Vector{AtlasDiscreteModel{2,3}}(undef,n_ref_lvls)
+  for (i,n) in enumerate(n_ref_lvls:-1:1)
+    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=ExtrinsicManifold())
+    models[i] = model
+  end
+  if coarse_model
+    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=ExtrinsicManifold()))
+  end
+  models
+end
+
+
+

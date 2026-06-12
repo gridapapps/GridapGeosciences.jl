@@ -144,20 +144,6 @@ returns an array of refined serial models where
 
 const ParametricModels{Dc,Dp} = Union{CubedSphereParametricDiscreteModel{Dc,Dp},AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel}}
 
-function get_refined_models(n_ref_lvls::Int,
-                            radius::Real,
-                            coarse_model=false)
-  coarse_mesh = CubedSphereMesh(radius)
-  models = Vector{AtlasDiscreteModel{2,2}}(undef,n_ref_lvls)
-  for (i,n) in enumerate(n_ref_lvls:-1:1)
-    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=IntrinsicManifold())
-    models[i] = model
-  end
-  if coarse_model
-    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=IntrinsicManifold()))
-  end
-  models
-end
 
 """
 perp

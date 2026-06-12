@@ -49,7 +49,6 @@ export _pushforward_normal
 export _pullback_area_form
 
 export get_radius, get_thickness
-export get_refined_models, get_ambient_refined_models
 export get_inverse_map_generator
 export get_parametric_model
 export get_surface_normal
@@ -85,5 +84,7 @@ export get_atlas_grid
 export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
 export get_coarse_mesh
 export JtJ
+export get_refined_models, get_ambient_refined_models
+
 
 end
