@@ -332,7 +332,7 @@ end
 # ----------------------------------------------------------
 
 Gridap.Geometry.OrientationStyle(
-  ::Type{<:AtlasGrid{Dc,Da,G,A,P,C,O,M}}) where {Dc,Da,G,A,P,C,O,M} = O()
+  ::Type{<:AtlasGrid{Dc,Da,Dp,G,A,P,C,O,M}}) where {Dc,Da,Dp,G,A,P,C,O,M} = O()
 
 Gridap.Geometry.num_cells(g::AtlasGrid) = Gridap.Geometry.num_cells(g.param_grid)
 

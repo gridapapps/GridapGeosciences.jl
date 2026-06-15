@@ -9,14 +9,11 @@ using FillArrays
 
 include("CubedSphereForwardMap.jl")
 include("CubedSphereInverseMap.jl")
-include("MatMultField.jl")
-include("AffineField.jl")
 include("Cartesian2SphericalMap.jl")
 
 export CubedSphereForwardMap,  ForwardMap2DGenerator, ForwardMap3DGenerator
 export CubedSphereInverseMap, InverseMap2DGenerator, InverseMap3DGenerator
 export _evaluate_forward_jacobian_2d, _evaluate_forward_jacobian_3d
-export MatMultField, MyAffineField
 export Cartesian2SphericalMap
 export J, normal_vec
 

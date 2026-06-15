@@ -6,8 +6,10 @@ end
 
 # TO-DO: decide better name (???)
 function setup_panel_cmaps(cube_cmaps, panel_ids)
-  cube2panel_map = lazy_map(p->MatMultField( A_cube2panel[p] ), panel_ids)
-  panel_cmaps = lazy_map(∘,cube2panel_map,cube_cmaps)
+  # I removed MatMultField .... I do not think we will needed it. 
+  # This is why I commented it out.  
+  # cube2panel_map = lazy_map(p->MatMultField( A_cube2panel[p] ), panel_ids)
+  # panel_cmaps = lazy_map(∘,cube2panel_map,cube_cmaps)
 end
 
 function parametric_model(cube_model, radius)

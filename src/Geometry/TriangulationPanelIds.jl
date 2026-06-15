@@ -1,3 +1,4 @@
+
 function get_panel_ids(atrian::AdaptedTriangulation)
   get_panel_ids(atrian.trian)
 end

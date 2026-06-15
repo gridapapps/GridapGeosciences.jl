@@ -84,6 +84,8 @@ Gridap.Geometry.get_cell_map(m::AtlasDiscreteModel)      = get_cell_map(m.atlas_
 Gridap.Geometry.get_grid_topology(m::AtlasDiscreteModel) = m.grid_topology
 Gridap.Geometry.get_face_labeling(m::AtlasDiscreteModel) = m.face_labeling
 Gridap.Geometry.num_point_dims(m::AtlasDiscreteModel)    = num_point_dims(get_grid(m))
+Gridap.Geometry.num_point_dims(m::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp} = num_point_dims(m.model)
+
 
 # ----------------------------------------------------------
 # Custom API
@@ -257,6 +259,13 @@ function MetricCellField(
 end
 
 function MetricCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = MetricCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function MetricCellField(
     trian ::  Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
@@ -275,8 +284,25 @@ function MetricCellField(
   SkeletonPair(plus,minus)
 end
 
+function MetricCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation{Dc,Dp,
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
+) where {Dc,Dp}
+  plus  = MetricCellField(trian.trian.plus)
+  minus = MetricCellField(trian.trian.minus)
+  SkeletonPair(plus,minus)
+end
+
 function MeasureCellField(trian :: BFTATDM{Dc,Dp}) where {Dc,Dp}
     sqrt∘det∘MetricCellField(trian)
+end
+
+function MeasureCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = MeasureCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function MeasureCellField(
@@ -296,6 +322,16 @@ function MeasureCellField(
   SkeletonPair(plus,minus)
 end
 
+function MeasureCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation{Dc,Dp,
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
+) where {Dc,Dp}
+  plus  = MeasureCellField(trian.trian.plus)
+  minus = MeasureCellField(trian.trian.minus)
+  SkeletonPair(plus,minus)
+end
+
 """
     InvMetricCellField(trian)
 
@@ -309,6 +345,13 @@ function InvMetricCellField(
 ) where {Dc,Dp}
   model = Gridap.Geometry.get_background_model(trian)
   Gridap.CellData.GenericCellField(get_cell_inv_metric(model), trian, Gridap.CellData.PhysicalDomain())
+end
+
+function InvMetricCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = InvMetricCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function InvMetricCellField(
@@ -330,11 +373,28 @@ function InvMetricCellField(
   SkeletonPair(plus,minus)
 end
 
+function InvMetricCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation{Dc,Dp,
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
+) where {Dc,Dp}
+  plus  = InvMetricCellField(trian.trian.plus)
+  minus = InvMetricCellField(trian.trian.minus)
+  SkeletonPair(plus,minus)
+end
+
 function AmbientMapCellField(
     trian :: BFTATDM{Dc,Dp},
 ) where {Dc,Dp}
   model = Gridap.Geometry.get_background_model(trian)
   Gridap.CellData.GenericCellField(get_cell_ambient_maps(model), trian, Gridap.CellData.PhysicalDomain())
+end
+
+function AmbientMapCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = AmbientMapCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function AmbientMapCellField(
@@ -356,14 +416,38 @@ function AmbientMapCellField(
   SkeletonPair(plus,minus)
 end
 
+function AmbientMapCellField(
+    trian :: AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation{Dc,Dp,
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
+) where {Dc,Dp}
+  plus  = AmbientMapCellField(trian.trian.plus)
+  minus = AmbientMapCellField(trian.trian.minus)
+  SkeletonPair(plus,minus)
+end
+
 # Right now only supported by AtlasDiscreteModel of the sphere
 function InvAmbientMapCellField(
-    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc,Da, 
-                                        G, 
-                                        A, 
-                                        <:AbstractVector{<:CubedSphereMap}, 
-                                        C, 
-                                        O, 
+    trian :: AdaptedTriangulation{Dc,Da,<:Gridap.Geometry.BodyFittedTriangulation{Dc,Da,
+                                        <:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:CubedSphereMap},
+                                        C,
+                                        O,
+                                        <:ExtrinsicManifold}}},
+) where {Dc,Da,G,A,C,O}
+  cf = InvAmbientMapCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function InvAmbientMapCellField(
+    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:CubedSphereMap},
+                                        C,
+                                        O,
                                         <:ExtrinsicManifold}}) where {Dc,Da,G,A,C,O}
   model = Gridap.Geometry.get_background_model(trian)
   cell_ambient_maps = get_cell_ambient_maps(model)
@@ -378,6 +462,11 @@ end
 function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
    model.atlas_grid.cell_ambient_maps.values[1].radius
 end
+
+function get_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_radius(model.model)
+end
+
 
 function _fm(f, m)
    function fm(m)
@@ -445,8 +534,14 @@ function _Δs_ad(f, Ω_atlas)
 end
 
 ## f is an scalar-valued ambient-space function
-function Δs(f::Function, 
+function Δs(f::Function,
             Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+    use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
+end
+
+function Δs(f::Function,
+            Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
     use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
 end
@@ -462,8 +557,15 @@ function _compose(parametric_space_quantity, inv_ambient_map_cell_field)
                               Gridap.CellData.PhysicalDomain())
 end
 
-function Δs(f::Function, 
+function Δs(f::Function,
             Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+    Δs_parametric_space = use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
+    _compose(Δs_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+function Δs(f::Function,
+            Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
     Δs_parametric_space = use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
     _compose(Δs_parametric_space, InvAmbientMapCellField(Ω_atlas))
@@ -491,14 +593,27 @@ function _∇s_ad(f, Ω_atlas)
 end 
 
 
-function ∇s(f::Function, 
+function ∇s(f::Function,
             Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
-end 
+end
 
-function ∇s(f::Function, 
+function ∇s(f::Function,
+            Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
+            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+end
+
+function ∇s(f::Function,
             Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+function ∇s(f::Function,
+            Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
@@ -516,10 +631,20 @@ function get_refined_models(n_ref_lvls,
                             coarse_mesh,
                             manifold_style,
                             coarse_model=false)
-  models = Vector{AtlasDiscreteModel}(undef,n_ref_lvls)
-  for (i,n) in enumerate(n_ref_lvls:-1:1)
-    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=manifold_style)
-    models[i] = model
+#   models = Vector{DiscreteModel}(undef,n_ref_lvls)
+#   for (i,n) in enumerate(n_ref_lvls:-1:1)
+#     model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=manifold_style)
+#     models[i] = model
+#   end
+#   if coarse_model
+#     push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=manifold_style))
+#   end
+#   models
+  model = AtlasDiscreteModel(coarse_mesh, 0; manifold_style=manifold_style)
+  models = Vector{DiscreteModel}(undef,n_ref_lvls)
+  for n in n_ref_lvls:-1:1
+    model = Gridap.Adaptivity.refine(model)
+    models[n] = model
   end
   if coarse_model
     push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=manifold_style))
@@ -546,6 +671,77 @@ function get_extrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
                                                    radius::Real,
                                                    coarse_model=false)
   get_cubed_sphere_refined_models(n_ref_lvls, radius, ExtrinsicManifold(), coarse_model)
+end
+
+"""
+    Gridap.Adaptivity.refine(model::AtlasDiscreteModel) -> AdaptedDiscreteModel
+
+Uniformly refine `model` once and return an `AdaptedDiscreteModel` wrapping the
+refined `AtlasDiscreteModel` together with its parent and the refinement glue.
+
+The refined atlas grid inherits ambient maps and metric from each parent cell.
+New per-cell chart coordinates are obtained by composing the parent-cell's
+ref-to-chart map with the sub-cell reference positions from the refinement rule,
+exactly as in `_build_atlas_grid`.
+"""
+function Gridap.Adaptivity.refine(model::AtlasDiscreteModel{Dc}, args...; kwargs...) where Dc
+  g = model.atlas_grid
+  n_old_cells = Gridap.Geometry.num_cells(g)
+
+  # Build an UnstructuredDiscreteModel from the current atlas components so that
+  # Gridap's refinement machinery (uniformly_refine + blocked_refinement_glue)
+  # operates on plain connectivity — same pattern as visualization_data.
+  fine_unstr = Gridap.Geometry.UnstructuredDiscreteModel(
+    Gridap.Geometry.UnstructuredGrid(g.param_grid),
+    Gridap.Geometry.UnstructuredGridTopology(model.grid_topology),
+    model.face_labeling,
+  )
+
+  # Refine the underlying model once (n_factor = 2) to get glue + refined topo/labeling
+  adapted          = Gridap.Adaptivity.refine(fine_unstr, 2)
+  glue             = adapted.glue
+  ref_model        = adapted.model
+  cell_to_old_cell = Vector{Int}(glue.n2o_faces_map[Dc + 1])
+
+  # Sub-cell reference coordinates from the (uniform) refinement rule
+  rrule      = glue.refinement_rules[1]
+  ref_cgrid  = Gridap.Adaptivity.get_ref_grid(rrule)
+  ref_coords = Gridap.Geometry.get_cell_coordinates(Gridap.Geometry.get_grid(ref_cgrid))
+  n_per_cell = Gridap.Geometry.num_cells(Gridap.Geometry.get_grid(ref_cgrid))
+
+  # Per-old-cell maps: ref-element → chart coordinates
+  reffe     = Gridap.Geometry.get_reffes(g)[1]
+  shapefuns = Gridap.ReferenceFEs.get_shapefuns(reffe)
+  Ψ_maps    = map(corners -> linear_combination(corners, shapefuns), g.cell_chart_coords)
+
+  # Tile ref_coords and apply the parent-cell Ψ map lazily.
+  # blocked_refinement_glue guarantees parent-major ordering, so child_ids
+  # cycles 1..n_per_cell once for every parent cell.
+  child_ids             = repeat(1:n_per_cell, n_old_cells)
+  ref_per_new_cell      = lazy_map(Reindex(ref_coords), child_ids)
+  cell_Ψ                = lazy_map(Reindex(Ψ_maps), cell_to_old_cell)
+  new_cell_chart_coords = lazy_map(evaluate, cell_Ψ, ref_per_new_cell)
+
+  # Inherit ambient maps and metric from parent cells
+  new_cell_ambient_maps = lazy_map(Reindex(g.cell_ambient_maps), cell_to_old_cell)
+  new_cell_metric       = lazy_map(Reindex(g.cell_metric),       cell_to_old_cell)
+
+  new_atlas_grid = AtlasGrid(
+    Gridap.Geometry.get_grid(ref_model),
+    new_cell_chart_coords,
+    new_cell_ambient_maps,
+    new_cell_metric,
+    Gridap.Geometry.OrientationStyle(g),
+    ManifoldStyle(g),
+  )
+
+  ref_atlas_model = AtlasDiscreteModel(
+    new_atlas_grid,
+    Gridap.Geometry.get_grid_topology(ref_model),
+    Gridap.Geometry.get_face_labeling(ref_model),
+  )
+
+  AdaptedDiscreteModel(ref_atlas_model, model, glue)
 end
 
 function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},

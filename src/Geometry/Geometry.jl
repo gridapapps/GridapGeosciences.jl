@@ -44,7 +44,6 @@ import Gridap.Geometry: TriangulationView
 import Gridap.Geometry: FaceToCellGlue, FaceCompressedVector, push_normal
 
 using GridapGeosciences.Fields
-import GridapGeosciences.Fields: MatMultField
 import GridapGeosciences.Fields: CubedSphereInverseMap
 
 using GridapGeosciences.Helpers

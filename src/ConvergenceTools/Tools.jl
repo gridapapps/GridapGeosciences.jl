@@ -52,22 +52,26 @@ returns the level of refinement
 """
 nref(nc) = Int(log2(sqrt(nc))) ## level of refinement
 
-function nref(model::Union{<:AtlasDiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
+function nref(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
   nref(nc(model))
 end
 
 const AtlasDiscreteModelCubedSphere3D = AtlasDiscreteModel{3,3,<:Any,<:Any,<:AbstractVector{<:CubedSphereWithThicknessMap}}
 
-function nref(model::Union{<:AtlasDiscreteModelCubedSphere3D,
+const AdaptedAtlasDiscreteModelCubedSphere3D = AdaptedDiscreteModel{3,3,<:AtlasDiscreteModelCubedSphere3D}
+
+const ATDMCS3D = Union{AtlasDiscreteModelCubedSphere3D,AdaptedAtlasDiscreteModelCubedSphere3D}
+
+function nref(model::Union{<:ATDMCS3D,
                            <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nref(nc_horizontal(model))
 end
 
 ## nc = num cells per panel
-function nc(model::Union{<:AtlasDiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
+function nc(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
   num_cells(model)/6
 end
-function nc(model::Union{<:AtlasDiscreteModelCubedSphere3D,
+function nc(model::Union{<:ATDMCS3D,
                          <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nc_horizontal(model) + _nc_vertical(model)
 end
@@ -79,7 +83,6 @@ end
 function nc_vertical(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) where T
   nc_vertical(get_parametric_model(model))
 end
-
 
 function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
 
@@ -105,7 +108,7 @@ function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
 end
 
 ## nc = num cells per panel in horizontal
-function nc_horizontal(model::AtlasDiscreteModelCubedSphere3D)
+function nc_horizontal(model::ATDMCS3D)
   ## find the number of cells that are on the surface.
   grid = get_grid(model)
   cmap = get_cell_map(grid)

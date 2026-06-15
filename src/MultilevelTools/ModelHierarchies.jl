@@ -21,7 +21,7 @@ function GridapSolvers.MultilevelTools.ModelHierarchy(
 end
 
 function GridapSolvers.MultilevelTools.ModelHierarchy(
-  coarse_model::CubedSphereParametricDiscreteModel,
+  coarse_model::AtlasDiscreteModel,
   n_ref_lvls::Int)
   println("gmg lvls = $(n_ref_lvls)")
 
@@ -33,9 +33,7 @@ function GridapSolvers.MultilevelTools.ModelHierarchy(
     model = Gridap.Adaptivity.refine(model)
     models[n] = model
   end
-
   return GridapSolvers.MultilevelTools.ModelHierarchy(models)
-
 end
 
 # function GridapSolvers.MultilevelTools.ModelHierarchy(models::Vector{<:GridapDistributed.DistributedDiscreteModel},glues::Vector{<:MPIArray})

@@ -1,10 +1,10 @@
-
-function pushforward_normal(trian::AdaptedTriangulation,cell_geo_map::AbstractArray)
-  cell_vectors = get_facet_normal(trian,cell_geo_map)
-  get_normal_vector(trian,cell_vectors)
+function pushforward_reference_normal(trian::AdaptedTriangulation)
+  pushforward_reference_normal(trian.trian)
 end
 
-Geometry.get_facet_normal(trian::AdaptedTriangulation,cell_geo_map::AbstractArray) = Geometry.get_facet_normal(trian.trian,cell_geo_map)
+function pushforward_parametric_normal(trian::AdaptedTriangulation)
+  pushforward_parametric_normal(trian.trian)
+end
 
 function pushforward_normal(trian::AdaptedTriangulation)
   pushforward_normal(trian.trian)
@@ -12,5 +12,7 @@ end
 
 function pullback_area_form(atrian::AdaptedTriangulation)
   cf = pullback_area_form(atrian.trian)
-  ParametricCellField(cf,atrian)
+  plus = GenericCellField(get_data(cf.plus),atrian,DomainStyle(cf.plus))
+  minus = GenericCellField(get_data(cf.minus),atrian,DomainStyle(cf.minus))
+  SkeletonPair(plus,minus)
 end
