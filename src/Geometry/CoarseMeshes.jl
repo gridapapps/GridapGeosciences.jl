@@ -631,6 +631,87 @@ function Gridap.Arrays.evaluate!(cache, f::FieldGradient{2,<:CubedSphereMap}, xs
   cache.array
 end
 
+# ── CubedSphereWithThicknessMap ───────────────────────────────────────────────
+#
+# 3D extension of CubedSphereMap for one panel of a spherical shell.
+#
+# Input:  (γ, α, β) ∈ [0,1] × [−π/4, π/4]²
+#   γ — normalised radial coordinate: γ=0 → inner sphere, γ=1 → outer sphere
+#   α, β — gnomonic chart angles (same as CubedSphereMap)
+# Output: (X, Y, Z) ∈ ℝ³
+#
+# Map:
+#   XYZ_surf = _csphere_eval(panel, radius, Point(α,β))
+#   φ(γ,α,β) = (1 + thickness·γ/radius) · XYZ_surf
+#
+# This follows the same extrusion as ForwardMap3D
+#   (φ_surf + thickness·γ·n,  n = XYZ_surf/radius)
+# but uses the explicit _csphere_eval / _csphere_jac kernels of CubedSphereMap
+# instead of forward-AD.
+#
+# Jacobian J[i,k] = ∂φ_k/∂x_i  (Gridap convention, stored in TensorValue{3,3}):
+#   J[1,k] = ∂φ_k/∂γ = (thickness/radius) · XYZ_surf[k]
+#   J[2,k] = ∂φ_k/∂α = (1 + thickness·γ/radius) · Jsurf[1,k]
+#   J[3,k] = ∂φ_k/∂β = (1 + thickness·γ/radius) · Jsurf[2,k]
+# where Jsurf = _csphere_jac(panel, radius, Point(α,β)).
+
+@inline function _csphere3d_eval(panel::Int, radius::Float64, thickness::Float64, x::Point{3})
+  γ, α, β  = x[1], x[2], x[3]
+  XYZ_surf = _csphere_eval(panel, radius, Point(α, β))
+  (1 + thickness * γ / radius) * XYZ_surf
+end
+
+@inline function _csphere3d_jac(panel::Int, radius::Float64, thickness::Float64, x::Point{3})
+  γ, α, β  = x[1], x[2], x[3]
+  αβ       = Point(α, β)
+  XYZ_surf = _csphere_eval(panel, radius, αβ)
+  Jsurf    = _csphere_jac(panel, radius, αβ)   # TensorValue{2,3,Float64}
+  t_over_r = thickness / radius
+  scale    = 1 + t_over_r * γ
+  # Column-major storage: column k = (J[1,k], J[2,k], J[3,k])
+  TensorValue{3,3,Float64}(
+    t_over_r * XYZ_surf[1], scale * Jsurf[1,1], scale * Jsurf[2,1],
+    t_over_r * XYZ_surf[2], scale * Jsurf[1,2], scale * Jsurf[2,2],
+    t_over_r * XYZ_surf[3], scale * Jsurf[1,3], scale * Jsurf[2,3],
+  )
+end
+
+struct CubedSphereWithThicknessMap <: Field
+  panel     :: Int
+  radius    :: Float64
+  thickness :: Float64
+end
+
+Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessMap, x::Point{3}) =
+  _csphere3d_eval(m.panel, m.radius, m.thickness, x)
+function Gridap.Arrays.return_cache(m::CubedSphereWithThicknessMap, xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, Point{3,Float64}))
+end
+function Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessMap, xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  p, r, t = m.panel, m.radius, m.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_eval(p, r, t, xs[i])
+  end
+  cache.array
+end
+
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CubedSphereWithThicknessMap},
+                                    xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, TensorValue{3,3,Float64}))
+end
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CubedSphereWithThicknessMap}, x::Point{3}) =
+  _csphere3d_jac(f.object.panel, f.object.radius, f.object.thickness, x)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CubedSphereWithThicknessMap},
+                                 xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  p, r, t = f.object.panel, f.object.radius, f.object.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_jac(p, r, t, xs[i])
+  end
+  cache.array
+end
+
 # ── CubedSphereInvMap ─────────────────────────────────────────────────────────
 #
 # Inverse of CubedSphereMap: gnomonic de-projection from a sphere point
@@ -868,6 +949,94 @@ end
 
 inverse_metric_field(f::CubedSphereMetricField) = CubedSphereInvMetricField(f.radius)
 
+# ── CubedSphereWithThicknessMetricField ───────────────────────────────────────
+#
+# Pullback metric g = JᵀJ for CubedSphereWithThicknessMap.
+#
+# Because φ(γ,α,β) = scale · φ_surf(α,β) with scale = 1 + thickness·γ/radius,
+# and φ_surf lies on a sphere so φ_surf ⊥ ∂φ_surf/∂α and φ_surf ⊥ ∂φ_surf/∂β,
+# the metric is block-diagonal:
+#
+#   g₁₁ = thickness²                                (pure γγ term)
+#   g₁₂ = g₁₃ = 0                                   (sphere orthogonality)
+#   g₂₂ = scale²·r²·sa²·sb/ρ⁴  = scale²·g_surf₁₁
+#   g₂₃ = −scale²·r²·a·b·sa·sb/ρ⁴ = scale²·g_surf₁₂
+#   g₃₃ = scale²·r²·sa·sb²/ρ⁴  = scale²·g_surf₂₂
+#
+# with a=tanα, b=tanβ, sa=1+a², sb=1+b², ρ²=1+a²+b², scale=1+thickness·γ/radius.
+#
+# Inverse (block-diagonal):
+#   h₁₁ = 1/thickness²
+#   h₁₂ = h₁₃ = 0
+#   h₂₂ = (1/scale²)·g_surf⁻¹₁₁ = ρ²·sb/(scale²·r²·sa·sb)
+#   h₂₃ = (1/scale²)·g_surf⁻¹₁₂ = ρ²·a·b/(scale²·r²·sa·sb)
+#   h₃₃ = (1/scale²)·g_surf⁻¹₂₂ = ρ²·sa/(scale²·r²·sa·sb)
+
+function _csphere3d_metric(radius::Float64, thickness::Float64, x::Point{3,T}) where T
+  γ, α, β = x[1], x[2], x[3]
+  a, b   = tan(α), tan(β)
+  sa, sb = 1 + a^2, 1 + b^2
+  ρ4     = (1 + a^2 + b^2)^2
+  s2     = (1 + thickness * γ / radius)^2
+  c      = radius^2 * sa * sb / ρ4
+  SymTensorValue{3,T,6}(
+    T(thickness^2), zero(T), zero(T),
+    s2*c*sa, -s2*c*a*b, s2*c*sb,
+  )
+end
+
+function _csphere3d_inv_metric(radius::Float64, thickness::Float64, x::Point{3,T}) where T
+  γ, α, β = x[1], x[2], x[3]
+  a, b   = tan(α), tan(β)
+  sa, sb = 1 + a^2, 1 + b^2
+  ρ2     = 1 + a^2 + b^2
+  s2     = (1 + thickness * γ / radius)^2
+  ci     = ρ2 / (radius^2 * sa * sb)
+  SymTensorValue{3,T,6}(
+    T(1 / thickness^2), zero(T), zero(T),
+    ci*sb/s2, ci*a*b/s2, ci*sa/s2,
+  )
+end
+
+struct CubedSphereWithThicknessMetricField <: Field
+  radius    :: Float64
+  thickness :: Float64
+end
+Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessMetricField, x::Point{3}) =
+  _csphere3d_metric(m.radius, m.thickness, x)
+function Gridap.Arrays.return_cache(m::CubedSphereWithThicknessMetricField, xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, SymTensorValue{3,Float64,6}))
+end
+function Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessMetricField, xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  r, t = m.radius, m.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_metric(r, t, xs[i])
+  end
+  cache.array
+end
+
+struct CubedSphereWithThicknessInvMetricField <: Field
+  radius    :: Float64
+  thickness :: Float64
+end
+Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessInvMetricField, x::Point{3}) =
+  _csphere3d_inv_metric(m.radius, m.thickness, x)
+function Gridap.Arrays.return_cache(m::CubedSphereWithThicknessInvMetricField, xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, SymTensorValue{3,Float64,6}))
+end
+function Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessInvMetricField, xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  r, t = m.radius, m.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_inv_metric(r, t, xs[i])
+  end
+  cache.array
+end
+
+inverse_metric_field(f::CubedSphereWithThicknessMetricField) =
+  CubedSphereWithThicknessInvMetricField(f.radius, f.thickness)
+
 # ── get_coarse_mesh(CubedSphereMesh) ─────────────────────────────────────────
 
 """
@@ -946,6 +1115,109 @@ function get_coarse_mesh(m::CubedSphereMesh)
   cell_chart_coords = fill(panel_corners, NPANELS)
   ambient_maps      = [CubedSphereMap(p, m.radius) for p in 1:NPANELS]
   metric_fields     = fill(CubedSphereMetricField(m.radius), NPANELS)
+
+  CoarseMeshInfo(model, cell_chart_coords, ambient_maps, metric_fields)
+end
+
+"""
+"""
+struct CubedSphereWithThicknessMesh <: CoarseMesh
+  radius :: Float64
+  thickness :: Float64
+  CubedSphereWithThicknessMesh(radius=1.0, thickness=0.1) = new(radius, thickness)
+end
+
+"""
+"""
+function get_coarse_mesh(m::CubedSphereWithThicknessMesh)
+  # Coordinate values are unused — AtlasGrid replaces them with cell_chart_coords.
+  # Any distinct values that give a valid non-degenerate mesh work here.
+  node_coords = Vector{Point{3,Float64}}([
+    Point(0.0, -1.0, -1.0),   # 1
+    Point(1.0, -1.0, -1.0),   # 2
+    Point(0.0,  1.0, -1.0),   # 3
+    Point(1.0,  1.0, -1.0),   # 4
+    Point(0.0, -2.0, -2.0),   # 5
+    Point(1.0, -2.0, -2.0),   # 6
+    Point(0.0,  2.0, -2.0),   # 7
+    Point(1.0,  2.0, -2.0),   # 8
+    Point(0.0, -2.0,  2.0),   # 9
+    Point(1.0, -2.0,  2.0),   # 10
+    Point(0.0,  2.0,  2.0),   # 11
+    Point(1.0,  2.0,  2.0),   # 12
+    Point(0.0,  1.0,  1.0),   # 13
+    Point(1.0,  1.0,  1.0),   # 14
+    Point(0.0, -1.0,  1.0),   # 15
+    Point(1.0, -1.0,  1.0),   # 16
+  ])
+
+  cell_node_data = Int32[1,2,3,4,5,6,7,8, 
+                         5,6,7,8,9,10,11,12, 
+                         3,4,13,14,7,8,11,12, 
+                         15,16,9,10,13,14,11,12, 
+                         1,2,15,16,3,4,13,14, 
+                         1,2,5,6,15,16,9,10]
+  cell_node_ptrs = Int32[1,9,17,25,33,41,49]
+  cell_node_ids  = Gridap.Arrays.Table(cell_node_data, cell_node_ptrs)
+  cell_types     = Int32[1,1,1,1,1,1]
+  reffe          = Gridap.ReferenceFEs.LagrangianRefFE(Float64, HEX, 1)
+  grid = Gridap.Geometry.UnstructuredGrid(
+    node_coords, cell_node_ids, [reffe], cell_types, Gridap.Geometry.Oriented())
+
+  topo   = Gridap.Geometry.UnstructuredGridTopology(grid)
+
+  # Four entity ids: interior=1, bottom_boundary=2, top_boundary=3, intermediate_boundary=4.
+  # Odd-indexed vertices are on the bottom (inner) shell; even-indexed on the top (outer) shell.
+  # Edges and 2D facets are tagged by their vertex parities; mixed-parity ones are intermediate.
+  labels = Gridap.Geometry.FaceLabeling(topo)
+
+  for v in 1:Gridap.Geometry.num_faces(topo, 0)
+    labels.d_to_dface_to_entity[1][v] = isodd(v) ? Int32(2) : Int32(3)
+  end
+
+  edge_to_vert = Gridap.Geometry.get_faces(topo, 1, 0)
+  for e in 1:Gridap.Geometry.num_faces(topo, 1)
+    vs = edge_to_vert[e]
+    if all(isodd(v) for v in vs)
+      labels.d_to_dface_to_entity[2][e] = Int32(2)
+    elseif all(iseven(v) for v in vs)
+      labels.d_to_dface_to_entity[2][e] = Int32(3)
+    else
+      labels.d_to_dface_to_entity[2][e] = Int32(4)
+    end
+  end
+
+  facet_to_vert = Gridap.Geometry.get_faces(topo, 2, 0)
+  for f in 1:Gridap.Geometry.num_faces(topo, 2)
+    vs = facet_to_vert[f]
+    if all(isodd(v) for v in vs)
+      labels.d_to_dface_to_entity[3][f] = Int32(2)
+    elseif all(iseven(v) for v in vs)
+      labels.d_to_dface_to_entity[3][f] = Int32(3)
+    else
+      labels.d_to_dface_to_entity[3][f] = Int32(4)
+    end
+  end
+
+  Gridap.Geometry.add_tag!(labels, "bottom_boundary",       [2])
+  Gridap.Geometry.add_tag!(labels, "top_boundary",          [3])
+  Gridap.Geometry.add_tag!(labels, "intermediate_boundary", [4])
+
+  model  = Gridap.Geometry.UnstructuredDiscreteModel(grid, topo, labels)
+
+  panel_corners = [
+    Point(0.0, -CUBE_HALF_EDGE, -CUBE_HALF_EDGE),   # BLB
+    Point(1.0, -CUBE_HALF_EDGE, -CUBE_HALF_EDGE),   # BLT
+    Point(0.0, CUBE_HALF_EDGE, -CUBE_HALF_EDGE),    # BRB
+    Point(1.0, CUBE_HALF_EDGE, -CUBE_HALF_EDGE),    # BRT
+    Point(0.0, -CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TLN
+    Point(1.0, -CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TLT
+    Point(0.0,  CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TRB
+    Point(1.0,  CUBE_HALF_EDGE,  CUBE_HALF_EDGE),   # TRT
+  ]
+  cell_chart_coords = fill(panel_corners, NPANELS)
+  ambient_maps      = [CubedSphereWithThicknessMap(p, m.radius, m.thickness) for p in 1:NPANELS]
+  metric_fields     = fill(CubedSphereWithThicknessMetricField(m.radius, m.thickness), NPANELS)
 
   CoarseMeshInfo(model, cell_chart_coords, ambient_maps, metric_fields)
 end

@@ -1,8 +1,4 @@
-transpose_jacobian(p) = x -> transpose(forward_jacobian(p)(x))
-covar_v_3D(vecX::Function,m) = αβ -> transpose_jacobian(m)(αβ) ⋅ vecX(m)(αβ)
-covar_v_3D(vecX::Function) = m -> covar_v_3D(vecX,m)
-
-function L2_projection_Hcurl(panel_model,
+function L2_projection_Hcurl(atlas_model,
                              p_fe::Int,
                              dir::String,
                              vecX::Function,
@@ -10,8 +6,8 @@ function L2_projection_Hcurl(panel_model,
                              return_vtk=true;
                              _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   @check Dc == 3
 
@@ -22,23 +18,25 @@ function L2_projection_Hcurl(panel_model,
 
   _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc; degree = $(degree)")
 
-  Ω_atlas = Triangulation(panel_model)
+  Ω_atlas = Triangulation(atlas_model)
   dΩ = Measure(Ω_atlas,degree)
   dΩ_error = Measure(Ω_atlas,2*degree)
 
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_atlas)
-  metric_cf = ParametricCellField(metric,Ω_atlas)
-  meas_cf = ParametricCellField(sqrtg,Ω_atlas)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   ## covariant components
-  vec_cov_cf = ParametricCellField(covar_v_3D(vecX),Ω_atlas)
-  vec_proj_cf = covariant_basis_cf⋅ ( inv_metric_cf ⋅ vec_cov_cf)
-
+  vec_cov_cf = ∇(ambient_map_cf)⋅(vecX∘ambient_map_cf)
+  vec_proj_cf = covariant_basis_cf⋅(inv_metric_cf⋅vec_cov_cf)
 
   reffe = ReferenceFE(nedelec,Float64,p_fe)
-  V = TestFESpace(panel_model, reffe; conformity=:Hcurl,dirichlet_tags=["top_boundary", "bottom_boundary"])
-  U = TrialFESpace(V,vec_cov_cf)
+  V = TestFESpace(atlas_model, reffe; 
+                  conformity=:Hcurl,
+                  dirichlet_tags=["top_boundary", "bottom_boundary"])
+  U = TrialFESpace(V, vec_cov_cf)
 
   ## interpolation
   uh_interp = interpolate(vec_cov_cf,U)
@@ -47,7 +45,7 @@ function L2_projection_Hcurl(panel_model,
 
 
   ## L2 projection
-  a(u,v) = ∫( u⋅( inv_metric_cf⋅v)*meas_cf )dΩ
+  a(u,v) = ∫( u⋅(inv_metric_cf⋅v)*meas_cf )dΩ
   l(v) = ∫( vec_cov_cf⋅(inv_metric_cf⋅v)*meas_cf )dΩ
   op = AffineFEOperator(a,l,U,V)
   uh_l2proj = solve(ls,op)
@@ -64,7 +62,6 @@ function L2_projection_Hcurl(panel_model,
     writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
-
   return  el2_proj,e_interp, false
 end
 

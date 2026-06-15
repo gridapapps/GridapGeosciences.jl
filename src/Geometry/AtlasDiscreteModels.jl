@@ -358,7 +358,7 @@ end
 
 # Right now only supported by AtlasDiscreteModel of the sphere
 function InvAmbientMapCellField(
-    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc, 
+    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc,Da, 
                                         G, 
                                         A, 
                                         <:AbstractVector{<:CubedSphereMap}, 
@@ -512,33 +512,40 @@ function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
   change_domain(ns,DomainStyle(ns),ReferenceDomain())
 end
 
-
-function get_intrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
-                            radius::Real,
+function get_refined_models(n_ref_lvls,
+                            coarse_mesh,
+                            manifold_style,
                             coarse_model=false)
-  coarse_mesh = CubedSphereMesh(radius)
-  models = Vector{AtlasDiscreteModel{2,2}}(undef,n_ref_lvls)
+  models = Vector{AtlasDiscreteModel}(undef,n_ref_lvls)
   for (i,n) in enumerate(n_ref_lvls:-1:1)
-    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=IntrinsicManifold())
+    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=manifold_style)
     models[i] = model
   end
   if coarse_model
-    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=IntrinsicManifold()))
+    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=manifold_style))
   end
   models
+end 
+
+function get_cubed_sphere_refined_models(n_ref_lvls::Int, 
+                                         radius::Real, 
+                                         manifold_style, 
+                                         coarse_model=false)
+  coarse_mesh = CubedSphereMesh(radius)
+  get_refined_models(n_ref_lvls, coarse_mesh, manifold_style, coarse_model)
 end
 
-function get_extrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
-  coarse_mesh = CubedSphereMesh(radius)
-  models = Vector{AtlasDiscreteModel{2,3}}(undef,n_ref_lvls)
-  for (i,n) in enumerate(n_ref_lvls:-1:1)
-    model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=ExtrinsicManifold())
-    models[i] = model
-  end
-  if coarse_model
-    push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=ExtrinsicManifold()))
-  end
-  models
+
+function get_intrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
+                                                   radius::Real,
+                                                   coarse_model=false)
+  get_cubed_sphere_refined_models(n_ref_lvls, radius, IntrinsicManifold(), coarse_model)
+end
+
+function get_extrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
+                                                   radius::Real,
+                                                   coarse_model=false)
+  get_cubed_sphere_refined_models(n_ref_lvls, radius, ExtrinsicManifold(), coarse_model)
 end
 
 function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},

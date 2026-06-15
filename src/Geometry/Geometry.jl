@@ -30,10 +30,13 @@ export ∇s
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
 export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
+export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap
+export CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
 export get_atlas_grid
 export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
 export get_coarse_mesh
 export JtJ
+export get_refined_models
 export get_intrinsic_cubed_sphere_refined_models, get_extrinsic_cubed_sphere_refined_models
 
 

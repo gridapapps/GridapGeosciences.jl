@@ -23,7 +23,7 @@ function p_convergence_auto_test(ps::Vector{Int},
   # 2^nref == number of cells per panel
   # 1/(2^nref) -> to get positive slopes
 
-  lvls = map(x->1/(2^nref(x)),models)
+  lvls = map(x->1.0/(2.0^nref(x)),models)
   # lvls = map(x->num_cells(x),models)
 
   for (i,p_fe) in enumerate(ps)
@@ -52,19 +52,23 @@ returns the level of refinement
 """
 nref(nc) = Int(log2(sqrt(nc))) ## level of refinement
 
-function nref(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
+function nref(model::Union{<:AtlasDiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
   nref(nc(model))
 end
 
-function nref(model::GridapDistributed.DistributedDiscreteModel{3,3})
+const AtlasDiscreteModelCubedSphere3D = AtlasDiscreteModel{3,3,<:Any,<:Any,<:AbstractVector{<:CubedSphereWithThicknessMap}}
+
+function nref(model::Union{<:AtlasDiscreteModelCubedSphere3D,
+                           <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nref(nc_horizontal(model))
 end
 
 ## nc = num cells per panel
-function nc(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
+function nc(model::Union{<:AtlasDiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
   num_cells(model)/6
 end
-function nc(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
+function nc(model::Union{<:AtlasDiscreteModelCubedSphere3D,
+                         <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nc_horizontal(model) + _nc_vertical(model)
 end
 
@@ -77,7 +81,6 @@ function nc_vertical(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) w
 end
 
 
-## nc = num cells per panel in horizontal
 function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
 
   grid = get_grid(model)
@@ -97,6 +100,19 @@ function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
   end
 
   nsurface = sum(f)
+  ncells_per_panel = Int(nsurface/6)
+  return ncells_per_panel
+end
+
+## nc = num cells per panel in horizontal
+function nc_horizontal(model::AtlasDiscreteModelCubedSphere3D)
+  ## find the number of cells that are on the surface.
+  grid = get_grid(model)
+  cmap = get_cell_map(grid)
+  pts = get_cell_ref_coordinates(grid)
+  f = lazy_map(evaluate,cmap,pts)
+  g = lazy_map(FindSurfaceCells(),f)
+  nsurface = sum(g)
   ncells_per_panel = Int(nsurface/6)
   return ncells_per_panel
 end
@@ -154,7 +170,7 @@ function dx(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDi
   sqrt(tmp)
 end
 
-function dx(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
+function dx(model::Union{<:DiscreteModel{3,3},<:GridapDistributed.GenericDistributedDiscreteModel{3,3}})
   horizontal = dx_horizontal(model)
   vertical = dx_vertical(model)
   horizontal*vertical

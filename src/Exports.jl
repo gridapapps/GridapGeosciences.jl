@@ -32,6 +32,7 @@ end
 @publish Geometry CubedSphere2DParametricDiscreteModel
 @publish Geometry CubedSphere3DParametricDiscreteModel
 @publish Geometry CubedSphereAmbientDiscreteModel
+@publish Geometry get_refined_models
 @publish Geometry get_intrinsic_cubed_sphere_refined_models
 @publish Geometry get_extrinsic_cubed_sphere_refined_models
 @publish Geometry get_inverse_map_generator
@@ -69,6 +70,8 @@ end
 @publish Geometry CubedSphereMap
 @publish Geometry CubedSphereMetricField
 @publish Geometry CubedSphereInvMetricField
+@publish Geometry CubedSphereWithThicknessMesh
+@publish Geometry CubedSphereWithThicknessMap
 
 @publish Geometry get_coarse_mesh
 @publish Geometry get_cell_ambient_maps
