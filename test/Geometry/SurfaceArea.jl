@@ -17,14 +17,12 @@ using Test
 function compute_surface_area(model, degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
-
-  meas_cf = ParametricCellField(sqrtg,Ω)
+  meas_cf = MeasureCellField(Ω)
   surface_area = sum( ∫( 1.0*meas_cf )dΩ )
   return surface_area
 end
 
 function main(serial_models::AbstractArray)
-
   for degree in collect([2,4,6,8])
     for (s_model) in serial_models
       radius = get_radius(s_model)

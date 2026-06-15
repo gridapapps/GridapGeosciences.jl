@@ -10,11 +10,11 @@ using Gridap
 using GridapGeosciences
 using Test
 
-radius = 1
+radius = 1.0
 n_ref_lvls = 1
-ambient_model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=n_ref_lvls)
-panel_model = get_parametric_model(ambient_model)
-
+coarse_mesh = CubedSphereMesh(radius)
+ambient_model = AtlasDiscreteModel(coarse_mesh,n_ref_lvls; manifold_style=ExtrinsicManifold())
+parametric_model = AtlasDiscreteModel(coarse_mesh,n_ref_lvls; manifold_style=IntrinsicManifold())
 
 ################################################################################
 ########## Ambient model
@@ -38,7 +38,7 @@ max_dif = map(x->maximum(norm.(x)),normal_component)
 ################################################################################
 ########## Parametric model
 ################################################################################
-Λ_panel = SkeletonTriangulation(panel_model)
+Λ_panel = SkeletonTriangulation(parametric_model)
 n_Λ_mapped = pushforward_normal(Λ_panel)
 pts_panel = get_cell_points(Λ_panel)
 

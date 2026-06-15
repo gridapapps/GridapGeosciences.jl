@@ -17,15 +17,13 @@ end
 @publish Geometry latlon_geo_map_func
 @publish Geometry pullback_area_form
 @publish Geometry pushforward_normal
-@publish Geometry get_facet_normal
-@publish Geometry get_mapped_facet_normal
+@publish Geometry pushforward_reference_normal
+@publish Geometry pushforward_parametric_normal
 @publish Geometry BoundaryTriangulation
 @publish Geometry SkeletonTriangulation
 @publish Geometry generate_ptr
 @publish Geometry coarse_cube_model
 @publish Geometry coarse_parametric_model
-@publish Geometry _pushforward_normal
-@publish Geometry _pullback_area_form
 @publish Geometry get_forward_map_generator
 @publish Geometry get_radius
 @publish Geometry get_thickness

@@ -138,9 +138,9 @@ on demand only during visualization.
 - (M)                   — `ManifoldStyle` encoded as type parameter; not stored as a field.
                           Access via `ManifoldStyle(g)`.
 """
-struct AtlasGrid{Dc, Da,
-                 G <: Gridap.Geometry.Grid{Dc,Dc},
-                 A <: AbstractVector{<:AbstractVector{<:Point{Dc}}},
+struct AtlasGrid{Dc, Da, Dp,
+                 G <: Gridap.Geometry.Grid{Dc,Dp},
+                 A <: AbstractVector{<:AbstractVector{<:Point{Dp}}},
                  P <: AbstractVector{<:Field},
                  C <: AbstractVector{<:Field},
                  O <: Gridap.Geometry.OrientationStyle,
@@ -152,18 +152,19 @@ struct AtlasGrid{Dc, Da,
   orientation_style  :: O
 
   function AtlasGrid(
-    param_grid         :: Gridap.Geometry.Grid{Dc,Dc},
-    cell_chart_coords  :: AbstractVector{<:AbstractVector{<:Point{Dc}}},
+    param_grid         :: Gridap.Geometry.Grid{Dc,Dp},
+    cell_chart_coords  :: AbstractVector{<:AbstractVector{<:Point{Dp}}},
     cell_ambient_maps  :: AbstractVector{<:Field},
     cell_metric        :: AbstractVector{<:Field},
     orientation_style  :: Gridap.Geometry.OrientationStyle,
     manifold_style     :: ManifoldStyle,
-  ) where Dc
-    sample_pt = cell_chart_coords[1][1]
-    fwd0      = cell_ambient_maps[1]
+  ) where {Dc,Dp}
     if (manifold_style isa IntrinsicManifold)
-       Da = Dc
+       Da = Dp
     else
+       T= eltype(Gridap.Arrays.testitem(Gridap.Arrays.testitem(cell_chart_coords)))
+       sample_pt = zero(Point{Dp,Float64})
+       fwd0 = Gridap.Arrays.testitem(cell_ambient_maps)
        Da = Gridap.TensorValues.num_components(Gridap.Arrays.return_type(fwd0, sample_pt))
     end
     n = Gridap.Geometry.num_cells(param_grid)
@@ -176,18 +177,15 @@ struct AtlasGrid{Dc, Da,
     C = typeof(cell_metric)
     O = typeof(orientation_style)
     M = typeof(manifold_style)
-    new{Dc,Da,G,A,P,C,O,M}(param_grid, cell_chart_coords, cell_ambient_maps, cell_metric, orientation_style)
+    new{Dc,Da,Dp,G,A,P,C,O,M}(param_grid, cell_chart_coords, cell_ambient_maps, cell_metric, orientation_style)
   end
-
-
-
 end
 
 # ----------------------------------------------------------
 # ManifoldStyle accessor (mirrors OrientationStyle pattern)
 # ----------------------------------------------------------
 
-ManifoldStyle(::Type{<:AtlasGrid{Dc,Da,G,A,P,C,O,M}}) where {Dc,Da,G,A,P,C,O,M} = M()
+ManifoldStyle(::Type{<:AtlasGrid{Dc,Da,Dp,G,A,P,C,O,M}}) where {Dc,Da,Dp,G,A,P,C,O,M} = M()
 ManifoldStyle(g::AtlasGrid) = ManifoldStyle(typeof(g))
 
 # ----------------------------------------------------------
@@ -347,8 +345,16 @@ Gridap.Geometry.get_cell_coordinates(g::AtlasGrid) = g.cell_chart_coords
 # Delegate to param_grid: gives the correct shared-node count for FESpace/num_nodes.
 # Coordinate values are junk (2D parametric), but FEM assembly uses get_cell_map (overridden
 # below) and never reads these values — only the length matters.
-Gridap.Geometry.get_node_coordinates(g::AtlasGrid) =
+Gridap.Geometry.get_node_coordinates(g::AtlasGrid{Dc,Dc}) where {Dc} =
   Gridap.Geometry.get_node_coordinates(g.param_grid)
+
+# For consistency with the Grid interface, if Dc < Dp, get_node_coordinates 
+# returns Dp-dim points with junk values. 
+function Gridap.Geometry.get_node_coordinates(g::AtlasGrid{Dc,Dp}) where {Dc,Dp}
+  grid_node_coordinates = Gridap.Geometry.get_node_coordinates(g.param_grid)
+  T = eltype(grid_node_coordinates)  
+  Vector{Point{Dp,T}}(undef, length(grid_node_coordinates))
+end    
 
 # get_cell_map dispatches on ManifoldStyle:
 #   ExtrinsicManifold — RefFE→Chart composed with Chart→Ambient (current behavior)

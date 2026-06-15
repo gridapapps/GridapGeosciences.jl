@@ -78,7 +78,7 @@ export get_distributed_ambient_refined_models
 export get_panel_ids, get_owned_panel_ids, get_skel_panel_ids
 # export BoundaryTriangulation
 export pullback_area_form
-export pushforward_normal, get_surface_normal
+export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
 export get_octree_refined_models, get_3D_octree_refined_models
 export get_octree_ambient_refined_models, get_3D_octree_ambient_refined_models
 
