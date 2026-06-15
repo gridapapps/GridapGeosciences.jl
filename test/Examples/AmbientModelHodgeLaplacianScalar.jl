@@ -47,12 +47,8 @@ using Gridap
 # To obtain a refined ambient model, we pass $\ell$ levels of refinement:
 ℓ = 3
 radius = 1.0
-model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
-
-# This a model of the ambient space of the 2D cubed sphere. The underlying model of
-# the parametric space can be extracted as:
-panel_model = get_parametric_model(model)
-
+coarse_mesh = CubedSphereMesh(radius)
+model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=ExtrinsicManifold())
 
 # We can visualise the triangulation using the typical visualise tools in Gridap:
 Ω = Triangulation(model)
@@ -76,7 +72,6 @@ X = MultiFieldFESpace([U, P])
 # This is defined as a regular Julia function that takes a point in ambient space
 # and returns a scalar:
 φₓ(x) = x[1]*x[2]*x[3]
-φ_cf = CellField(φₓ,Ω)
 
 # The cooresponding rhs forcing function is defined panelwise, using the AmbientCellField.
 # Similar to ParametricCellField, AmbientCellField returns an GenericCellField object, where the cell_field is an
@@ -85,8 +80,8 @@ X = MultiFieldFESpace([U, P])
 # in physical space and returns the function evaluated in physical space.
 # To manufacture the solution, we use the ambient_surflap, which computes the surface
 # Laplacian operator for ambient functions
-u_cf = AmbientCellField(ambient_sgrad(φₓ),Ω)
-slap_cf = AmbientCellField(ambient_surflap(φₓ),Ω)
+u_cf = ∇s(φₓ,Ω)
+slap_cf = Δs(φₓ,Ω)
 rhs_cf = -slap_cf
 
 
@@ -107,7 +102,7 @@ uh,ph = solve(LUSolver(),op)
 
 # For the pressure and velocity, the $L^2$ norm of the error between the exact
 # and numerical soltuions is computed as (recall $\widetilde{\boldsymbol{u}} = - \nabla_\gamma \widetilde{\varphi}$)
-ep = φ_cf  - ph
+ep = φₓ - ph
 el2_p = sqrt(sum(∫( ep*ep  )dΩ))
 
 eu = uh - (- u_cf )
@@ -117,6 +112,6 @@ el2_u = sqrt(sum(∫( eu⋅eu  )dΩ))
 # The solution can be visualised in the ambient space using Gridap's visualisation
 # functionality:
 writevtk(Ω,"hodge_laplacian_scalar",
-        cellfields=["p"=>φ_cf,"ph"=>ph,"ep"=>ep,
+        cellfields=["p"=>φₓ,"ph"=>ph,"ep"=>ep,
                 "uamb"=>u_cf,"uamb_h"=>uh, "eu"=>eu],
         append=false)

@@ -51,7 +51,8 @@ using GridapSolvers
 # then apply $\ell$ levels of refinement:
 ℓ = 3
 radius = 1.0
-model = CubedSphere2DParametricDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+coarse_mesh = CubedSphereMesh(radius)
+model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=IntrinsicManifold())
 
 
 # ## Triangulation
@@ -61,20 +62,18 @@ model = CubedSphere2DParametricDiscreteModel(radius;num_initial_uniform_refineme
 #
 # The volume triangulation and assoicated panel ides can be extracted as per usual:
 Ω = Triangulation(model)
-fwd_map_generator = get_forward_map_generator(model)
 
 # The skeleton triangulation, skeleton normal vector and skeleton panel ids are:
 Λ = SkeletonTriangulation(model)
 n_Λ = get_normal_vector(Λ)
-skel_panel_ids = get_panel_ids(Λ)
 
 # Note, $n_{\Lambda}$ is the skeleton normal vector in the parametric space.
 # To obtain the normal vector in the ambient space, we can pushforward $n_{\Lambda}$
 # and plot the result on $\Lambda$:
 n_ambient = pushforward_normal(Λ)
 cellfields = ["amb_n_plus"=>n_ambient.plus, "amb_n_minus"=>n_ambient.minus, "amb_n_total"=>n_ambient.minus+n_ambient.plus ]
-skel_geo_map = lazy_map(p -> fwd_map_generator(p), skel_panel_ids.plus)
-writevtk_with_cell_geomap(skel_geo_map,Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
+# TO-DO skel_geo_map = lazy_map(p -> fwd_map_generator(p), skel_panel_ids.plus)
+# TO-DO writevtk_with_cell_geomap(skel_geo_map,Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
 
 
 # ## FE Spaces
@@ -93,25 +92,19 @@ P = TrialFESpace(Q)
 # \end{align*}
 # ```
 # This is defined as a function of the forward map as follows:
-function uₓ(forward_map)
-  function _f(α)
-    x = forward_map(α)
+function uₓ(x)
     exp(-(x[2]^2 + x[3]^2))
-  end
-end
+end 
 
-function βₓ(forward_map)
-  function _f(α)
-    x = forward_map(α)
-    VectorValue(-x[2],x[1],0)
-  end
+function βₓ(x)
+  VectorValue(-x[2],x[1],0)
 end
 
 # Then converted into a panelwise cellfield, where we extract the contravariant components
 # for the velocity:
-u = ParametricCellField(uₓ,Ω)
-β =  ParametricCellField(contra_v(βₓ),Ω)
-
+ambient_map_cf = AmbientMapCellField(Ω)
+u = uₓ∘ambient_map_cf
+β = (pinvJ∘transpose∘∇(ambient_map_cf))⋅(βₓ∘ambient_map_cf)
 # ## Weak form
 # The weak form is written as a transient problem using  using Gridap's high level API.
 # For more information about transient problems in Gridap, refer to
@@ -123,8 +116,8 @@ function my_mean( Bu_n::Gridap.Geometry.SkeletonPair)
   0.5*( plus - minus  )
 end
 
-meas = ParametricCellField(sqrtg,Ω)
-meas_skel = ParametricCellField(sqrtg,Λ)
+meas = MeasureCellField(Ω)
+meas_skel = MeasureCellField(Λ)
 upwind = 0.5*abs((β⋅n_Λ).plus)
 dΩ = Measure(Ω,4*order)
 dΛ = Measure(Λ,4*order)
@@ -158,11 +151,11 @@ solT = solve(solver, opT, t₀, tF, uh₀)
 # The transient solution is post-processed and inspected in Paraview:
 mkpath("transient_sol/results")
 createpvd("transient_sol/results") do pvd
-  pvd[0] = createvtk_with_cell_geomap(geo_map_func(Ω), Ω, "transient_sol/results/results_0" * ".vtu",
-            cellfields=["u"=>uh₀],append=false)
+  # TO-DO: pvd[0] = createvtk_with_cell_geomap(geo_map_func(Ω), Ω, "transient_sol/results/results_0" * ".vtu",
+  #          cellfields=["u"=>uh₀],append=false)
   for (t, uh) in solT
     println("t = $t")
-    pvd[t] = createvtk_with_cell_geomap(geo_map_func(Ω),Ω, "transient_sol/results/results_$t" * ".vtu",
-            cellfields=["u"=>uh],append=false)
+    # TO-DO: pvd[t] = createvtk_with_cell_geomap(geo_map_func(Ω),Ω, "transient_sol/results/results_$t" * ".vtu",
+    #        cellfields=["u"=>uh],append=false)
   end
 end
