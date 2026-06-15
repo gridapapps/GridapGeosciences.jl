@@ -32,8 +32,8 @@ end
 @publish Geometry CubedSphere2DParametricDiscreteModel
 @publish Geometry CubedSphere3DParametricDiscreteModel
 @publish Geometry CubedSphereAmbientDiscreteModel
-@publish Geometry get_refined_models
-@publish Geometry get_ambient_refined_models
+@publish Geometry get_intrinsic_cubed_sphere_refined_models
+@publish Geometry get_extrinsic_cubed_sphere_refined_models
 @publish Geometry get_inverse_map_generator
 @publish Geometry AmbientCellField
 @publish Geometry get_parametric_model

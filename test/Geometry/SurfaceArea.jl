@@ -44,7 +44,7 @@ function main(distribute,nprocs;n_ref_lvls=3,radii=[1.0,2.0])
 
   for radius in radii
 
-    serial_models = get_refined_models(n_ref_lvls,radius)
+    serial_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
 
     p4test_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
     for degree in collect([2,4,6,8])

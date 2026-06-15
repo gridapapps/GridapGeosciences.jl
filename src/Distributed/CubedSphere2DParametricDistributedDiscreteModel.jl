@@ -189,7 +189,7 @@ returns an array of refined serial models where
 """
 
 function get_distributed_refined_models(ranks,nprocs,n_ref_lvls::Int,radius::Real,coarse_s_model=false)
-  s_models  = get_refined_models(n_ref_lvls,radius,coarse_s_model)
+  s_models  = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius,coarse_s_model)
   dmodels, dpanel_ids, owned_panel_ids = get_distributed_refined_models(ranks,nprocs,s_models)
   dmodels
 end

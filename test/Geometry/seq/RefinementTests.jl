@@ -26,7 +26,7 @@ panel_model = coarse_parametric_model(radius)
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-panel_models = get_refined_models(n_ref_lvls, radius)
+panel_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls, radius)
 for lev in 1:n_ref_lvls-1
   @test num_point_dims(panel_models[lev]) == num_cell_dims(panel_models[lev]) == 2
   @test is_child(panel_models[lev],panel_models[lev+1])
@@ -43,7 +43,7 @@ ambient_model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refin
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-ambient_models = get_ambient_refined_models(n_ref_lvls, radius)
+ambient_models = get_extrinsic_cubed_sphere_refined_models(n_ref_lvls, radius)
 for lev in 1:n_ref_lvls-1
   @test num_point_dims(ambient_models[lev]) == 3
   @test num_cell_dims(ambient_models[lev]) == 2

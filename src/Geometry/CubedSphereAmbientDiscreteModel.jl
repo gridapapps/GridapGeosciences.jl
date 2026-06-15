@@ -53,7 +53,7 @@ function CubedSphereAmbientDiscreteModel(
     return coarse_ambient_model(radius)
   end
 
-  models = get_ambient_refined_models(num_initial_uniform_refinements,radius)
+  models = get_extrinsic_cubed_sphere_refined_models(num_initial_uniform_refinements,radius)
   models[1]
 end
 

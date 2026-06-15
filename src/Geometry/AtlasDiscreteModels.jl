@@ -513,7 +513,7 @@ function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
 end
 
 
-function get_refined_models(n_ref_lvls::Int,
+function get_intrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
                             radius::Real,
                             coarse_model=false)
   coarse_mesh = CubedSphereMesh(radius)
@@ -528,7 +528,7 @@ function get_refined_models(n_ref_lvls::Int,
   models
 end
 
-function get_ambient_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
+function get_extrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
   coarse_mesh = CubedSphereMesh(radius)
   models = Vector{AtlasDiscreteModel{2,3}}(undef,n_ref_lvls)
   for (i,n) in enumerate(n_ref_lvls:-1:1)
