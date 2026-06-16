@@ -2,6 +2,9 @@ const AtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O,M} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,M}}}
 const IntrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} = 
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:IntrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}}
+const ExtrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} = 
+     GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:ExtrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}}
+
 
 function AtlasDiscreteModel(ranks::AbstractArray{<:Integer},
                             mesh::CoarseMesh,
@@ -135,6 +138,27 @@ function AmbientMapCellField(
   GridapDistributed.DistributedCellField(fields, ghosted_trian)
 end
 
+function AmbientMapCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    AmbientMapCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
+function AmbientMapCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.SkeletonTriangulation{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    AmbientMapCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
 function MetricCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}}
 ) where {Dc,Dp}
@@ -144,6 +168,27 @@ function MetricCellField(
     MetricCellField(t)
   end
   GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
+function MetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
+function MetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.SkeletonTriangulation{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
 end
 
 function InvMetricCellField(
@@ -166,6 +211,27 @@ function MeasureCellField(
     MeasureCellField(t)
   end
   GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
+function MeasureCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MeasureCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
+function MeasureCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.SkeletonTriangulation{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MeasureCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
 end
 
 function Δs(f::Function,

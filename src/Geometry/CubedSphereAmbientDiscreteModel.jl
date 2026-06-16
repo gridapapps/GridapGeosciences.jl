@@ -115,23 +115,6 @@ function coarse_ambient_model(radius)
   CubedSphereAmbientDiscreteModel(panel_model0)
 end
 
-"""
-get_surface_normal
-
-The surface normal to the sphere, only defined for CubedSphereAmbientDiscreteModel with num_point_dims = 3
-"""
-function get_surface_normal(trian::BodyFittedTriangulation{Dc,3,<:CubedSphereAmbientDiscreteModel}) where {Dc}
-  ns = CellField(normal_vec,trian)
-  ## This cellfield is, by default, on the physical domain
-  ## Change to the reference domain. Recall the ambient model has junk nodes
-  ## So being on the reference domain means the evaluatation at pts is via ref points
-  change_domain(ns,DomainStyle(ns),ReferenceDomain())
-end
-
-function get_surface_normal(trian::BodyFittedTriangulation{Dc,Dp,<:CubedSphereParametricDiscreteModel}) where {Dc,Dp}
-  @notimplemented """\n get_surface_normal not defined for parametric models
-  """
-end
 
 function get_surface_normal(trian::AdaptedTriangulation)
   get_surface_normal(trian.trian)

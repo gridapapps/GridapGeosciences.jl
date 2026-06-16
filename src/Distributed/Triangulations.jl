@@ -1,40 +1,30 @@
-# function GridapDistributed.BoundaryTriangulation(
-#   portion,model::CubedSphereParametricDistributedDiscreteModel,labels::DistributedFaceLabeling;tags=nothing)
-#   println("distributed booundary trian")
-#   Dc = num_cell_dims(model)
-
-#   topo = get_grid_topology(model)
-#   face_to_mask = get_isboundary_face(topo,Dc-1) # This is globally consistent
-
-#   ## for CubedSphereParametricDiscreteModel, we want all cells all the internal cells
-#   _face_to_mask = map(face_to_mask) do m
-#     return .!m
-#   end
-
-#   Gridap.Geometry.BoundaryTriangulation(portion,model,_face_to_mask)
-# end
-
 
 function pullback_area_form(trian::DistributedTriangulation)
   fields = map(trian.trians) do t
-    return pullback_area_form(t)
-  end
-  DistributedCellField(fields,trian)
-end
-
-
-function pushforward_normal(trian::GridapDistributed.DistributedTriangulation,cell_geo_map::AbstractArray)
-  fields = map(trian.trians,cell_geo_map) do t,m
-    pushforward_normal(t,m)
+    pullback_area_form(t)
   end
   GridapDistributed.DistributedCellField(fields,trian)
 end
 
 function pushforward_normal(trian::GridapDistributed.DistributedTriangulation)
   fields = map(trian.trians) do t
-    return pushforward_normal(t)
+    pushforward_normal(t)
   end
-  return GridapDistributed.DistributedCellField(fields,trian)
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+function pushforward_reference_normal(trian::GridapDistributed.DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pushforward_reference_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+function pushforward_parametric_normal(trian::GridapDistributed.DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pushforward_parametric_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
 end
 
 """
@@ -46,20 +36,12 @@ recompute the triangulation to ensure proper handling of ghost cells in octree p
 """
 function get_surface_normal(trian::GridapDistributed.DistributedTriangulation)
   model = trian.model
-
-  fields = map(local_views(model)) do lmodel
-    get_surface_normal(Triangulation(lmodel))
+  _trian = GridapDistributed.add_ghost_cells(trian)
+  fields = map(_trian.trians) do t
+    get_surface_normal(t)
   end
-
-  trians = map(local_views(model)) do lmodel
-    Triangulation(lmodel)
-  end
-
-  _trian = GridapDistributed.DistributedTriangulation(trians,model)
   GridapDistributed.DistributedCellField(fields,_trian)
-
 end
-
 
 
 """

@@ -21,15 +21,21 @@ end
 
 
 function main(distribute,nprocs)
-
   ranks = distribute(LinearIndices((nprocs,)))
 
   n_ref_lvls = 2
   radius = 1.0
-  ambient_model = CubedSphereAmbientDistributedDiscreteModel(
-    ranks, radius; num_initial_uniform_refinements=n_ref_lvls)
-  panel_model = get_parametric_model(ambient_model)
-
+  coarse_mesh = CubedSphereMesh(radius)
+ 
+  ambient_model = AtlasDiscreteModel(ranks, 
+                                     coarse_mesh, 
+                                     n_ref_lvls, 
+                                     manifold_style=ExtrinsicManifold())
+ 
+  parametric_model = AtlasDiscreteModel(ranks, 
+                                        coarse_mesh, 
+                                        n_ref_lvls, 
+                                        manifold_style=IntrinsicManifold())
 
   ##############################################################################
   ########## Ambient model
@@ -59,7 +65,7 @@ function main(distribute,nprocs)
   ########## Parametric model
   ##############################################################################
 
-  Λ_panel = SkeletonTriangulation(with_ghost,panel_model)
+  Λ_panel = SkeletonTriangulation(with_ghost,parametric_model)
   n_Λ_mapped = pushforward_normal(Λ_panel)
   pts_panel = get_cell_points(Λ_panel)
 

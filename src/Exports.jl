@@ -154,6 +154,8 @@ end
 @publish Distributed CellField
 
 @publish Distributed AtlasOctreeDistributedDiscreteModel
+@publish Distributed IntrinsicAtlasDistributedDiscreteModel
+@publish Distributed ExtrinsicAtlasDistributedDiscreteModel
 
 @publish MultilevelTools ModelHierarchy
 @publish MultilevelTools adapt_model

@@ -45,15 +45,13 @@ function main(distribute,nprocs)
   ##############################################################################
 
   # Method 1: Use gridap machinary
-  n = pushforward_normal(Λ)
+  n = pushforward_reference_normal(Λ)
   out = (n.plus+n.minus)(pts)
   test_debug_vector_equality(out)
 
   # Method 2: Santi's formula
   panel_ids = get_panel_ids(panel_model)
-  forward_map_generator = get_forward_map_generator(panel_model)
-  cell_geo_map = geo_map_func(forward_map_generator,panel_ids)
-  n = pushforward_normal(Λ,cell_geo_map)
+  n = pushforward_parametric_normal(Λ)
   out = (n.plus+n.minus)(pts)
 
   # test_debug_vector_equality(out) #### For some reason this is failing, I am unsure why
@@ -75,7 +73,7 @@ function main(distribute,nprocs)
   ### check sqrt(g) is continuous across skeleton
   ### check |Jg^-1 n| - pullback of area form
   ##############################################################################
-  meas_cf = ParametricCellField(sqrtg,Λ)
+  meas_cf = MeasureCellField(Λ)
   out = (meas_cf.plus-meas_cf.minus)(pts)
   test_debug_equality(out)
 
@@ -88,18 +86,18 @@ function main(distribute,nprocs)
   ### check abs(v⋅n.plus) = abs(v⋅n.minus)
   ##############################################################################
   vecX(XYZ) = VectorValue(-XYZ[2],XYZ[3],0.0)
-  vX = panel_to_cartesian(tangent_vec(vecX))
+  vX = tangent_vec(vecX)
 
   V = TestFESpace(panel_model, ReferenceFE(raviart_thomas,Float64,1); conformity=:HDiv)
   U = TrialFESpace(V)
 
-  _vel = ParametricCellField(contra_v(vX),Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_panel)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  _vel = (pinvJ∘covariant_basis_cf)⋅(vX∘ambient_map_cf)
   vel = interpolate(_vel,U)
 
   diff_cf = (abs((vel⋅ n_Λ).minus) .- abs((vel⋅ n_Λ).plus))(pts)
   test_debug_equality(diff_cf)
-
 end
-
 
 end # module

@@ -14,19 +14,17 @@ using Test
 
 
 
-function compute_surface_area(model::CubedSphere2DParametricDistributedDiscreteModel, degree::Int)
+function compute_surface_area(model::IntrinsicAtlasDistributedDiscreteModel, degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
-
-  meas_cf = ParametricCellField(sqrtg,Ω)
+  meas_cf = MeasureCellField(Ω)
   surface_area = sum( ∫( 1.0*meas_cf )dΩ )
   return surface_area
 end
 
-function compute_surface_area(model::CubedSphereAmbientDistributedDiscreteModel{2,Dp,T}, degree::Int) where {Dp,T}
+function compute_surface_area(model::ExtrinsicAtlasDistributedDiscreteModel{2,Dp}, degree::Int) where {Dp}
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
-
   surface_area = sum( ∫( 1.0 )dΩ )
   return surface_area
 end
@@ -58,14 +56,14 @@ function main(distribute,nprocs)
 
   ## 2D parametric models:
   n_ref_lvls = 3
-  for radius in [1,2]
+  for radius in [1.0,2.0]
     dist_models = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
     # p4est_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
     # test_surface_area(dist_models,p4est_models)
   end
 
   ## 2D ambient models:
-  for radius in [1,2]
+  for radius in [1.0,2.0]
     dist_models = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
     # p4est_models = get_octree_ambient_refined_models(ranks,n_ref_lvls,radius)
     # test_surface_area(dist_models,p4est_models)

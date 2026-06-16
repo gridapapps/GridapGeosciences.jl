@@ -27,7 +27,8 @@ import GridapGeosciences.Geometry: setup_panel_cmaps
 import GridapGeosciences.Geometry: ParametricCellField, geo_map_func, latlon_geo_map_func
 import GridapGeosciences.Geometry: AmbientCellField
 import GridapGeosciences.Geometry: get_panel_ids, get_forward_map_generator, get_radius, get_thickness
-import GridapGeosciences.Geometry: pullback_area_form, pushforward_normal
+import GridapGeosciences.Geometry: pullback_area_form, pushforward_normal, 
+                                   pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
 import GridapGeosciences.Geometry: ParametricModels, get_parametric_model
 import GridapGeosciences.Geometry: get_surface_normal
@@ -67,12 +68,15 @@ import GridapGeosciences.Geometry: InvMetricCellField
 import GridapGeosciences.Geometry: MeasureCellField
 import GridapGeosciences.Geometry: Δs
 import GridapGeosciences.Geometry: ∇s
-import GridapGeosciences.Geometry: BFTATDMIM, IntrinsicAtlasDiscreteModel
+import GridapGeosciences.Geometry: BFTATDMIM, 
+                                   IntrinsicAtlasDiscreteModel, 
+                                   ExtrinsicAtlasDiscreteModel
 include("AtlasOctreeDistributedDiscreteModels.jl")
 export AtlasOctreeDistributedDiscreteModel
 include("AtlasDistributedDiscreteModels.jl")
 export AtlasDiscreteModel
 export IntrinsicAtlasDistributedDiscreteModel
+export ExtrinsicAtlasDistributedDiscreteModel
 export AtlasDistributedDiscreteModel
 export get_distributed_refined_models
 export get_distributed_cubed_sphere_refined_models
