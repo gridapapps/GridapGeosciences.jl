@@ -156,6 +156,8 @@ end
 @publish Distributed AtlasOctreeDistributedDiscreteModel
 @publish Distributed IntrinsicAtlasDistributedDiscreteModel
 @publish Distributed ExtrinsicAtlasDistributedDiscreteModel
+@publish Distributed get_atlas_dmodel
+@publish Distributed LatLonMapCellField
 
 @publish MultilevelTools ModelHierarchy
 @publish MultilevelTools adapt_model

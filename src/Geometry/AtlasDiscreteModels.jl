@@ -419,17 +419,26 @@ end
 
 # Only supported for the cubed sphere mesh
 # For visualisation purposes
-function LatLonMapCellField(trian)
-  ambient_maps = AmbientMapCellField(trian)
-  cell_data = get_data(ambient_maps)
-  ### For some reason, using Fill(Cartesian2SphericalMap(),num_cells(trian))
-  ### provides incorrect visualisation in paraview, while the lazy map works
-  fi = lazy_map(p->Cartesian2SphericalMap(),collect(1:num_cells(trian)))
-  latlon_cell_geo_map = lazy_map(∘, fi, cell_data)
-  GenericCellField(latlon_cell_geo_map,trian,DomainStyle(ambient_maps))
+function LatLonMapCellField(trian::Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:Union{<:CubedSphereMap,<:CubedSphereWithThicknessMap}},
+                                        C,
+                                        O,
+                                        M}}) where {Dc,Da,G,A,C,O,M}
+  Operation(Cartesian2SphericalMap())(AmbientMapCellField(trian))
 end
 
-
+function LatLonMapCellField(trian::AdaptedTriangulation{Dc,Da,<:Gridap.Geometry.BodyFittedTriangulation{Dc,Da,
+                                        <:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:Union{<:CubedSphereMap,<:CubedSphereWithThicknessMap}},
+                                        C,
+                                        O,
+                                        M}}}) where {Dc,Da,G,A,C,O,M}    
+  LatLonMapCellField(trian.trian)
+end
 
 # Right now only supported by AtlasDiscreteModel of the sphere
 function InvAmbientMapCellField(

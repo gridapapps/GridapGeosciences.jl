@@ -62,7 +62,7 @@ import GridapGeosciences.Geometry: AtlasDiscreteModel
 import GridapGeosciences.Geometry: AtlasGrid
 import GridapGeosciences.Geometry: get_atlas_grid
 import GridapGeosciences.Geometry: BFTATDM
-import GridapGeosciences.Geometry: AmbientMapCellField
+import GridapGeosciences.Geometry: AmbientMapCellField, LatLonMapCellField
 import GridapGeosciences.Geometry: MetricCellField
 import GridapGeosciences.Geometry: InvMetricCellField
 import GridapGeosciences.Geometry: MeasureCellField
@@ -72,7 +72,7 @@ import GridapGeosciences.Geometry: BFTATDMIM,
                                    IntrinsicAtlasDiscreteModel, 
                                    ExtrinsicAtlasDiscreteModel
 include("AtlasOctreeDistributedDiscreteModels.jl")
-export AtlasOctreeDistributedDiscreteModel
+export AtlasOctreeDistributedDiscreteModel, get_atlas_dmodel
 include("AtlasDistributedDiscreteModels.jl")
 export AtlasDiscreteModel
 export IntrinsicAtlasDistributedDiscreteModel
@@ -82,6 +82,7 @@ export get_distributed_refined_models
 export get_distributed_cubed_sphere_refined_models
 export get_distributed_intrinsic_cubed_sphere_refined_models
 export get_distributed_extrinsic_cubed_sphere_refined_models
+export LatLonMapCellField
 
 import Gridap.FESpaces: FESpace, compute_cell_bases_changes
 import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace

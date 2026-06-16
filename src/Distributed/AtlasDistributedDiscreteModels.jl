@@ -127,6 +127,19 @@ function get_distributed_extrinsic_cubed_sphere_refined_models(ranks,
   get_distributed_cubed_sphere_refined_models(ranks, n_ref_lvls, radius, ExtrinsicManifold(), coarse_model)
 end
 
+function LatLonMapCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,
+              <:AtlasDiscreteModel{Dc,Dp,G,A,
+                <:AbstractVector{<:Union{<:CubedSphereMap,<:CubedSphereWithThicknessMap}},
+                C,O,M}}}}
+) where {Dc,Dp,G,A,C,O,M}
+  ghosted_trian = add_ghost_cells(trian)
+  fields = map(ghosted_trian.trians) do t
+    LatLonMapCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
 function AmbientMapCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}}
 ) where {Dc,Dp}
@@ -233,6 +246,8 @@ function MeasureCellField(
   end
   GridapDistributed.DistributedCellField(fields, trian)
 end
+
+
 
 function Δs(f::Function,
             trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}};
