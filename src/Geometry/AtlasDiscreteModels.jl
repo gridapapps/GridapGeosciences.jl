@@ -223,10 +223,29 @@ const IntrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,
 const ExtrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,A,P,C,O,<:ExtrinsicManifold}
 
 const BFTATDM{Dc,Dp} = Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel}
+<<<<<<< Updated upstream
 const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = 
     Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:IntrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
 const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = 
     Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:ExtrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
+=======
+const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm,
+                                        Da,
+                                        G,
+                                        A,
+                                        P,
+                                        C,
+                                        O,
+                                        <:IntrinsicManifold}}
+const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm,
+                                        Da,
+                                        G,
+                                        A,
+                                        P,
+                                        C,
+                                        O,
+                                        <:ExtrinsicManifold}}
+>>>>>>> Stashed changes
 """
     MetricCellField(trian)
 
@@ -244,8 +263,8 @@ function MetricCellField(
     trian :: BFTATDM{Dc,Dp},
 ) where {Dc,Dp}
   model = Gridap.Geometry.get_background_model(trian)
-  Gridap.CellData.GenericCellField(get_cell_metric(model), 
-                                   trian, 
+  Gridap.CellData.GenericCellField(get_cell_metric(model),
+                                   trian,
                                    Gridap.CellData.PhysicalDomain())
 end
 
@@ -260,8 +279,8 @@ function MetricCellField(
     trian ::  Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
-  Gridap.CellData.GenericCellField(get_cell_metric(trian.trian.grid), 
-                                   trian, 
+  Gridap.CellData.GenericCellField(get_cell_metric(trian.trian.grid),
+                                   trian,
                                    Gridap.CellData.PhysicalDomain())
 end
 
@@ -349,8 +368,8 @@ function InvMetricCellField(
     trian ::  Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
-  Gridap.CellData.GenericCellField(get_cell_inv_metric(trian.trian.grid), 
-                                   trian, 
+  Gridap.CellData.GenericCellField(get_cell_inv_metric(trian.trian.grid),
+                                   trian,
                                    Gridap.CellData.PhysicalDomain())
 end
 
@@ -392,8 +411,8 @@ function AmbientMapCellField(
     trian :: Gridap.Geometry.BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
-  Gridap.CellData.GenericCellField(get_cell_ambient_maps(trian.trian.grid), 
-                                   trian, 
+  Gridap.CellData.GenericCellField(get_cell_ambient_maps(trian.trian.grid),
+                                   trian,
                                    Gridap.CellData.PhysicalDomain())
 end
 
@@ -416,6 +435,20 @@ function AmbientMapCellField(
   minus = AmbientMapCellField(trian.trian.minus)
   SkeletonPair(plus,minus)
 end
+
+# Only supported for the cubed sphere mesh
+# For visualisation purposes
+function LatLonMapCellField(trian)
+  ambient_maps = AmbientMapCellField(trian)
+  cell_data = get_data(ambient_maps)
+  ### For some reason, using Fill(Cartesian2SphericalMap(),num_cells(trian))
+  ### provides incorrect visualisation in paraview, while the lazy map works
+  fi = lazy_map(p->Cartesian2SphericalMap(),collect(1:num_cells(trian)))
+  latlon_cell_geo_map = lazy_map(∘, fi, cell_data)
+  GenericCellField(latlon_cell_geo_map,trian,DomainStyle(ambient_maps))
+end
+
+
 
 # Right now only supported by AtlasDiscreteModel of the sphere
 function InvAmbientMapCellField(
@@ -442,7 +475,7 @@ function InvAmbientMapCellField(
                                         <:ExtrinsicManifold}}) where {Dc,Da,G,A,C,O}
   model = Gridap.Geometry.get_background_model(trian)
   cell_ambient_maps = get_cell_ambient_maps(model)
-  ptrs = cell_ambient_maps.ptrs 
+  ptrs = cell_ambient_maps.ptrs
   ambient_maps = cell_ambient_maps.values
   radius = ambient_maps[1].radius
   inv_ambient_maps = [CubedSphereInvMap(panel, radius) for panel in 1:length(ambient_maps)]
@@ -495,15 +528,15 @@ function _Δs_no_ad(f, Ω_atlas)
   ## BEGIN Machinery to compute gradient_gradient(f_cf)
   # A_ij = v_k * B_ijk
   cpvB=(v,B)->contracted_product(Val(1), v, permutedims(B,(3,1,2)))
-  gradient_gradient_cf = ∇(ambient_map_cf)⋅(∇∇(f)∘ambient_map_cf)⋅covariant_basis_cf + 
+  gradient_gradient_cf = ∇(ambient_map_cf)⋅(∇∇(f)∘ambient_map_cf)⋅covariant_basis_cf +
                                             Operation(cpvB)(∇(f)∘ambient_map_cf,
                                             ∇∇(ambient_map_cf))
   ## END Machinery to compute gradient_gradient(f_cf)
 
   # w_cf = meas_cf*(inv_metric_cf⋅gradient_f_cf)
-  # divergence(w_cf) = 
+  # divergence(w_cf) =
   #   grad(meas_cf)⋅( inv_metric_cf⋅gradient_f_cf ) + (1)
-  #   meas_cf*divergence(inv_metric_cf⋅gradient_f_cf) (2+3) = 
+  #   meas_cf*divergence(inv_metric_cf⋅gradient_f_cf) (2+3) =
   #   grad(meas_cf)⋅( inv_metric_cf⋅gradient_f_cf ) +   (1)
   #   meas_cf*divergence(inv_metric_cf)⋅gradient_f_cf + (2)
   #   meas_cf*(inv_metric_cf ⊙ gradient(gradient_f_cf)) (3)
@@ -512,7 +545,7 @@ function _Δs_no_ad(f, Ω_atlas)
   div_wcf_third_term = meas_cf*(inv_metric_cf ⊙ gradient_gradient_cf)
   div_wcf = div_wcf_first_term + div_wcf_second_term + div_wcf_third_term
   1.0/meas_cf * div_wcf
-end 
+end
 
 function _Δs_ad(f, Ω_atlas)
   # surflap(f::Function) = m -> surflap(f,m)
@@ -543,8 +576,8 @@ function _compose(parametric_space_quantity, inv_ambient_map_cell_field)
     parametric_space_data = Gridap.CellData.get_data(parametric_space_quantity)
     inv_ambient_map_data = Gridap.CellData.get_data(inv_ambient_map_cell_field)
     composed_data = lazy_map(∘, parametric_space_data, inv_ambient_map_data)
-    CellData.GenericCellField(composed_data, 
-                              Gridap.Geometry.get_triangulation(inv_ambient_map_cell_field), 
+    CellData.GenericCellField(composed_data,
+                              Gridap.Geometry.get_triangulation(inv_ambient_map_cell_field),
                               Gridap.CellData.PhysicalDomain())
 end
 
@@ -564,24 +597,24 @@ end
 
 function _∇s_no_ad(f, Ω_atlas)
   # sgrad(f::Function) = m -> sgrad(f,m)
-  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
-  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
+  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅
+  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   inv_metric_cf = InvMetricCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
   gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
   covariant_basis_cf⋅(inv_metric_cf⋅gradient_f_cf)
-end 
+end
 
 function _∇s_ad(f, Ω_atlas)
   # sgrad(f::Function) = m -> sgrad(f,m)
-  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ 
-  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )                                      
+  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅
+  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
   cell_field = lazy_map(m->GenericField(sgrad(_fm(f,m),m)),ambient_maps)
   CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
-end 
+end
 
 
 function ∇s(f::Function,
@@ -608,7 +641,7 @@ function ∇s(f::Function,
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
-end 
+end
 
 function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
   ns = CellField(normal_vec,trian)
@@ -641,11 +674,11 @@ function get_refined_models(n_ref_lvls,
     push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=manifold_style))
   end
   models
-end 
+end
 
-function get_cubed_sphere_refined_models(n_ref_lvls::Int, 
-                                         radius::Real, 
-                                         manifold_style, 
+function get_cubed_sphere_refined_models(n_ref_lvls::Int,
+                                         radius::Real,
+                                         manifold_style,
                                          coarse_model=false)
   coarse_mesh = CubedSphereMesh(radius)
   get_refined_models(n_ref_lvls, coarse_mesh, manifold_style, coarse_model)
@@ -740,7 +773,7 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
                               face_to_bgface,
                               face_to_lcell) where {Dcg,Dcm}
    @check Dcg < Dcm
-   
+
    cell_grid = get_grid(model)
    cell_param_grid = cell_grid.param_grid
 
@@ -749,13 +782,13 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
    face_param_reffes = get_reffaces(ReferenceFE{Dcg},model)
    face_param_grid_cell_to_type = collect1d(get_face_type(model,Dcg))
 
-   face_param_grid =  view(UnstructuredGrid(face_param_grid_node_coordinates, 
-                                      face_param_grid_cell_to_nodes, 
-                                      face_param_reffes, 
+   face_param_grid =  view(UnstructuredGrid(face_param_grid_node_coordinates,
+                                      face_param_grid_cell_to_nodes,
+                                      face_param_reffes,
                                       face_param_grid_cell_to_type,
                                       Gridap.Geometry.OrientationStyle(cell_param_grid)),
-                            face_to_bgface)          
- 
+                            face_to_bgface)
+
     topology = get_grid_topology(model)
     nfaces = num_faces(topology,Dcg)
     glue = FaceToCellGlue(
@@ -764,20 +797,20 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
                face_param_grid,
                face_to_bgface,
                face_to_lcell)
-    
-   face_to_cell_reference_map = 
+
+   face_to_cell_reference_map =
       Gridap.Geometry.compute_face_to_cell_reference_map(cell_grid,face_param_grid,glue)
-   face_to_cell_ambient_maps = 
+   face_to_cell_ambient_maps =
         lazy_map(Reindex(get_cell_ambient_maps(model)), glue.face_to_cell)
-   
-   face_to_q_vertex_coords = 
+
+   face_to_q_vertex_coords =
       Fill(get_vertex_coordinates(get_polytope(face_param_reffes[1])), nfaces)
 
    chart_maps = lazy_map(Reindex(_chart_maps(cell_grid)), glue.face_to_cell)
    face_chart_maps = lazy_map(∘, chart_maps, face_to_cell_reference_map)
    face_chart_coords = lazy_map(evaluate, face_chart_maps, face_to_q_vertex_coords)
 
-   face_to_cell_metric = 
+   face_to_cell_metric =
       lazy_map(Reindex(get_cell_metric(model)), glue.face_to_cell)
 
    AtlasGrid(
@@ -788,6 +821,4 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
      Gridap.Geometry.OrientationStyle(cell_param_grid),
      ManifoldStyle(model),
    )
-end 
-
-
+end

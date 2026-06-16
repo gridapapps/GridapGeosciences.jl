@@ -78,7 +78,7 @@ function test_ParametricOctreeDistributedDiscreteModel(distribute,nprocs)
   test_distributed_panel_ids(panel_model)
 
   # Ω_panel = Triangulation(panel_model)
-  # writevtk_with_cell_geomap(geo_map_func(Ω_panel),"model0",append=false)
+  # writevtk_with_cell_geomap(AmbientMapCellField(Ω_panel),"model0",append=false)
 
 
   # level 1

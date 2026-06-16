@@ -111,7 +111,7 @@ function hodge_laplacian_scalar(atlas_model,
     "eu"=> (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (-sigma_cf),
     "ph"=>ph, "p"=>f_panel_cf, "e"=>ph-f_panel_cf
                   ]
-    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
   return el2_u, el2_p, false

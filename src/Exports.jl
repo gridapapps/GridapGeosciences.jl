@@ -45,23 +45,24 @@ end
 
 # BEGIN AtlasDiscreteModels-specific exports
 # At the present moment, I am solely exporting the symbols
-# that are used in the tests. But we should eventually give 
+# that are used in the tests. But we should eventually give
 # a deeper thought to this
-@publish Geometry AtlasDiscreteModel 
-@publish Geometry AtlasGrid 
+@publish Geometry AtlasDiscreteModel
+@publish Geometry AtlasGrid
 @publish Geometry IntrinsicManifold
 @publish Geometry ExtrinsicManifold
 @publish Geometry MetricCellField
 @publish Geometry InvMetricCellField
 @publish Geometry MeasureCellField
 @publish Geometry AmbientMapCellField
+@publish Geometry LatLonMapCellField
 @publish Geometry Δs
 @publish Geometry ∇s
 
 @publish Geometry CylinderMesh
-@publish Geometry CylinderChartMap 
+@publish Geometry CylinderChartMap
 @publish Geometry CylinderMetricField
-@publish Geometry CylinderInvMetricField 
+@publish Geometry CylinderInvMetricField
 @publish Geometry MobiusStripMesh
 @publish Geometry MobiusChartMap
 @publish Geometry MobiusMetricField

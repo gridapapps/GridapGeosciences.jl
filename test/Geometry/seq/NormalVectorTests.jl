@@ -32,7 +32,7 @@ function test_normal_unit_vector(atlas_model,return_vtk=false)
   dΩ = Measure(Ω_atlas,6)
 
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
- 
+
   norm_vec_cf = normal_vec ∘ ambient_map_cf
   norm_vec_from_basis_cf = normal_vector_from_basis∘transpose∘∇(ambient_map_cf)
   meas_cf = MeasureCellField(Ω_atlas)
@@ -44,11 +44,10 @@ function test_normal_unit_vector(atlas_model,return_vtk=false)
 
   if return_vtk
     lvl = nref(nc(atlas_model))
-    cell_geo_map = geo_map_func(Ω_atlas)
     panel_cfs = [ norm_vec_cf,norm_vec_from_basis_cf]
     labels = ["normal", "n"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(cell_geo_map,Ω_atlas,dir*"/ambient_model_nref$(lvl)",cellfields=cellfields,append=false)
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)",cellfields=cellfields,append=false)
   end
 end
 

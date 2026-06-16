@@ -227,7 +227,7 @@ mkpath("output_path/results")
 
 uh,ph,bh = xh0
 uproj = covariant_basis_cf⋅(1/meas*uh)
-writevtk_with_cell_geomap(geo_map_func(Ω),Ω,
+writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,
     "output_path/results/results_0",
     cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false)
 
@@ -242,7 +242,7 @@ while !isnothing(it)
   uh,ph,bh = xh
   uproj = covariant_basis_cf⋅(1/meas*uh)
 
-  writevtk_with_cell_geomap(geo_map_func(Ω),Ω,
+  writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,
     "output_path/results/results_$t",
     cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false)
   it = iterate(solT, state)

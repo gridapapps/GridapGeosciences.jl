@@ -352,7 +352,7 @@ while !isnothing(it)
 
   i_am_main(ranks) && println(t)
 
-  writevtk_with_cell_geomap(latlon_geo_map_func(Ω),Ω,"thermal_shallow_water_sol/solT_$t.vtu",
+  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"thermal_shallow_water_sol/solT_$t.vtu",
       cellfields=["vel"=>covariant_basis_cf⋅(1/meas*uh),"p"=>ph,"vort"=>qh],
       append=false)
 

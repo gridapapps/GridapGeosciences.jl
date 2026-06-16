@@ -94,7 +94,7 @@ P = TrialFESpace(Q)
 # This is defined as a function of the forward map as follows:
 function uₓ(x)
     exp(-(x[2]^2 + x[3]^2))
-end 
+end
 
 function βₓ(x)
   VectorValue(-x[2],x[1],0)
@@ -151,11 +151,11 @@ solT = solve(solver, opT, t₀, tF, uh₀)
 # The transient solution is post-processed and inspected in Paraview:
 mkpath("transient_sol/results")
 createpvd("transient_sol/results") do pvd
-  # TO-DO: pvd[0] = createvtk_with_cell_geomap(geo_map_func(Ω), Ω, "transient_sol/results/results_0" * ".vtu",
-  #          cellfields=["u"=>uh₀],append=false)
+  pvd[0] = createvtk_with_cell_geomap(AmbientMapCellField(Ω), Ω, "transient_sol/results/results_0" * ".vtu",
+           cellfields=["u"=>uh₀],append=false)
   for (t, uh) in solT
     println("t = $t")
-    # TO-DO: pvd[t] = createvtk_with_cell_geomap(geo_map_func(Ω),Ω, "transient_sol/results/results_$t" * ".vtu",
-    #        cellfields=["u"=>uh],append=false)
+    pvd[t] = createvtk_with_cell_geomap(AmbientMapCellField(Ω),Ω, "transient_sol/results/results_$t" * ".vtu",
+           cellfields=["u"=>uh],append=false)
   end
 end

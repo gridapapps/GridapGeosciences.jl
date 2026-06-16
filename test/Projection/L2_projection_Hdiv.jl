@@ -55,7 +55,7 @@ function L2_projection_Hdiv(atlas_model,
               "uh"=>vec_proj_h,
               "eu"=>vec_proj_cf_piola-vec_proj_h  ]
 
-    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
 

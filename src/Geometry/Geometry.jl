@@ -15,7 +15,7 @@ using Gridap.Adaptivity, Gridap.Visualization
 import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
 import Gridap.Geometry: Grid
 include("CoarseMeshes.jl")
-include("AtlasGrids.jl") 
+include("AtlasGrids.jl")
 include("AtlasDiscreteModels.jl")
 
 export AtlasGrid, AtlasDiscreteModel
@@ -23,11 +23,11 @@ export IntrinsicManifold, ExtrinsicManifold
 export MetricCellField
 export InvMetricCellField
 export MeasureCellField
-export AmbientMapCellField
+export AmbientMapCellField, LatLonMapCellField
 export Δs
 export ∇s
 
-export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField 
+export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
 export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
 export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap

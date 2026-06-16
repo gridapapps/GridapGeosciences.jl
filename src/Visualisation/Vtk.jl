@@ -5,6 +5,37 @@ evaluation of cell/node data.
 This is achieved by evaluating a cellwise geo_map in _vtkpoints.
 """
 
+"""
+when geo_map <: CellField, extract the array of maps
+"""
+function writevtk_with_cell_geomap(geo_map::CellField,args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
+  writevtk_with_cell_geomap(get_data(geo_map),args...;
+  compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
+end
+
+function createvtk_with_cell_geomap(geo_map::CellField,args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
+  createvtk_with_cell_geomap(get_data(geo_map),args...;
+  compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
+end
+
+"""
+when geo_map <: SkeletonPair, extract the cellfield of the plus side, which is
+used for visualisation
+"""
+function writevtk_with_cell_geomap(geo_map::SkeletonPair{<:CellField},args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
+  writevtk_with_cell_geomap(geo_map.plus,args...;
+  compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
+end
+
+function createvtk_with_cell_geomap(geo_map::SkeletonPair{<:CellField},args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
+  createvtk_with_cell_geomap(geo_map.plus,args...;
+  compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
+end
+
 
 function writevtk_with_cell_geomap(geo_map::AbstractArray,args...;
   compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)

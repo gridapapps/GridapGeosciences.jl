@@ -146,7 +146,7 @@ function hodge_laplacian_vector(
   #               "sigma"=>-sdiv_cf,
   #               "rhs"=>rhs_cov_cf
   #               ]
-  # writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/sol",
+  # writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/sol",
   #         cellfields=cellfields,
   #         append=false)
 
@@ -207,7 +207,7 @@ function hodge_laplacian_vector(
     "eu"=>covariant_basis_cf ⋅ (inv_metric_cf⋅uh)-covariant_basis_cf ⋅ (inv_metric_cf⋅u_cov_cf),
     "sh"=>sh, "s"=>sigma_cf, "e"=>sh-sigma_cf
                   ]
-    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
             cellfields=cellfields,append=false)
   end
 

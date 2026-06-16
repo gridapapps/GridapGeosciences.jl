@@ -85,7 +85,7 @@ cellfields = ["curlu"=> q1,
               "u"=>covariant_basis_cf ⋅ (inv_metric_cf⋅u_int),
               "u_cf"=>covariant_basis_cf ⋅ (inv_metric_cf⋅u_cov_cf),
               ]
-writevtk_with_cell_geomap(latlon_geo_map_func(Ω_panel),Ω_panel,dir*"/sol",
+writevtk_with_cell_geomap(AmbientMapCellField(Ω_panel),Ω_panel,dir*"/sol",
         cellfields=cellfields,
         append=false)
 

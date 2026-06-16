@@ -33,7 +33,7 @@ function L2_projection_Hcurl(atlas_model,
   vec_proj_cf = covariant_basis_cf⋅(inv_metric_cf⋅vec_cov_cf)
 
   reffe = ReferenceFE(nedelec,Float64,p_fe)
-  V = TestFESpace(atlas_model, reffe; 
+  V = TestFESpace(atlas_model, reffe;
                   conformity=:Hcurl,
                   dirichlet_tags=["top_boundary", "bottom_boundary"])
   U = TrialFESpace(V, vec_cov_cf)
@@ -59,7 +59,7 @@ function L2_projection_Hcurl(atlas_model,
     cellfields=["uproj"=> vec_proj_cf,
               "uprojh"=>vec_proj_h,
               "eproj"=>vec_proj_cf-vec_proj_h, ]
-    writevtk_with_cell_geomap(latlon_geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)",cellfields=cellfields,
           append=false)
   end
   return  el2_proj,e_interp, false

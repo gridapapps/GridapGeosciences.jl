@@ -44,7 +44,8 @@ then apply $\ell$ levels of refinement:
 ````julia 
 ℓ = 3
 radius = 1.0
-model = CubedSphere2DParametricDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+coarse_mesh = CubedSphereMesh(radius)
+model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=IntrinsicManifold())
 ````
 
 Each cell is assigned a panel identifier, $p$, which is extracted as a cellwise array.
@@ -53,8 +54,8 @@ or in latitiude-longitude by passing a cellwise array of geometrical maps to wri
 
 ````julia 
 Ω = Triangulation(model)
-writevtk_with_cell_geomap(geo_map_func(Ω),Ω,"sphere_model",append=false)
-writevtk_with_cell_geomap(latlon_geo_map_func(Ω),Ω,"latlon_model",append=false)
+writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,"sphere_model",append=false)
+writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"latlon_model",append=false)
 ````
 
 ## FE Spaces
@@ -74,18 +75,17 @@ First we define a function that given a forward map, returns a function
 that takes coordinates in parametric space as input, and returns the value of the function.
 
 ````julia 
-function uₓ(forward_map)
-  function _u(α)
-    x = forward_map(α)
-    x[1]*x[2]*x[3]
-  end
+function uₓ(x)
+  x[1]*x[2]*x[3]
 end
+
+ambient_map_cf = AmbientMapCellField(Ω)
 ````
 
 This function is passed to the ParametricCellField:
 
 ````julia 
-u_cf = ParametricCellField(uₓ,Ω)
+u_cf = uₓ∘ambient_map_cf
 ````
 
 Similar to CellField, ParametricCellField returns an GenericCellField object, where the cell_field is an
@@ -96,7 +96,7 @@ in physical space and returns the function evaluated in physical space.
 The cooresponding rhs forcing function is defined panelwise, as follows:
 
 ````julia 
-slap_cf = ParametricCellField(surflap(uₓ),Ω)
+slap_cf = Δs(uₓ,Ω)
 rhs = -slap_cf
 ````
 
@@ -106,8 +106,8 @@ and then write the bilinear and linear forms using Gridap's high level API.
 We use an increased degree of quadrature to exactly approximate the geometrical map included in the weak form.
 
 ````julia 
-invg = ParametricCellField(inv_metric,Ω)
-meas = ParametricCellField(sqrtg,Ω)
+invg = InvMetricCellField(Ω)
+meas = MeasureCellField(Ω)
 dΩ = Measure(Ω,6*order)
 poisson_biform(u,v) = ∫((gradient(v)⋅(invg⋅gradient(u)))*meas )dΩ
 poisson_liform(v) = ∫((rhs*v)*meas)dΩ
@@ -134,7 +134,7 @@ The solution can be visualised in the ambient space by passing a
 cell-wise array of geometrical maps to our writevtk_with_cell_geomap function
 
 ````julia 
-writevtk_with_cell_geomap(geo_map_func(Ω),Ω,"laplace_beltrami",cellfields=["u"=>u_cf,"uh"=>uh,"eu"=>e],append=false)
+writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,"laplace_beltrami",cellfields=["u"=>u_cf,"uh"=>uh,"eu"=>e],append=false)
 ````
 
 ---

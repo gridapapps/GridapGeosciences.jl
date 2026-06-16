@@ -118,7 +118,7 @@ function wave_solver(atlas_model,
     labels = ["p","u_proj", "ph", "uh_proj", "ep","eu"]
 
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_D$Dc",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_D$Dc",
             cellfields=cellfields,append=false)
   end
 

@@ -44,11 +44,10 @@ function main(distribute,nprocs)
 
   # if return_vtk
   #   lvl = nref(panel_model)
-  #   cell_geo_map = geo_map_func(Ω_panel)
   #   panel_cfs = [ n_mapped,norm_vec_cf,norm_vec_cf-n_mapped]
   #   labels = ["n_mapped", "n_vec", "diff"]
   #   cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-  #   writevtk_with_cell_geomap(geo_map_func(Ω_panel),dir*"/ambient_model_nref$(lvl)",cellfields=cellfields,append=false)
+  #   writevtk_with_cell_geomap(AmbientMapCellField(Ω_panel),dir*"/ambient_model_nref$(lvl)",cellfields=cellfields,append=false)
   # end
 
 end

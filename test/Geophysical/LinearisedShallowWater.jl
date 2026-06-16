@@ -90,7 +90,7 @@ function linear_shallow_water_solver(atlas_model,
   #_area_meas(p) = x->  forward_jacobian(p,x) ⋅ (inv_metric(p,x) ⋅ VectorValue(1,0,0))
   # area_meas(p) = x-> norm(_area_meas(p)(x))
   # normal_3D(p) = x-> (1/area_meas(p)(x) )*VectorValue(1,0,0)
-  normal_3D_cf = 1.0/(norm∘(covariant_basis_cf⋅(inv_metric_cf⋅VectorValue(1.0,0.0,0.0))))*VectorValue(1.0,0.0,0.0) 
+  normal_3D_cf = 1.0/(norm∘(covariant_basis_cf⋅(inv_metric_cf⋅VectorValue(1.0,0.0,0.0))))*VectorValue(1.0,0.0,0.0)
 
   ## return the appropriate term based on Dimension
   function get_coriolis_term(Dc::Int)
@@ -151,7 +151,7 @@ function linear_shallow_water_solver(atlas_model,
     panel_cfs = [ph, uh_proj, uh_proj-u_proj_cf,ph-h_cf]
     labels = ["p","u_proj","eu","ep"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(geo_map_func(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_D$Dc",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$(p_fe)_D$Dc",
           cellfields=cellfields,append=false)
   end
 
