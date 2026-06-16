@@ -3,8 +3,6 @@ using Test
 
 TESTCASE = get(ENV, "TESTCASE", "seq")
 
-TESTCASE="mpi"
-
 # Sequential tests
 if TESTCASE ∈ ("all", "seq", "seq-atlas-discrete-models")
   include("AtlasDiscreteModels/seq/runtests.jl")
