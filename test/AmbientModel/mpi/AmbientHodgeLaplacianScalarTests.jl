@@ -10,7 +10,7 @@ n_ref_lvls = 4
 radius = 1.0
 
 ## Distributed model: 2D
-models = get_distributed_ambient_refined_models(ranks,nprocs,n_ref_lvls,radius)
+models = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
 AmbientHodgeLaplacianScalarTests.main(models;_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D

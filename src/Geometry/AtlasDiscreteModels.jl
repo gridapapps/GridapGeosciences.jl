@@ -219,23 +219,14 @@ function AtlasDiscreteModel(
   AtlasDiscreteModel(get_coarse_mesh(mesh), num_refinements; orientation_style, manifold_style)
 end
 
+const IntrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,A,P,C,O,<:IntrinsicManifold}
+const ExtrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,A,P,C,O,<:ExtrinsicManifold}
+
 const BFTATDM{Dc,Dp} = Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel}
-const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm, 
-                                        Da, 
-                                        G, 
-                                        A, 
-                                        P, 
-                                        C, 
-                                        O, 
-                                        <:IntrinsicManifold}}
-const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm, 
-                                        Da, 
-                                        G, 
-                                        A, 
-                                        P, 
-                                        C, 
-                                        O, 
-                                        <:ExtrinsicManifold}}
+const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = 
+    Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:IntrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
+const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = 
+    Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:ExtrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
 """
     MetricCellField(trian)
 

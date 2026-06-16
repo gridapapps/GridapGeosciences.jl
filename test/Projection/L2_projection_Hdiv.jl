@@ -9,7 +9,7 @@ function L2_projection_Hdiv(atlas_model,
   Dc = num_cell_dims(atlas_model)
   lvl = nref(atlas_model)
 
-  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
+  _i_am_main && println("L2_projection_Hdiv: p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
   degree = 4*(p_fe+1)
   Ω_atlas = Triangulation(atlas_model)
@@ -61,30 +61,3 @@ function L2_projection_Hdiv(atlas_model,
 
   return e_l2proj,e_interp,false
 end
-
-### must be in the tangent space of the sphere
-# function uX(p)
-#   function _u(α)
-#     x = CubedSphereForwardMap(p)(α)
-#     VectorValue(-x[2],x[1],0.0)
-#   end
-# end
-
-# MPI.Init()
-# ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))
-
-# n_ref_lvls = 4
-# ps = [1]
-# ls = LUSolver()
-
-# Dc = 3
-# models = (Dc == 2) ? get_octree_refined_models(ranks,n_ref_lvls,radius) : get_3D_octree_refined_models(ranks,n_ref_lvls-1)
-
-# dir = datadir("InterpolateConvergence")
-# (i_am_main(ranks) && !isdir(dir)) && mkdir(dir)
-
-# _dir = dir*"/vector_func_$(Dc)D_Hdiv"
-# !isdir(_dir) && mkdir(_dir)
-
-# p_convergence_test(ranks,ps,models,L2_projection_Hdiv,_dir,uX,ls,true)
-# plot_convergence_from_saved(_dir,"convergence",["L2 proj","Interp"])

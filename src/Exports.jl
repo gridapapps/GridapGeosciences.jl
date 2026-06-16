@@ -130,9 +130,9 @@ end
 @publish Distributed createvtk_with_cell_geomap
 @publish Distributed create_pvtk_file_with_cell_geomap
 
-@publish Distributed distributed_panel_ids
 @publish Distributed get_distributed_refined_models
-@publish Distributed get_distributed_ambient_refined_models
+@publish Distributed get_distributed_extrinsic_cubed_sphere_refined_models
+@publish Distributed get_distributed_intrinsic_cubed_sphere_refined_models
 @publish Distributed get_panel_ids
 @publish Distributed get_owned_panel_ids
 @publish Distributed get_skel_panel_ids

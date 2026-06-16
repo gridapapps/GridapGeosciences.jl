@@ -84,7 +84,7 @@ function nc_vertical(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) w
   nc_vertical(get_parametric_model(model))
 end
 
-function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
+function nc_horizontal(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
 
   grid = get_grid(model)
   gids = get_cell_gids(model)
@@ -97,11 +97,9 @@ function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
     pts = get_cell_ref_coordinates(grid)
     f = lazy_map(evaluate,cmap,pts)
     g = lazy_map(FindSurfaceCells(),f)
-
     owned_cells = own_to_local(cids)
     sum(g[owned_cells])
   end
-
   nsurface = sum(f)
   ncells_per_panel = Int(nsurface/6)
   return ncells_per_panel
@@ -121,13 +119,13 @@ function nc_horizontal(model::ATDMCS3D)
 end
 
 # return square here so vertical is 'like' horitzontal
-function nc_vertical(model::CubedSphere3DParametricDistributedDiscreteModel)
+function nc_vertical(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
   n = _nc_vertical(model)
   return Int(n^2)
 end
 
 # the actual number of cells in vertical per panel
-function _nc_vertical(model::CubedSphere3DParametricDistributedDiscreteModel)
+function _nc_vertical(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
   ncells_per_panel = nc_horizontal(model)
   n = num_cells(model)/6
   _n =  n /ncells_per_panel

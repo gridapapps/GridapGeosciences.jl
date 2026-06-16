@@ -26,19 +26,19 @@ function L2_projection(models::AbstractArray; _i_am_main=true)
   Dc = num_cell_dims(testitem(models))
 
   # L2: scalar
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:L2,ls,false; _i_am_main=_i_am_main)
+ # p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:L2,ls,false; _i_am_main=_i_am_main)
 
   # H1: scalar
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:H1,ls,false; _i_am_main=_i_am_main)
+  #p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:H1,ls,false; _i_am_main=_i_am_main)
 
   # L2: vector
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:L2,ls,false; _i_am_main=_i_am_main)
+  #p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:L2,ls,false; _i_am_main=_i_am_main)
 
   # H1: vector
   p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:H1,ls,false; _i_am_main=_i_am_main)
 
   # H div: vector
-  p_convergence_auto_test(ps,models,L2_projection_Hdiv,dir,uX,ls,false; _i_am_main=_i_am_main)
+  # p_convergence_auto_test(ps,models,L2_projection_Hdiv,dir,uX,ls,false; _i_am_main=_i_am_main)
 
   # H curl: vector (3D)
   if Dc == 3

@@ -10,14 +10,14 @@ n_ref_lvls = 4
 radius = 1.0
 
 ## Distributed model: 2D
-models = get_distributed_refined_models(ranks,nprocs,n_ref_lvls,radius)
+models = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
 WaveEquationTests.main(models;_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D
-models = get_octree_refined_models(ranks,n_ref_lvls,radius)
-WaveEquationTests.main(models;_i_am_main=i_am_main(ranks))
+# models = get_octree_refined_models(ranks,n_ref_lvls,radius)
+# WaveEquationTests.main(models;_i_am_main=i_am_main(ranks))
 
 ### P4test model: 3D
-thickness = 0.19
-models = get_3D_octree_refined_models(ranks,n_ref_lvls-1,radius,thickness)
-WaveEquationTests.main(models;ps=[1],_i_am_main=i_am_main(ranks))
+# thickness = 0.19
+# models = get_3D_octree_refined_models(ranks,n_ref_lvls-1,radius,thickness)
+# WaveEquationTests.main(models;ps=[1],_i_am_main=i_am_main(ranks))

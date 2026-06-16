@@ -1,4 +1,4 @@
-function _generate_face_to_master_cell_id(model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold};
+function _generate_face_to_master_cell_id(model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O};
                                           cell_l2g::AbstractVector{Int}=IdentityVector(num_cells(model))) where {Dc, Da, G, A, P, C, O}
   
   grid_topology = get_grid_topology(model)
@@ -137,7 +137,7 @@ function _compute_cell_bases_changes(
   ::Type{Float64},  
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O,<:IntrinsicManifold}, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
   cell_Jt) where {Dc, Da, G, A, P, C, O}
   return nothing
@@ -148,7 +148,7 @@ function _compute_cell_bases_changes(
   ::Type{<:VectorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
   cell_Jt) where {Dc, Da, G, A, P, C, O}
   change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe)
@@ -160,7 +160,7 @@ function _compute_cell_bases_changes(
   ::Type{<:TensorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
   cell_Jt) where {Dc, Da, G, A, P, C, O}
   @notimplemented "GridapGeosciences.jl does not support grad-conforming tensor-valued finite elements"
@@ -170,7 +170,7 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::AtlasDiscreteModel{Dc, Da, G, A, P, C, O, <:IntrinsicManifold}, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
   cell_Jt) where {Dc, Da, G, A, P, C, O}
   T = _get_value_type(cell_reffe)
@@ -180,21 +180,18 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}, 
+  model::AdaptedDiscreteModel{Dc,Dp,<:IntrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}, 
   cell_reffe, 
   cell_Jt) where {Dc,Dp,G,A,P,C,O}
   T = _get_value_type(cell_reffe)
   _compute_cell_bases_changes(T, ref_name, map, model.model, cell_reffe, cell_Jt)
 end
 
-# We do not want to use CLagrangianFESpace for parametric models, because otherwise
+# We do not want to use CLagrangianFESpace for intrinsic/parametric models, because otherwise
 # we cannot implement the change of basis for the vector-valued case
-const ParamTrianType{Dc,Dp,G,A,P,C,O} = BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,<:IntrinsicManifold}}
-const UnionParamTrianType{Dc,Dp,G,A,P,C,O} = Union{ParamTrianType{Dc,Dp,G,A,P,C,O},
-                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp,G,A,P,C,O}}}
-
-function _use_clagrangian(trian::UnionParamTrianType,
+function _use_clagrangian(trian::Union{<:BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O}, 
+                                       <:AdaptedTriangulation{Dct,Dcm,<:BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O}}}, 
                           cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                          conf::H1Conformity)
+                          conf::H1Conformity) where {Dct,Dcm,Da,G,A,P,C,O}
     return false
 end

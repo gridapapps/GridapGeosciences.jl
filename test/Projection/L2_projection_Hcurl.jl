@@ -16,7 +16,7 @@ function L2_projection_Hcurl(atlas_model,
     degree = 8
   end
 
-  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc; degree = $(degree)")
+  _i_am_main && println("L2_projection_Hcurl: p_fe = $(p_fe); nref = $lvl; Dc = $Dc; degree = $(degree)")
 
   Ω_atlas = Triangulation(atlas_model)
   dΩ = Measure(Ω_atlas,degree)

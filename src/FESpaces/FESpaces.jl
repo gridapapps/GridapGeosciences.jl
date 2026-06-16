@@ -12,6 +12,7 @@ import Gridap.Fields: Map, VectorValue, TensorValue, Point, ∇
 import Gridap.Arrays: array_cache, CachedMatrix, return_type, getindex!,
                       testitem, lazy_map, IdentityVector, setsize!, return_cache,
                       evaluate, evaluate!
+import GridapGeosciences.Geometry: BFTATDMIM, IntrinsicAtlasDiscreteModel
 import GridapGeosciences.Geometry: CubedSphereParametricDiscreteModel, AtlasDiscreteModel,
                                    get_panel_ids, get_forward_map_generator, get_cell_ambient_maps,
                                    AmbientMapCellField, IntrinsicManifold
@@ -26,6 +27,5 @@ import Gridap.CellData: get_data
 include("GradConformingFESpaces.jl")
 export _generate_change_of_basis_matrices
 export _get_value_type
-export ParamTrianType
 
 end

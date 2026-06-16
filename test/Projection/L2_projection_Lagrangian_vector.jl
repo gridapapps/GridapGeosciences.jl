@@ -12,7 +12,7 @@ function L2_projection_Lagrangian_vector(atlas_model,
 
   @check conf in [:L2, :H1] "\n Must be L2 or H1 conformity"
 
-  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc, conf = $conf")
+  _i_am_main && println("L2_projection_Lagrangian_vector: p_fe = $(p_fe); nref = $lvl; Dc = $Dc, conf = $conf")
 
   degree = 4*(p_fe+1)
 

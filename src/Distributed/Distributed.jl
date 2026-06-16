@@ -52,9 +52,37 @@ include("PanelIds.jl")
 include("Vtk.jl")
 include("Triangulations.jl")
 
+
+## AtlasDiscreteModels-related stuff
+import GridapGeosciences.Geometry: ManifoldStyle
+import GridapGeosciences.Geometry: CoarseMeshInfo
+import GridapGeosciences.Geometry: CoarseMesh
+import GridapGeosciences.Geometry: AtlasDiscreteModel
+import GridapGeosciences.Geometry: AtlasGrid
+import GridapGeosciences.Geometry: get_atlas_grid
+import GridapGeosciences.Geometry: BFTATDM
+import GridapGeosciences.Geometry: AmbientMapCellField
+import GridapGeosciences.Geometry: MetricCellField
+import GridapGeosciences.Geometry: InvMetricCellField
+import GridapGeosciences.Geometry: MeasureCellField
+import GridapGeosciences.Geometry: Δs
+import GridapGeosciences.Geometry: ∇s
+import GridapGeosciences.Geometry: BFTATDMIM, IntrinsicAtlasDiscreteModel
+include("AtlasOctreeDistributedDiscreteModels.jl")
+export AtlasOctreeDistributedDiscreteModel
+include("AtlasDistributedDiscreteModels.jl")
+export AtlasDiscreteModel
+export IntrinsicAtlasDistributedDiscreteModel
+export AtlasDistributedDiscreteModel
+export get_distributed_refined_models
+export get_distributed_cubed_sphere_refined_models
+export get_distributed_intrinsic_cubed_sphere_refined_models
+export get_distributed_extrinsic_cubed_sphere_refined_models
+
 import Gridap.FESpaces: FESpace, compute_cell_bases_changes
 import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace
-import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type, ParamTrianType
+import GridapDistributed: add_ghost_cells
+import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type
 include("GradConformingFESpaces.jl")
 
 export CubedSphere2DParametricOctreeDistributedDiscreteModel
@@ -73,8 +101,7 @@ export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk
 
 export distributed_panel_ids
 export DistributedAdaptivityGlue
-export get_distributed_refined_models
-export get_distributed_ambient_refined_models
+export get_distributed_extrinsic_cubed_sphere_refined_models
 export get_panel_ids, get_owned_panel_ids, get_skel_panel_ids
 # export BoundaryTriangulation
 export pullback_area_form
@@ -84,12 +111,7 @@ export get_octree_ambient_refined_models, get_3D_octree_ambient_refined_models
 
 export CellField
 
-## AtlasDiscreteModels-related stuff
-import GridapGeosciences.Geometry: ManifoldStyle
-import GridapGeosciences.Geometry: CoarseMeshInfo
-import GridapGeosciences.Geometry: CoarseMesh
-include("AtlasOctreeDistributedDiscreteModels.jl")
-export AtlasOctreeDistributedDiscreteModel
+
 
 
 end

@@ -4,7 +4,7 @@ function _generate_change_of_basis_matrices(model, cell_reffe, cell_l2g)
                                        face_to_master_cell_id=face_to_master_cell_id)
 end
 
-function _generate_change_of_basis_matrices(model::CubedSphereParametricDistributedDiscreteModel, cell_reffes)
+function _generate_change_of_basis_matrices(model::IntrinsicAtlasDistributedDiscreteModel, cell_reffes)
     is_vector = false
     map(cell_reffes) do cell_reffe
       T=_get_value_type(cell_reffe)
@@ -35,8 +35,11 @@ function _generate_change_of_basis_matrices(model::CubedSphereParametricDistribu
 end
 
 function DistributedSingleFieldFESpace(
-  model::CubedSphereParametricDistributedDiscreteModel, # Active model, not bg model
-  trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:ParamTrianType{Dc,Dp}}},
+  model::IntrinsicAtlasDistributedDiscreteModel{Dc,Dp}, # Active model, not bg model
+  trian::DistributedTriangulation{Dc,Dp,
+                                  <:AbstractArray{<:Union{<:BFTATDMIM{Dc,Dp},
+                                                          <:AdaptedTriangulation{Dc,Dp,
+                                                                                 <: BFTATDMIM{Dc,Dp}}}}},
   cell_gids::PRange, 
   cell_reffe::AbstractArray{<:AbstractArray{T}}; 
   labels = get_face_labeling(model), 
@@ -65,8 +68,8 @@ function DistributedSingleFieldFESpace(
 end
 
 function compute_cell_bases_changes(
-  ::ReferenceFEName, ::IdentityPiolaMap, model::CubedSphereParametricDistributedDiscreteModel, cell_reffe, cell_Jt
-)
+  ::ReferenceFEName, ::IdentityPiolaMap, model::IntrinsicAtlasDistributedDiscreteModel, cell_reffe, cell_Jt
+) 
   change_matrices = _generate_change_of_basis_matrices(model, cell_reffe)
   map(change_matrices) do change_matrices
     if isnothing(change_matrices)

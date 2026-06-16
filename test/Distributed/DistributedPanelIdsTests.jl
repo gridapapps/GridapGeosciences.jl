@@ -56,7 +56,7 @@ function test_distributedParametricDiscreteModel(distribute,nprocs)
 
   n_ref_lvls = 2
   radius = 1.0
-  dmodels = get_distributed_refined_models(ranks,nprocs,n_ref_lvls,radius)
+  dmodels = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
 
   test_distributed_panel_ids(dmodels[1])
 
@@ -152,7 +152,7 @@ function test_distributedAmbientDiscreteModel(distribute,nprocs)
 
   n_ref_lvls = 2
   radius = 1.0
-  dmodels = get_distributed_ambient_refined_models(ranks,nprocs,n_ref_lvls,radius)
+  dmodels = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
 
   test_distributed_panel_ids(dmodels[1])
 

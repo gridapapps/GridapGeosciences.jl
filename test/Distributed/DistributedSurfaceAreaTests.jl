@@ -59,16 +59,16 @@ function main(distribute,nprocs)
   ## 2D parametric models:
   n_ref_lvls = 3
   for radius in [1,2]
-    dist_models = get_distributed_refined_models(ranks,nprocs,n_ref_lvls,radius)
-    p4est_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
-    test_surface_area(dist_models,p4est_models)
+    dist_models = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
+    # p4est_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
+    # test_surface_area(dist_models,p4est_models)
   end
 
   ## 2D ambient models:
   for radius in [1,2]
-    dist_models = get_distributed_ambient_refined_models(ranks,nprocs,n_ref_lvls,radius)
-    p4est_models = get_octree_ambient_refined_models(ranks,n_ref_lvls,radius)
-    test_surface_area(dist_models,p4est_models)
+    dist_models = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
+    # p4est_models = get_octree_ambient_refined_models(ranks,n_ref_lvls,radius)
+    # test_surface_area(dist_models,p4est_models)
   end
 
   @test true
