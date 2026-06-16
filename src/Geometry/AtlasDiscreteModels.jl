@@ -223,29 +223,10 @@ const IntrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,
 const ExtrinsicAtlasDiscreteModel{Dc,Da,G,A,P,C,O} = AtlasDiscreteModel{Dc,Da,G,A,P,C,O,<:ExtrinsicManifold}
 
 const BFTATDM{Dc,Dp} = Gridap.Geometry.BodyFittedTriangulation{Dc,Dp,<:AtlasDiscreteModel}
-<<<<<<< Updated upstream
-const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = 
+const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} =
     Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:IntrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
-const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = 
+const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} =
     Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:ExtrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
-=======
-const BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm,
-                                        Da,
-                                        G,
-                                        A,
-                                        P,
-                                        C,
-                                        O,
-                                        <:IntrinsicManifold}}
-const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} = Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:AtlasDiscreteModel{Dcm,
-                                        Da,
-                                        G,
-                                        A,
-                                        P,
-                                        C,
-                                        O,
-                                        <:ExtrinsicManifold}}
->>>>>>> Stashed changes
 """
     MetricCellField(trian)
 

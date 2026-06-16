@@ -88,10 +88,8 @@ and plot the result on $\Lambda$:
 ````julia 
 n_ambient = pushforward_normal(Λ)
 cellfields = ["amb_n_plus"=>n_ambient.plus, "amb_n_minus"=>n_ambient.minus, "amb_n_total"=>n_ambient.minus+n_ambient.plus ]
+writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
 ````
-
-TO-DO skel_geo_map = lazy_map(p -> fwd_map_generator(p), skel_panel_ids.plus)
-TO-DO writevtk_with_cell_geomap(skel_geo_map,Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
 
 ## FE Spaces
 Now that we have a discrete model, we define trial and test spaces using Gridap's high level API:

@@ -72,8 +72,7 @@ n_Λ = get_normal_vector(Λ)
 # and plot the result on $\Lambda$:
 n_ambient = pushforward_normal(Λ)
 cellfields = ["amb_n_plus"=>n_ambient.plus, "amb_n_minus"=>n_ambient.minus, "amb_n_total"=>n_ambient.minus+n_ambient.plus ]
-# TO-DO skel_geo_map = lazy_map(p -> fwd_map_generator(p), skel_panel_ids.plus)
-# TO-DO writevtk_with_cell_geomap(skel_geo_map,Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
+writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,"ambient_skeleton_normal",cellfields=cellfields,append=false)
 
 
 # ## FE Spaces
