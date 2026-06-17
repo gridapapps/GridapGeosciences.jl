@@ -48,6 +48,8 @@ end
 # that are used in the tests. But we should eventually give
 # a deeper thought to this
 @publish Geometry AtlasDiscreteModel
+@publish Geometry IntrinsicAtlasDiscreteModel
+@publish Geometry ExtrinsicAtlasDiscreteModel
 @publish Geometry AtlasGrid
 @publish Geometry IntrinsicManifold
 @publish Geometry ExtrinsicManifold

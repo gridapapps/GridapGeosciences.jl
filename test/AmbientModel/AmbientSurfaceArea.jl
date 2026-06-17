@@ -11,12 +11,11 @@ using Gridap
 using GridapGeosciences
 using GridapP4est
 using Test
+using Gridap.Adaptivity
 
-import GridapGeosciences.Geometry: ParametricModels
-import GridapGeosciences.Geometry: AmbientModels
 
 function compute_surface_area(
-  ambient_model::AtlasDiscreteModel{2,3},
+  ambient_model::ExtrinsicAtlasDiscreteModel,
   degree::Int)
   Ω = Triangulation(ambient_model)
   dΩ = Measure(Ω,degree)
@@ -25,13 +24,19 @@ function compute_surface_area(
 end
 
 function compute_surface_area(
-  model::AtlasDiscreteModel{2,2},
+  model::IntrinsicAtlasDiscreteModel,
   degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
   meas_cf = MeasureCellField(Ω)
   surface_area = sum( ∫( 1.0*meas_cf )dΩ )
   return surface_area
+end
+
+function compute_surface_area(
+  model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel},
+  degree::Int) where {Dc,Dp}
+  compute_surface_area(model.model, degree)
 end
 
 

@@ -19,6 +19,7 @@ include("AtlasGrids.jl")
 include("AtlasDiscreteModels.jl")
 
 export AtlasGrid, AtlasDiscreteModel
+export IntrinsicAtlasDiscreteModel, ExtrsinsicAtlasDiscreteModel
 export IntrinsicManifold, ExtrinsicManifold
 export MetricCellField
 export InvMetricCellField

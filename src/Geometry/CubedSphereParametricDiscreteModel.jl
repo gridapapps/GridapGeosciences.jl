@@ -158,11 +158,8 @@ or 2/3D ambient model
 function perp(u::CellField)
   trian = get_triangulation(u)
   model = get_background_model(trian)
-
-  @check isa(model,ParametricModels{2,Dp} where {Dp})
-
-  R = [0 -1
-       1 0]
+  R = [0.0 -1.0
+       1.0 0.0]
   R_cf = CellField(TensorValue(R),trian)
   R_cf⋅u
 end
