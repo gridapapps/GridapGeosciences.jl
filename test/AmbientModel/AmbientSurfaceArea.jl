@@ -15,7 +15,8 @@ using Gridap.Adaptivity
 
 
 function compute_surface_area(
-  ambient_model::ExtrinsicAtlasDiscreteModel,
+  ambient_model::Union{<:ExtrinsicAtlasDiscreteModel,
+                        <:ExtrinsicAtlasDistributedDiscreteModel},
   degree::Int)
   Ω = Triangulation(ambient_model)
   dΩ = Measure(Ω,degree)
@@ -24,7 +25,8 @@ function compute_surface_area(
 end
 
 function compute_surface_area(
-  model::IntrinsicAtlasDiscreteModel,
+  model::Union{<:IntrinsicAtlasDiscreteModel,
+               <:IntrinsicAtlasDistributedDiscreteModel},
   degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
