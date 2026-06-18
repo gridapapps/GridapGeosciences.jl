@@ -39,8 +39,6 @@ end
 @publish Geometry AmbientCellField
 @publish Geometry get_parametric_model
 @publish Geometry get_surface_normal
-@publish Geometry dagger
-@publish Geometry perp
 @publish Geometry AmbientModels
 
 # BEGIN AtlasDiscreteModels-specific exports
@@ -60,6 +58,9 @@ end
 @publish Geometry LatLonMapCellField
 @publish Geometry Δs
 @publish Geometry ∇s
+@publish Geometry divs
+@publish Geometry skew_∇s
+@publish Geometry skew_divs
 
 @publish Geometry CylinderMesh
 @publish Geometry CylinderChartMap
@@ -83,6 +84,8 @@ end
 @publish Geometry JtJ
 @publish Geometry get_atlas_grid
 @publish Geometry get_ambient_dim
+@publish Geometry dagger
+
 # END AtlasDiscreteModels-specific exports
 
 
@@ -117,6 +120,7 @@ end
 @publish Helpers forward_pinv_jacobian
 
 @publish Helpers pinvJ
+@publish Helpers perp
 
 @publish Distributed CubedSphere2DParametricOctreeDistributedDiscreteModel
 @publish Distributed CubedSphere3DParametricOctreeDistributedDiscreteModel

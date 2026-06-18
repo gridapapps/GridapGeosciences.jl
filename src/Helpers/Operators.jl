@@ -44,3 +44,38 @@ sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ (inv_metric(m,αβ) ⋅ grad
 _sdiv(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( f(m)(αβ))
 surfdiv(vec::Function) = m -> surfdiv(vec,m)
 surfdiv(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(_sdiv(f,m))(αβ) )
+
+####### skew surf div
+
+# grad(m^2)⋅(inv(g) R(J^†⋅(f∘ϕ)))
+
+_skew_sdiv(f::Function,m::Field) = αβ -> detg(m,αβ)*inv_metric(m,αβ)⋅(perp(f(m)(αβ)))
+skew_surfdiv(vec::Function) = m -> skew_surfdiv(vec,m)
+skew_surfdiv(f::Function,m::Field) = αβ ->  -1.0/sqrtg(m,αβ)*(divergence(_skew_sdiv(f,m))(αβ))
+
+####### skew surf grad
+
+skew_surfgrad(vec::Function) = m -> skew_surfgrad(vec,m)
+skew_surfgrad(f::Function,m::Field) = αβ ->  1.0/sqrtg(m,αβ)*J(m)(αβ)⋅perp(gradient(f(m))(αβ))
+
+dagger(vec::Function) = m -> dagger(vec,m)
+dagger(vec::Function,m::Field) = αβ ->  J(m)(αβ)⋅(inv_metric(m,αβ)⋅perp( contra_v(vec(m))(αβ) )) * sqrtg(m,αβ)
+
+"""
+perp
+
+computes u^⟂ = R u , where u is only defined for 2D parametric models.
+This function will fail if the background model is a 3D parametric model,
+or 2/3D ambient model
+"""
+
+function perp(vec::VectorValue{2})
+  VectorValue(-vec[2],vec[1])
+end  
+
+function perp(t::TensorValue{2,2})
+  TensorValue(-t[2,1],t[1,1],-t[2,2],t[1,2])
+end  
+
+
+

@@ -491,6 +491,12 @@ function _fm(f, m)
    end
 end
 
+ deriv_sqrt= x -> 0.5/sqrt(x)
+ function deriv_det(x)
+   Gridap.TensorValues.SymTensorValue(x[2,2],-x[2,1],x[1,1])
+ end
+ cpAB = (A,B)->contracted_product(Val(2), A, permutedims(B,(2,3,1)))
+
 function _Δs_no_ad(f, Ω_atlas)
   # surflap(f::Function) = m -> surflap(f,m)
   # surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
@@ -505,12 +511,7 @@ function _Δs_no_ad(f, Ω_atlas)
   gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
 
   ## BEGIN Machinery to compute gradient(meas_cf)
-  deriv_sqrt= x -> 0.5/sqrt(x)
-  function deriv_det(x)
-    Gridap.TensorValues.SymTensorValue(x[2,2],-x[2,1],x[1,1])
-  end
   # v_l = A_ij * B_kij
-  cpAB = (A,B)->contracted_product(Val(2), A, permutedims(B,(2,3,1)))
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*
                    Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
   ## END Machinery to compute gradient(meas_cf)
@@ -633,12 +634,176 @@ function ∇s(f::Function,
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
+function _skew_∇s_no_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  J_cf = transpose∘∇(ambient_map_cf)
+  grad_f_cf = (∇(f)∘ambient_map_cf)⋅J_cf
+  skew_grad_parametric = J_cf⋅(perp∘grad_f_cf)*(1.0/meas_cf) 
+end
+
+function _skew_∇s_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(skew_surfgrad(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+   use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas) : _skew_∇s_no_ad(f, Ω_atlas)
+end
+
+
+
+function _divs_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(surfdiv(contra_v(_fm(f,m)),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+function _divs_no_ad(f, Ω_atlas)
+    # 1/m * div( m * (J^†⋅(f∘ϕ)) ), where J^†=inv(g)⋅Jᵀ
+    # grad(m)⋅(J^†⋅(f∘ϕ)) + 
+    # div((J^†⋅(f∘ϕ))) = tr(grad(J^†):(f∘ϕ)) + tr(J^†⋅grad(f∘ϕ))
+    # grad(J^†) = grad(inv(g)⋅Jᵀ) = grad(inv(g))⋅Jᵀ + inv(g)⊙grad(Jᵀ)
+    metric_cf = MetricCellField(Ω_atlas)
+    meas_cf = MeasureCellField(Ω_atlas)
+    inv_metric_cf = InvMetricCellField(Ω_atlas)
+    ambient_map_cf = AmbientMapCellField(Ω_atlas)
+    grad_ambient_map_cf = ∇(ambient_map_cf)
+    f_cf = f∘ambient_map_cf
+    grad_f_cf = ∇(f)∘ambient_map_cf
+    Jt_cf = ∇(ambient_map_cf)
+    
+    # grad(inv(g))⋅Jᵀ
+    grad_inv_metric_cf = ∇(inv_metric_cf)
+    trace_1=Operation(tr)((grad_inv_metric_cf⋅Jt_cf)⋅f_cf)
+    
+    # inv(g)⋅grad(Jᵀ)
+    trace_2 = Operation(tr)((inv_metric_cf ⋅ ∇(Jt_cf))⋅f_cf)
+
+    # tr(J^†⋅grad(f∘ϕ)) = tr((inv(g)⋅Jᵀ)⋅grad(f∘ϕ))
+    trace_3=Operation(tr)((inv_metric_cf⋅grad_ambient_map_cf)⋅
+                              ((grad_f_cf)⋅(transpose∘grad_ambient_map_cf)))
+
+    grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*
+                   Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))                          
+
+    return (1.0/meas_cf)*(meas_cf*(trace_1+trace_2+trace_3) + 
+                           grad_meas_cf⋅(inv_metric_cf⋅Jt_cf⋅f_cf))
+end
+
+function _skew_divs_no_ad(f, Ω_atlas)
+    # -1/m * div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) ), where J^†=inv(g)⋅Jᵀ
+    # div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) )
+    #    
+    
+    metric_cf = MetricCellField(Ω_atlas)
+    det_metric_cf = det∘metric_cf
+    meas_cf = MeasureCellField(Ω_atlas)
+    inv_metric_cf = InvMetricCellField(Ω_atlas)
+    ambient_map_cf = AmbientMapCellField(Ω_atlas)
+    grad_ambient_map_cf = ∇(ambient_map_cf)
+    f_cf = f∘ambient_map_cf
+    grad_f_cf = ∇(f)∘ambient_map_cf
+    Jt_cf = ∇(ambient_map_cf)
+    grad_Jt_cf = ∇(Jt_cf)
+    grad_metric_cf = ∇(metric_cf)
+    grad_inv_metric_cf = ∇(inv_metric_cf)
+    pseudo_inv_J = pinvJ∘transpose∘grad_ambient_map_cf
+    grad_pseudo_inv_J = grad_inv_metric_cf⋅Jt_cf + inv_metric_cf⋅grad_Jt_cf
+
+    # div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) ) = 
+    #   grad(m^2)⋅(inv(g) R(J^†⋅(f∘ϕ))) + m^2 * div(inv(g) R(J^†⋅(f∘ϕ)))
+
+    # div(inv(g) R(J^†⋅(f∘ϕ))) = tr(grad(inv(g))⋅R(J^†⋅(f∘ϕ))) + tr(inv(g)⋅grad(R(J^†⋅(f∘ϕ))))
+    trace_1 = Operation(tr)(grad_inv_metric_cf⋅(perp∘(pseudo_inv_J⋅f_cf)))
+    trace_2 = Operation(tr)(inv_metric_cf⋅(perp∘(grad_pseudo_inv_J⋅f_cf)))
+    trace_3 = Operation(tr)(inv_metric_cf⋅(perp∘(pseudo_inv_J⋅((grad_f_cf)⋅(transpose∘grad_ambient_map_cf)))))
+    
+    term_1 = (Operation(cpAB)(deriv_det∘metric_cf,grad_metric_cf))⋅
+                                (inv_metric_cf⋅(perp∘(pseudo_inv_J⋅f_cf))) # VALIDATED!!
+    term_2 = det_metric_cf*(trace_1 + trace_2 + trace_3)
+    return -1.0/meas_cf * (term_1+term_2)
+end
+
+function _skew_divs_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(skew_surfdiv(contra_v(_fm(f,m)),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+# Surface divergence of an ambient vector-valued function which is 
+# pulled back using the pseudo-inverse of the jacobian of the ambient 
+# map without multiplying by the metric
+function divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+              use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+   use_automatic_differentiation ? _divs_ad(f, Ω_atlas) : _divs_no_ad(f, Ω_atlas)
+end
+
+function divs(f::Function,
+              Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+              use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _divs_ad(f, Ω_atlas) : _divs_no_ad(f, Ω_atlas)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+function divs(f::Function,
+              Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
+              use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _divs_ad(f, Ω_atlas.trian) : _divs_no_ad(f, Ω_atlas.trian)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+
+function skew_divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+   use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas) : _skew_divs_no_ad(f, Ω_atlas)
+end
+
+function _dagger_ad(f::Function, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(dagger(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+function _dagger_no_ad(f::Function, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  f_cf = f∘ambient_map_cf
+  measure_cf = MeasureCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  J_cf = transpose∘∇(ambient_map_cf)
+  f_cf_parametric = (pinvJ∘J_cf)⋅f_cf
+  J_cf⋅(inv_metric_cf⋅(perp∘f_cf_parametric))*measure_cf
+end
+
+function dagger(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  use_automatic_differentiation ? _dagger_ad(f, Ω_atlas) : _dagger_no_ad(f, Ω_atlas)
+end
+
 function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
   ns = CellField(normal_vec,trian)
   ## This cellfield is, by default, on the physical domain
   ## Change to the reference domain. Recall the ambient model has junk nodes
   ## So being on the reference domain means the evaluatation at pts is via ref points
   change_domain(ns,DomainStyle(ns),ReferenceDomain())
+end
+
+"""
+dagger
+ 
+computes ̃u^† = ̃k × ̃u, where ̃k is only defined for ambient models.
+This function will fail if get_surface_normal fails (i.e for parametric models)
+"""
+function dagger(u::CellField)
+  trian = get_triangulation(u)
+  n = get_surface_normal(trian)
+  n×u
 end
 
 function get_refined_models(n_ref_lvls,

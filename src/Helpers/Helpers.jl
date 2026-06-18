@@ -22,7 +22,7 @@ export forward_jacobian, covariant_basis
 export pinvJ
 export sqrtg,  detg
 export metric, inv_metric
-export surflap, surfdiv, sgrad
+export surflap, surfdiv, sgrad, skew_surfdiv, skew_surfgrad
 export ambient_surflap, ambient_surfdiv, ambient_sgrad
 
 export panel_to_cartesian

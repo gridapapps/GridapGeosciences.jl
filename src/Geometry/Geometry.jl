@@ -27,6 +27,9 @@ export MeasureCellField
 export AmbientMapCellField, LatLonMapCellField
 export Δs
 export ∇s
+export divs
+export skew_∇s
+export skew_divs
 
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
@@ -49,6 +52,7 @@ import GridapGeosciences.Fields: CubedSphereInverseMap
 
 using GridapGeosciences.Helpers
 import GridapGeosciences.Helpers: inv_metric, forward_jacobian
+import GridapGeosciences.Helpers: perp
 
 include("PanelIds.jl")
 include("CubeSurface.jl")
@@ -83,7 +87,6 @@ export get_radius, get_thickness
 export get_inverse_map_generator
 export get_parametric_model
 export get_surface_normal
-export dagger, perp
 
 export AmbientModels
 

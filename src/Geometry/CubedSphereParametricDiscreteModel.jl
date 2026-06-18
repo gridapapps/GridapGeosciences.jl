@@ -145,21 +145,3 @@ returns an array of refined serial models where
 """
 
 const ParametricModels{Dc,Dp} = Union{CubedSphereParametricDiscreteModel{Dc,Dp},AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel}}
-
-
-"""
-perp
-
-computes u^⟂ = R u , where u is only defined for 2D parametric models.
-This function will fail if the background model is a 3D parametric model,
-or 2/3D ambient model
-"""
-
-function perp(u::CellField)
-  trian = get_triangulation(u)
-  model = get_background_model(trian)
-  R = [0.0 -1.0
-       1.0 0.0]
-  R_cf = CellField(TensorValue(R),trian)
-  R_cf⋅u
-end

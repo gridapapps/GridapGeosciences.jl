@@ -121,14 +121,4 @@ function get_surface_normal(trian::AdaptedTriangulation)
 end
 
 
-"""
-dagger
 
-computes ̃u^† = ̃k × ̃u, where ̃k is only defined for ambient models.
-This function will fail if get_surface_normal fails (i.e for parametric models)
-"""
-function dagger(u::CellField)
-  trian = get_triangulation(u)
-  n = get_surface_normal(trian)
-  n×u
-end
