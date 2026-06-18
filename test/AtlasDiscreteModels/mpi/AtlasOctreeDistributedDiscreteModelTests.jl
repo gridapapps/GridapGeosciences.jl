@@ -38,7 +38,7 @@ module AtlasOctreeDistributedDiscreteModelTests
     function main(ranks)
         # ── Build new AtlasOctreeDistributedDiscreteModel ────────────────────────────
         atlas_model = AtlasOctreeDistributedDiscreteModel(
-          ranks, CubedSphereMesh(RADIUS); num_initial_uniform_refinements = NUM_REF)
+          ranks, CubedSphereMesh(RADIUS), NUM_REF)
 
         # ── Reference: CubedSphere2DParametricOctreeDistributedDiscreteModel ─────────
         ref_model = CubedSphere2DParametricOctreeDistributedDiscreteModel(
@@ -46,7 +46,7 @@ module AtlasOctreeDistributedDiscreteModelTests
 
         # ── Per-rank verification ─────────────────────────────────────────────────────
         map(
-          local_views(atlas_model.dmodel),
+          local_views(atlas_model.atlas_dmodel),
           local_views(ref_model.parametric_dmodel),
         ) do local_atlas, local_ref
 
