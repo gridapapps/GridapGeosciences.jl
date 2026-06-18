@@ -172,8 +172,8 @@ function perp(u::CellField)
 
   @check isa(model,ParametricModels{2,Dp} where {Dp})
 
-  R = [0 -1
-       1 0]
-  R_cf = CellField(TensorValue(R),trian)
+  R = [0.0 -1.0
+       1.0 0.0]
+  R_cf = CellField(TensorValue(R),trian, PhysicalDomain())
   R_cf⋅u
 end
