@@ -528,7 +528,7 @@ function _csphere_eval(panel::Int, r::Float64, x::Point{2})
   r * Point(s1*h[j1], s2*h[j2], s3*h[j3])
 end
 
-function _csphere_jac(panel::Int, r::Float64, x::Point{2})
+function _csphere_jac(panel::Int, r::Float64, x::Point{2,T}) where T
   a, b  = tan(x[1]), tan(x[2])
   ρ2    = 1 + a^2 + b^2
   ρ     = sqrt(ρ2); ρ3 = ρ2 * ρ
@@ -536,7 +536,7 @@ function _csphere_jac(panel::Int, r::Float64, x::Point{2})
   # Base Jh columns: c[k] = (Jh[1,k], Jh[2,k]) scaled by ρ³
   c = ((-a*sa, -b*sb), (sa*sb, -a*b*sb), (-a*b*sa, sa*sb))
   j1,s1, j2,s2, j3,s3 = _CSPHERE_PERM[panel]
-  (r/ρ3) * TensorValue{2,3,Float64}(
+  (r/ρ3) * TensorValue{2,3,T}(
     s1*c[j1][1], s1*c[j1][2],
     s2*c[j2][1], s2*c[j2][2],
     s3*c[j3][1], s3*c[j3][2],
@@ -661,7 +661,7 @@ end
   (1 + thickness * γ / radius) * XYZ_surf
 end
 
-@inline function _csphere3d_jac(panel::Int, radius::Float64, thickness::Float64, x::Point{3})
+@inline function _csphere3d_jac(panel::Int, radius::Float64, thickness::Float64, x::Point{3,T}) where T
   γ, α, β  = x[1], x[2], x[3]
   αβ       = Point(α, β)
   XYZ_surf = _csphere_eval(panel, radius, αβ)
@@ -669,7 +669,7 @@ end
   t_over_r = thickness / radius
   scale    = 1 + t_over_r * γ
   # Column-major storage: column k = (J[1,k], J[2,k], J[3,k])
-  TensorValue{3,3,Float64}(
+  TensorValue{3,3,T}(
     t_over_r * XYZ_surf[1], scale * Jsurf[1,1], scale * Jsurf[2,1],
     t_over_r * XYZ_surf[2], scale * Jsurf[1,2], scale * Jsurf[2,2],
     t_over_r * XYZ_surf[3], scale * Jsurf[1,3], scale * Jsurf[2,3],
@@ -708,6 +708,61 @@ function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CubedSphereWithThic
   p, r, t = f.object.panel, f.object.radius, f.object.thickness
   @inbounds for i in eachindex(xs)
     cache.array[i] = _csphere3d_jac(p, r, t, xs[i])
+  end
+  cache.array
+end
+
+# ── FieldGradient{2} of CubedSphereWithThicknessMap (Hessian) ────────────────
+#
+# Returns ThirdOrderTensorValue{3,3,3} where T[l,i,k] = ∂J[i,k]/∂x_l = ∂²φ_k/(∂x_i∂x_l),
+# J being the Jacobian from FieldGradient{1}.  x = (γ,α,β), scale = 1+thickness·γ/radius.
+#
+# From J[1,k] = t_over_r·φ_surf[k],  J[2,k] = scale·Jsurf[1,k],  J[3,k] = scale·Jsurf[2,k]:
+#
+#   T[1,1,k] = 0                              (γγ: φ_surf independent of γ)
+#   T[2,1,k] = T[1,2,k] = t_over_r·Jsurf[1,k]  (γα cross term)
+#   T[3,1,k] = T[1,3,k] = t_over_r·Jsurf[2,k]  (γβ cross term)
+#   T[2,2,k]             = scale·Hsurf[1,1,k]   (αα surface Hessian)
+#   T[3,2,k] = T[2,3,k] = scale·Hsurf[1,2,k]   (αβ cross term; Hsurf[1,2,k]=Hsurf[2,1,k])
+#   T[3,3,k]             = scale·Hsurf[2,2,k]   (ββ surface Hessian)
+
+@inline function _csphere3d_hess(panel::Int, radius::Float64, thickness::Float64, x::Point{3})
+  γ, α, β  = x[1], x[2], x[3]
+  αβ       = Point(α, β)
+  Jsurf    = _csphere_jac(panel, radius, αβ)    # TensorValue{2,3}
+  Hsurf    = _csphere_hess(panel, radius, αβ)   # ThirdOrderTensorValue{2,2,3}
+  t_over_r = thickness / radius
+  scale    = 1 + t_over_r * γ
+  z        = zero(Float64)
+  # Column-major storage, l fastest, then i, then k (output component).
+  ThirdOrderTensorValue{3,3,3,Float64,27}(
+    # k=1:
+    z,                    t_over_r*Jsurf[1,1], t_over_r*Jsurf[2,1],  # i=1
+    t_over_r*Jsurf[1,1], scale*Hsurf[1,1,1],  scale*Hsurf[2,1,1],   # i=2
+    t_over_r*Jsurf[2,1], scale*Hsurf[1,2,1],  scale*Hsurf[2,2,1],   # i=3
+    # k=2:
+    z,                    t_over_r*Jsurf[1,2], t_over_r*Jsurf[2,2],
+    t_over_r*Jsurf[1,2], scale*Hsurf[1,1,2],  scale*Hsurf[2,1,2],
+    t_over_r*Jsurf[2,2], scale*Hsurf[1,2,2],  scale*Hsurf[2,2,2],
+    # k=3:
+    z,                    t_over_r*Jsurf[1,3], t_over_r*Jsurf[2,3],
+    t_over_r*Jsurf[1,3], scale*Hsurf[1,1,3],  scale*Hsurf[2,1,3],
+    t_over_r*Jsurf[2,3], scale*Hsurf[1,2,3],  scale*Hsurf[2,2,3],
+  )
+end
+
+function Gridap.Arrays.return_cache(_::FieldGradient{2,<:CubedSphereWithThicknessMap},
+                                    xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, ThirdOrderTensorValue{3,3,3,Float64,27}))
+end
+Gridap.Arrays.evaluate!(_, f::FieldGradient{2,<:CubedSphereWithThicknessMap}, x::Point{3}) =
+  _csphere3d_hess(f.object.panel, f.object.radius, f.object.thickness, x)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{2,<:CubedSphereWithThicknessMap},
+                                 xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  p, r, t = f.object.panel, f.object.radius, f.object.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_hess(p, r, t, xs[i])
   end
   cache.array
 end
@@ -1016,6 +1071,69 @@ function Gridap.Arrays.evaluate!(cache, m::CubedSphereWithThicknessMetricField, 
   cache.array
 end
 
+# ── FieldGradient of CubedSphereWithThicknessMetricField ─────────────────────
+#
+# Returns ThirdOrderTensorValue{3,3,3} where T[k,i,j] = ∂g_{ij}/∂x_k,
+# g = JᵀJ, x = (γ,α,β).  g₁₁=thickness² and g₁₂=g₁₃=0 are constant;
+# only the (2,2)/(2,3)/(3,3) block has non-zero derivatives.
+# With a=tanα, b=tanβ, sa=1+a², sb=1+b², ρ²=1+a²+b²,
+# scale=1+thickness·γ/radius, s2=scale², cg=s2·radius²/ρ⁶,
+# fγ=2·(thickness/radius)/scale:
+#
+#   ∂g₂₂/∂γ = fγ·g₂₂               ∂g₂₃/∂γ = fγ·g₂₃               ∂g₃₃/∂γ = fγ·g₃₃
+#   ∂g₂₂/∂α = 4cg·a·sa²·sb·b²       ∂g₂₃/∂α = −cg·b·sa·sb·(ρ²+a²(3b²−sa))  ∂g₃₃/∂α = 2cg·a·sa·sb²·(b²−sa)
+#   ∂g₂₂/∂β = 2cg·b·sa²·sb·(a²−sb)  ∂g₂₃/∂β = −cg·a·sa·sb·(ρ²+b²(3a²−sb)) ∂g₃₃/∂β = 4cg·b·sa·sb²·a²
+
+@inline function _csphere3d_metric_grad(radius::Float64, thickness::Float64, x::Point{3})
+  γ, α, β  = x[1], x[2], x[3]
+  a, b     = tan(α), tan(β)
+  sa, sb   = 1 + a^2, 1 + b^2
+  ρ2       = 1 + a^2 + b^2
+  t_over_r = thickness / radius
+  scale    = 1 + t_over_r * γ
+  s2       = scale^2
+  c        = radius^2 * sa * sb / ρ2^2
+  g22      = s2 * c * sa
+  g23      = -s2 * c * a * b
+  g33      = s2 * c * sb
+  fγ       = 2 * t_over_r / scale
+  cg       = s2 * radius^2 / ρ2^3   # = s2·c6 where c6=r²/ρ⁶
+
+  dg22_dγ = fγ * g22
+  dg23_dγ = fγ * g23
+  dg33_dγ = fγ * g33
+
+  dg22_dα =  4cg * a * sa^2 * sb * b^2
+  dg23_dα = -cg * b * sa * sb * (ρ2 + a^2*(3*b^2 - sa))
+  dg33_dα =  2cg * a * sa * sb^2 * (b^2 - sa)
+
+  dg22_dβ =  2cg * b * sa^2 * sb * (a^2 - sb)
+  dg23_dβ = -cg * a * sa * sb * (ρ2 + b^2*(3*a^2 - sb))
+  dg33_dβ =  4cg * b * sa * sb^2 * a^2
+
+  z = zero(Float64)
+  # Column-major storage with k (derivative) index fastest: T[k,i,j] = ∂g_{ij}/∂x_k.
+  ThirdOrderTensorValue{3,3,3,Float64,27}(
+    z, z, z,  z,       z,       z,       z,       z,       z,        # j=1: all zero
+    z, z, z,  dg22_dγ, dg22_dα, dg22_dβ, dg23_dγ, dg23_dα, dg23_dβ, # j=2
+    z, z, z,  dg23_dγ, dg23_dα, dg23_dβ, dg33_dγ, dg33_dα, dg33_dβ, # j=3
+  )
+end
+
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CubedSphereWithThicknessMetricField}, xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, ThirdOrderTensorValue{3,3,3,Float64,27}))
+end
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CubedSphereWithThicknessMetricField}, x::Point{3}) =
+  _csphere3d_metric_grad(f.object.radius, f.object.thickness, x)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CubedSphereWithThicknessMetricField}, xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  r, t = f.object.radius, f.object.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_metric_grad(r, t, xs[i])
+  end
+  cache.array
+end
+
 struct CubedSphereWithThicknessInvMetricField <: Field
   radius    :: Float64
   thickness :: Float64
@@ -1036,6 +1154,69 @@ end
 
 inverse_metric_field(f::CubedSphereWithThicknessMetricField) =
   CubedSphereWithThicknessInvMetricField(f.radius, f.thickness)
+
+# ── FieldGradient of CubedSphereWithThicknessInvMetricField ──────────────────
+#
+# Returns ThirdOrderTensorValue{3,3,3} where T[k,i,j] = ∂h_{ij}/∂x_k,
+# h = g⁻¹, x = (γ,α,β).  h₁₁=1/thickness² and h₁₂=h₁₃=0 are constant;
+# only the (2,2)/(2,3)/(3,3) block has non-zero derivatives.
+# With a=tanα, b=tanβ, sa=1+a², sb=1+b², ρ²=1+a²+b²,
+# scale=1+thickness·γ/radius, s2=scale², ciq=1/(radius²·sa·sb·s2),
+# fγ=−2·(thickness/radius)/scale:
+#
+#   ∂h₂₂/∂γ = fγ·h₂₂              ∂h₂₃/∂γ = fγ·h₂₃              ∂h₃₃/∂γ = fγ·h₃₃
+#   ∂h₂₂/∂α = −2a·b²·ciq·sb       ∂h₂₃/∂α = ciq·b·(sa·ρ²−2a²b²)  ∂h₃₃/∂α = 2a·ciq·sa²
+#   ∂h₂₂/∂β = 2b·ciq·sb²          ∂h₂₃/∂β = ciq·a·(sb·ρ²−2a²b²)  ∂h₃₃/∂β = −2b·a²·ciq·sa
+
+@inline function _csphere3d_inv_metric_grad(radius::Float64, thickness::Float64, x::Point{3})
+  γ, α, β  = x[1], x[2], x[3]
+  a, b     = tan(α), tan(β)
+  sa, sb   = 1 + a^2, 1 + b^2
+  ρ2       = 1 + a^2 + b^2
+  t_over_r = thickness / radius
+  scale    = 1 + t_over_r * γ
+  s2       = scale^2
+  ci       = ρ2 / (radius^2 * sa * sb)
+  h22      = ci * sb / s2
+  h23      = ci * a * b / s2
+  h33      = ci * sa / s2
+  fγ       = -2 * t_over_r / scale
+  ciq      = ci / (ρ2 * s2)   # = 1/(radius²·sa·sb·scale²)
+
+  dh22_dγ = fγ * h22
+  dh23_dγ = fγ * h23
+  dh33_dγ = fγ * h33
+
+  dh22_dα = -2a * b^2 * ciq * sb
+  dh23_dα =  ciq * b * (sa*ρ2 - 2*a^2*b^2)
+  dh33_dα =  2a * ciq * sa^2
+
+  dh22_dβ =  2b * ciq * sb^2
+  dh23_dβ =  ciq * a * (sb*ρ2 - 2*a^2*b^2)
+  dh33_dβ = -2b * a^2 * ciq * sa
+
+  z = zero(Float64)
+  # Column-major storage with k (derivative) index fastest: T[k,i,j] = ∂h_{ij}/∂x_k.
+  ThirdOrderTensorValue{3,3,3,Float64,27}(
+    z, z, z,  z,       z,       z,       z,       z,       z,        # j=1: all zero
+    z, z, z,  dh22_dγ, dh22_dα, dh22_dβ, dh23_dγ, dh23_dα, dh23_dβ, # j=2
+    z, z, z,  dh23_dγ, dh23_dα, dh23_dβ, dh33_dγ, dh33_dα, dh33_dβ, # j=3
+  )
+end
+
+function Gridap.Arrays.return_cache(_::FieldGradient{1,<:CubedSphereWithThicknessInvMetricField}, xs::AbstractArray{<:Point{3}})
+  CachedArray(similar(xs, ThirdOrderTensorValue{3,3,3,Float64,27}))
+end
+Gridap.Arrays.evaluate!(_, f::FieldGradient{1,<:CubedSphereWithThicknessInvMetricField}, x::Point{3}) =
+  _csphere3d_inv_metric_grad(f.object.radius, f.object.thickness, x)
+function Gridap.Arrays.evaluate!(cache, f::FieldGradient{1,<:CubedSphereWithThicknessInvMetricField}, xs::AbstractArray{<:Point{3}})
+  setsize!(cache, size(xs))
+  r, t = f.object.radius, f.object.thickness
+  @inbounds for i in eachindex(xs)
+    cache.array[i] = _csphere3d_inv_metric_grad(r, t, xs[i])
+  end
+  cache.array
+end
 
 # ── get_coarse_mesh(CubedSphereMesh) ─────────────────────────────────────────
 

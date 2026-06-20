@@ -57,8 +57,10 @@ end
 @publish Geometry AmbientMapCellField
 @publish Geometry LatLonMapCellField
 @publish Geometry Δs
+@publish Geometry vecΔs
 @publish Geometry ∇s
 @publish Geometry divs
+@publish Geometry curls
 @publish Geometry skew_∇s
 @publish Geometry skew_divs
 

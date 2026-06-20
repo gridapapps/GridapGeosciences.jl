@@ -211,9 +211,9 @@ while !isnothing(it)
 
   i_am_main(ranks) && println(t)
 
-  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$t.vtu",
-      cellfields=["vel"=>covariant_basis_cf⋅(1/meas*uh),"p"=>ph,"vort"=>qh],
-      append=false)
+  # TO-DO: fix this call writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$t.vtu",
+  #    cellfields=["vel"=>covariant_basis_cf⋅(1/meas*uh),"p"=>ph,"vort"=>qh],
+  #    append=false)
 
   global it = iterate(solT, state)
 end

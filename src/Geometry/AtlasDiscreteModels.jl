@@ -436,8 +436,9 @@ function LatLonMapCellField(trian::AdaptedTriangulation{Dc,Da,<:Gridap.Geometry.
                                         <:AbstractVector{<:Union{<:CubedSphereMap,<:CubedSphereWithThicknessMap}},
                                         C,
                                         O,
-                                        M}}}) where {Dc,Da,G,A,C,O,M}    
-  LatLonMapCellField(trian.trian)
+                                        M}}}) where {Dc,Da,G,A,C,O,M}
+  cf = LatLonMapCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end
 
 # Right now only supported by AtlasDiscreteModel of the sphere
@@ -492,11 +493,21 @@ function _fm(f, m)
 end
 
  deriv_sqrt= x -> 0.5/sqrt(x)
- function deriv_det(x)
+ function deriv_det(x::SymTensorValue{2})
    Gridap.TensorValues.SymTensorValue(x[2,2],-x[2,1],x[1,1])
  end
- cpAB = (A,B)->contracted_product(Val(2), A, permutedims(B,(2,3,1)))
+ function deriv_det(x::SymTensorValue{3})
+   Gridap.TensorValues.SymTensorValue(
+     x[2,2]*x[3,3] - x[2,3]^2,
+     x[2,3]*x[1,3] - x[1,2]*x[3,3],
+     x[1,2]*x[2,3] - x[2,2]*x[1,3],
+     x[1,1]*x[3,3] - x[1,3]^2,
+     x[1,2]*x[1,3] - x[1,1]*x[2,3],
+     x[1,1]*x[2,2] - x[1,2]^2,
+   )
+ end
 
+cpAB = (A,B)->contracted_product(Val(2), A, permutedims(B,(2,3,1)))
 function _Δs_no_ad(f, Ω_atlas)
   # surflap(f::Function) = m -> surflap(f,m)
   # surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
@@ -558,7 +569,8 @@ end
 function Δs(f::Function,
             Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-    use_automatic_differentiation ? _Δs_ad(f, Ω_atlas) : _Δs_no_ad(f, Ω_atlas)
+    Δs_trian = use_automatic_differentiation ? _Δs_ad(f, Ω_atlas.trian) : _Δs_no_ad(f, Ω_atlas.trian)
+    Gridap.CellData.GenericCellField(get_data(Δs_trian), Ω_atlas, Gridap.CellData.DomainStyle(Δs_trian))
 end
 
 function _compose(parametric_space_quantity, inv_ambient_map_cell_field)
@@ -617,7 +629,8 @@ end
 function ∇s(f::Function,
             Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  ∇s_trian = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas.trian) : _∇s_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(∇s_trian), Ω_atlas, Gridap.CellData.DomainStyle(∇s_trian))
 end
 
 function ∇s(f::Function,
@@ -689,7 +702,8 @@ function _divs_no_ad(f, Ω_atlas)
                               ((grad_f_cf)⋅(transpose∘grad_ambient_map_cf)))
 
     grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*
-                   Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))                          
+                   Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
+   
 
     return (1.0/meas_cf)*(meas_cf*(trace_1+trace_2+trace_3) + 
                            grad_meas_cf⋅(inv_metric_cf⋅Jt_cf⋅f_cf))
@@ -738,10 +752,17 @@ end
 
 # Surface divergence of an ambient vector-valued function which is 
 # pulled back using the pseudo-inverse of the jacobian of the ambient 
-# map without multiplying by the metric
+# map without multiplying by the measure
 function divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
               use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
    use_automatic_differentiation ? _divs_ad(f, Ω_atlas) : _divs_no_ad(f, Ω_atlas)
+end
+
+function divs(f::Function,
+              Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
+              use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  divs_trian = use_automatic_differentiation ? _divs_ad(f, Ω_atlas.trian) : _divs_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(divs_trian), Ω_atlas, Gridap.CellData.DomainStyle(divs_trian))
 end
 
 function divs(f::Function,
@@ -785,6 +806,82 @@ function dagger(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
                 use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   use_automatic_differentiation ? _dagger_ad(f, Ω_atlas) : _dagger_no_ad(f, Ω_atlas)
 end
+
+
+Jt(m) = x -> transpose(J(m,x))
+Jtu(u,m) = x -> Jt(m)(x)⋅u(m)(x)
+# Returns the co-vector associated to the surface curl of a vector-valued field
+curls(u,m) = x-> 1.0/sqrtg(m,x)*metric(m,x)⋅curl(Jtu(u,m))(x)
+# Returns the co-vector associated to the surface curl of the surface curl of a vector-valued field
+curls_curls(u, m) = x -> 1.0/sqrtg(m,x)*metric(m,x)⋅curl(curls(u,m))(x)
+
+## surface divergence
+_divs(u,m) = x -> sqrtg(m)(x)*inv(J(m,x))⋅u(m)(x)
+divs(u, m) = x -> 1/sqrtg(m)(x)*(divergence(_divs(u,m))(x))
+
+### covariant vector surfgrad(surfdiv u)
+grads_divs(u, m) = x-> gradient(divs(u,m))(x)
+vec_laps(u,m) = x -> grads_divs(u,m)(x) - curls_curls(u,m)(x)
+
+function _vecΔs_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(vec_laps(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+function _vecΔs_no_ad(f, Ω_atlas)
+  Gridap.Helpers.@notimplemented "vecΔs without automatic differentiation is not implemented yet"  
+end
+
+# Returns the co-vector components of the vector surface laplacian applied to the 
+# ambient vector-valued function f
+function vecΔs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  use_automatic_differentiation ? _vecΔs_ad(f, Ω_atlas) : _vecΔs_no_ad(f, Ω_atlas)
+end
+
+function vecΔs(f::Function, Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
+                use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  vecΔs_trian = use_automatic_differentiation ? _vecΔs_ad(f, Ω_atlas.trian) : _vecΔs_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(vecΔs_trian), Ω_atlas, Gridap.CellData.DomainStyle(vecΔs_trian))
+end
+
+# ### Curl of covariant components of u
+# ucov(u,m,x) = Jt(m)(x)⋅u(m)(x)
+# ucov(u,m) = x -> ucov(u,m,x)
+# curl_ucov(u,m,x) = curl(ucov(u,m))(x)
+# curl_ucov(u,m) = x -> curl_ucov(u,m,x)
+
+# ### Covariant components of surfcurl u
+# _curls(u,m,x) = 1.0/sqrtg(m,x)*metric(m,x)⋅curl_ucov(u,m,x)
+# _curls(u,m) = x -> _curls(u,m,x)
+# curls(u,m,x) = curl(_curls(u,m))(x)
+# curls(u,m) = x -> curls(u,m,x)
+function _curls_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
+  cell_field = lazy_map(m->GenericField(curls(_fm(f,m),m)),ambient_maps)
+  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
+end
+
+function _curls_no_ad(f, Ω_atlas)
+  Gridap.Helpers.@notimplemented "curls without automatic differentiation is not implemented yet"  
+end
+
+# Returns the co-vector components of the surface curl operator applied to the 
+# ambient vector-valued function f
+function curls(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  use_automatic_differentiation ? _curls_ad(f, Ω_atlas) : _curls_no_ad(f, Ω_atlas)
+end
+
+function curls(f::Function, Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
+                use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  curls_trian = use_automatic_differentiation ? _curls_ad(f, Ω_atlas.trian) : _curls_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(curls_trian), Ω_atlas, Gridap.CellData.DomainStyle(curls_trian))
+end
+
 
 function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
   ns = CellField(normal_vec,trian)

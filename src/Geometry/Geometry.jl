@@ -26,6 +26,8 @@ export InvMetricCellField
 export MeasureCellField
 export AmbientMapCellField, LatLonMapCellField
 export Δs
+export vecΔs
+export curls
 export ∇s
 export divs
 export skew_∇s

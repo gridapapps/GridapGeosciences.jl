@@ -15,35 +15,21 @@ using GridapGeosciences
 using GridapP4est
 using Test
 
-
-inv_jacobian(p) = x -> inv(forward_jacobian(p)(x))
-contra_v_3D(vecX::Function,p) = x -> inv_jacobian(p)(x) ⋅ vecX(p)(x)
-contra_v_3D(vecX::Function) = p -> contra_v_3D(vecX,p)
-
-transpose_jacobian(p) = x -> transpose(forward_jacobian(p)(x))
-inv_tranpose_jacobian(p) = x -> inv(transpose_jacobian(p)(x))
-
-function uX(forward_map)
-  function _u(γαβ)
-    xyz = forward_map(γαβ)
-    # VectorValue(-xyz[2],xyz[1],0.0)
-
-    r = sqrt(xyz[1]^2 + xyz[2]^2 + xyz[3]^2)
-    f = 2.0*xyz[3]/r
-    n = normal_vec(xyz)
-    f*n
-  end
+function uX(xyz)
+  r = sqrt(xyz[1]^2 + xyz[2]^2 + xyz[3]^2)
+  f = 2.0*xyz[3]/r
+  n = normal_vec(xyz)
+  f*n
 end
 
-
-
 function hodge_laplacian_vector(
-  panel_model::GridapDistributed.GenericDistributedDiscreteModel{3,3},
+  atlas_model::Union{<:IntrinsicAtlasDiscreteModel{3,3},
+                     <:Gridap.Adaptivity.AdaptedDiscreteModel{3,3,<:IntrinsicAtlasDiscreteModel{3,3}}},
   p_fe::Int,dir::String,uX::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
  _i_am_main && println("p_fe = $(p_fe); nref = $lvl; Dc = $Dc")
 
   # degree = 30
@@ -54,90 +40,38 @@ function hodge_laplacian_vector(
   @check degree > 0 "Zero quad!!"
 
   ## finite element solver
-  Ω_atlas = Triangulation(panel_model)
+  Ω_atlas = Triangulation(atlas_model)
   dΩ = Measure(Ω_atlas,degree)
-  Ω_error = Triangulation(panel_model)
+  Ω_error = Triangulation(atlas_model)
   dΩ_error = Measure(Ω_error,2*degree)
 
   tags = ["top_boundary", "bottom_boundary"]
-  Γ = BoundaryTriangulation(panel_model,tags=tags)
+  Γ = BoundaryTriangulation(atlas_model,tags=tags)
   dΓ = Measure(Γ,degree)
   nΓ = get_normal_vector(Γ)
 
   ## metric information
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_atlas)
-  metric_cf = ParametricCellField(metric,Ω_atlas)
-  meas_cf = ParametricCellField(sqrtg,Ω_atlas)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  
+  ## ambient map and jacobian
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  Jt_cf = ∇(ambient_map_cf)
+  covariant_basis_cf = transpose∘Jt_cf
 
+  u_cf = uX ∘ ambient_map_cf
 
+  ### Rhs function (covariant vector of the surface vector Laplacian of uX)
+  rhs_cov_cf = -vecΔs(uX, Ω_atlas)
 
-  # covarient components of u
-  function ucov(forward_map)
-    function _u(γαβ)
-      u = uX(forward_map)(γαβ)
-      J = transpose_jacobian(forward_map)(γαβ)
-      J⋅u
-    end
-  end
+  u_cov_cf = Jt_cf⋅u_cf
+  
+  ### Covariant vector of the surface curl of uX
+  curls_u_cf = curls(uX, Ω_atlas)
 
-  # u ⋅ n on the surface
-  function unX(forward_map)
-    function _u(γαβ)
-      xyz = forward_map(γαβ)
-      u = uX(forward_map)(γαβ)
-      n = normal_vec(xyz)
-      u⋅n
-    end
-  end
-
-  ### Curl of covariant components of u
-  curlu(p,x) = curl(ucov(p))(x)
-  curlu(p) = x -> curlu(p,x)
-  _curlu(p) = curl(ucov(p))
-
-  ### Covariant components of surfcurl u
-  wcov(p,x) = 1/sqrtg(p,x)*metric(p,x)⋅curlu(p,x)
-  wcov(p) = x -> wcov(p,x)
-  curlw(p,x) = curl(wcov(p))(x)
-  curlw(p) = x -> curlw(p,x)
-
-  #### Covariant component of surfcurl surfcurl u
-  curlw_cov(p) = x -> 1/sqrtg(p,x)*metric(p,x)⋅curlw(p,x)
-
-  # area measure
-  _area_meas(p) = x->  forward_jacobian(p,x) ⋅ (inv_metric(p,x) ⋅ VectorValue(1,0,0))
-  area_meas(p) = x-> norm(_area_meas(p)(x))
-
-  #### Covariant componetsn of (surfcurl u)× surfnormal
-  wcrossk_cov(p) = x -> 1/sqrtg(p,x) * metric(p,x)⋅(wcov(p,x) × (VectorValue(1,0,0)/area_meas(p)(x)) )
-
-
-  # _t(p) = x -> sqrtg(p)(x)* contra_v_3D(uX,p)(x)
-  # _k(p) = x -> 1/sqrtg(p)(x) * ( divergence(_t(p) )(x) )
-  # _l(p) = gradient(_k(p))
-  # rhs(p) = x-> curlw_cov(p)(x) - _l(p)(x)
-
-  ## surface divergence
-  _sdiv_u(p) = x -> sqrtg(p)(x)* contra_v_3D(uX,p)(x)
-  sdiv_u(p) = x -> 1/sqrtg(p)(x) * ( divergence(_sdiv_u(p) )(x) )
-
-  ### covariant components of surfgrad(surfdiv u)
-  graddiv_cov(p) = gradient(sdiv_u(p))
-
-  ### Rhs function
-  rhs(p) = x-> curlw_cov(p)(x) - graddiv_cov(p)(x)
-  rhs_cov_cf = ParametricCellField(rhs,Ω_atlas)
-
-  u_cov_cf = ParametricCellField(ucov,Ω_atlas)
-  ccurlu_cov_cf = ParametricCellField(curlw_cov,Ω_atlas)
-  un_cf = ParametricCellField(unX,Ω_atlas)
-  curlu_cross = ParametricCellField(wcrossk_cov,Ω_atlas)
-  curlu_cf = ParametricCellField(curlu,Ω_atlas)
-
-  sdiv_cf =  ParametricCellField(surfdiv(contra_v_3D(uX)),Ω_atlas)
+  sdiv_cf =  divs(uX, Ω_atlas)
   sigma_cf = -sdiv_cf
-
 
   # cellfields = ["curlu"=>ccurlu_cov_cf,
   #               "u"=>covariant_basis_cf ⋅ (inv_metric_cf⋅u_cov_cf),
@@ -176,7 +110,7 @@ function hodge_laplacian_vector(
                   )
   liform_x((t,v)) = (
                 ∫( rhs_cov_cf⋅(inv_metric_cf⋅v)*meas_cf  )dΩ
-                + ∫( v⋅( ( metric_cf⋅curlu_cf )×nΓ    )*(1.0/meas_cf)     )dΓ
+                + ∫( v⋅( ( curls_u_cf )×nΓ)     )dΓ
                 - ∫(( t*(u_cov_cf⋅(inv_metric_cf⋅nΓ)) )*(meas_cf)  )dΓ
                   )
 
