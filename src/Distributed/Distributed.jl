@@ -73,11 +73,14 @@ import GridapGeosciences.Geometry: BFTATDMIM,
                                    ExtrinsicAtlasDiscreteModel
 include("AtlasOctreeDistributedDiscreteModels.jl")
 export AtlasOctreeDistributedDiscreteModel, get_atlas_model
+include("ExtrudedAtlasOctreeDistributedDiscreteModels.jl")
+export ExtrudedAtlasOctreeDistributedDiscreteModel
 include("AtlasDistributedDiscreteModels.jl")
 export AtlasDiscreteModel
 export IntrinsicAtlasDistributedDiscreteModel
 export ExtrinsicAtlasDistributedDiscreteModel
 export AtlasDistributedDiscreteModel
+export AdaptedAtlasDistributedDiscreteModel
 export get_distributed_refined_models
 export get_distributed_cubed_sphere_refined_models
 export get_distributed_intrinsic_cubed_sphere_refined_models

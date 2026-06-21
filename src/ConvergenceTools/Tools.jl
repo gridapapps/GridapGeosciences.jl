@@ -76,15 +76,16 @@ function nc(model::Union{<:ATDMCS3D,
   nc_horizontal(model) + _nc_vertical(model)
 end
 
-function nc_horizontal(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) where T
-  nc_horizontal(get_parametric_model(model))
-end
+function nc_horizontal(model::AtlasOctreeDistributedDiscreteModel{3,3})
+    nc_horizontal(get_atlas_model(model))
+end 
 
-function nc_vertical(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) where T
-  nc_vertical(get_parametric_model(model))
-end
+function nc_vertical(model::AtlasOctreeDistributedDiscreteModel{3,3})
+   nc_vertical(get_atlas_model(model))
+end 
 
-function nc_horizontal(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
+function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedAtlasDistributedDiscreteModel{3,3}})
 
   grid = get_grid(model)
   gids = get_cell_gids(model)
@@ -119,13 +120,15 @@ function nc_horizontal(model::ATDMCS3D)
 end
 
 # return square here so vertical is 'like' horitzontal
-function nc_vertical(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
+function nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                  AdaptedAtlasDistributedDiscreteModel{3,3}})
   n = _nc_vertical(model)
   return Int(n^2)
 end
 
 # the actual number of cells in vertical per panel
-function _nc_vertical(model::IntrinsicAtlasDistributedDiscreteModel{3,3})
+function _nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                   AdaptedAtlasDistributedDiscreteModel{3,3}})
   ncells_per_panel = nc_horizontal(model)
   n = num_cells(model)/6
   _n =  n /ncells_per_panel

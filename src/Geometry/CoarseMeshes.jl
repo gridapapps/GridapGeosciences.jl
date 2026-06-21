@@ -1403,6 +1403,19 @@ function get_coarse_mesh(m::CubedSphereWithThicknessMesh)
   CoarseMeshInfo(model, cell_chart_coords, ambient_maps, metric_fields)
 end
 
+struct ExtrudedCubedSphereWithThicknessMesh <: CoarseMesh
+  radius :: Float64
+  thickness :: Float64
+  ExtrudedCubedSphereWithThicknessMesh(radius=1.0, thickness=0.1) = new(radius, thickness)
+end
+
+function get_coarse_mesh(m::ExtrudedCubedSphereWithThicknessMesh)
+  cubed_sphere_mesh_info = get_coarse_mesh(CubedSphereMesh(m.radius))  
+  ambient_maps      = [CubedSphereWithThicknessMap(p, m.radius, m.thickness) for p in 1:NPANELS]
+  metric_fields     = fill(CubedSphereWithThicknessMetricField(m.radius, m.thickness), NPANELS)
+  CoarseMeshInfo(cubed_sphere_mesh_info.model, cubed_sphere_mesh_info.cell_chart_coords, ambient_maps, metric_fields)
+end
+
 # ============================================================
 # inverse_metric_field: generic fallback
 # ============================================================

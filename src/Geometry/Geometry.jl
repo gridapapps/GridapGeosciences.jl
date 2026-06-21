@@ -38,6 +38,7 @@ export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
 export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
 export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap
 export CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
+export ExtrudedCubedSphereWithThicknessMesh
 export get_atlas_grid
 export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
 export get_coarse_mesh

@@ -29,6 +29,7 @@ function main(distribute,nprocs)
   test_OctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
   test_3DDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
   test_3DOctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
+  test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
 end
 
 function _test_2D_trians(atlas_model)
@@ -120,5 +121,21 @@ function test_3DOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
   _test_3D_trians(atlas_model)
   @test true
 end
+
+function test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
+    ranks = distribute(LinearIndices((nprocs,)))
+    radius,thickness = 1.0, 0.19
+    coarse_mesh = CubedSphereMesh(radius)
+    n_horiz_ref_lvls = 2
+    n_vert_ref_lvls = 1
+    o3model = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks,
+                                                          coarse_mesh,
+                                                          n_horiz_ref_lvls,
+                                                          n_vert_ref_lvls;
+                                                          manifold_style=manifold_style);
+    atlas_model = get_atlas_model(o3model)
+    _test_3D_trians(atlas_model)
+    @test true
+end 
 
 end ## module

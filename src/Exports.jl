@@ -78,6 +78,7 @@ end
 @publish Geometry CubedSphereInvMetricField
 @publish Geometry CubedSphereWithThicknessMesh
 @publish Geometry CubedSphereWithThicknessMap
+@publish Geometry ExtrudedCubedSphereWithThicknessMesh
 
 @publish Geometry get_coarse_mesh
 @publish Geometry get_cell_ambient_maps
@@ -168,6 +169,7 @@ end
 @publish Distributed CellField
 
 @publish Distributed AtlasOctreeDistributedDiscreteModel
+@publish Distributed ExtrudedAtlasOctreeDistributedDiscreteModel
 @publish Distributed IntrinsicAtlasDistributedDiscreteModel
 @publish Distributed ExtrinsicAtlasDistributedDiscreteModel
 @publish Distributed get_atlas_model
