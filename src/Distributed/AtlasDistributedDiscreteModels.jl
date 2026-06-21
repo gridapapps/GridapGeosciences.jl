@@ -6,37 +6,24 @@ const ExtrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:ExtrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}}
 
 
-function AtlasDiscreteModel(ranks::AbstractArray{<:Integer},
-                            mesh::CoarseMesh,
-                            num_refinements::Int;
-                            orientation_style=nothing,
-                            manifold_style=ExtrinsicManifold())
+# Distribute a (small) serial AtlasDiscreteModel across MPI ranks.
+# Assigns cells with a linear partition, then gives each rank owned cells
+# plus their vertex-adjacent ghosts.  Only called on the coarse mesh (tiny),
+# so the sequential work here is not a scalability concern.
+function _distribute_serial_atlas_model(ranks, serial_model::AtlasDiscreteModel, manifold_style)
+    g      = get_atlas_grid(serial_model)
+    ncells = Gridap.Geometry.num_cells(serial_model)
+    nparts = length(ranks)
 
-    # Build the full serial AtlasDiscreteModel on every rank.
-    # Not scalable to very large cell counts, but correct for moderate meshes —
-    # the same trade-off as GridapDistributed.Geometry.DiscreteModel(parts, serial_model, ...).
-    info               = get_coarse_mesh(mesh)
-    serial_model       = AtlasDiscreteModel(info, num_refinements;
-                                            orientation_style, manifold_style)
-    g                  = get_atlas_grid(serial_model)
-    ncells             = Gridap.Geometry.num_cells(serial_model)
-    nparts             = length(ranks)
-
-    # Build the underlying param model so that Geometry.restrict can produce
-    # local UnstructuredGridTopology + FaceLabeling for each rank.
     param_model = Gridap.Geometry.UnstructuredDiscreteModel(
         g.param_grid,
         serial_model.grid_topology,
         serial_model.face_labeling,
     )
 
-    # Simple linear partition: cell_to_part[i] = owning rank for global cell i.
     cell_to_part = Int32[div((i - 1) * nparts, ncells) + 1 for i in 1:ncells]
+    cell_graph   = GridapDistributed.compute_cell_graph(param_model)
 
-    # Cell-adjacency graph (vertex connectivity) for one-layer ghost detection.
-    cell_graph = GridapDistributed.compute_cell_graph(param_model)
-
-    # For each rank: collect owned cells plus their face-adjacent ghost cells.
     lcell_to_cell, lcell_to_part = map(ranks) do part
         cell_to_mask = fill(false, ncells)
         ptrs = cell_graph.colptr
@@ -54,37 +41,178 @@ function AtlasDiscreteModel(ranks::AbstractArray{<:Integer},
         loc_to_glob, loc_to_part
     end |> tuple_of_arrays
 
-    # Build PRange describing global cell id layout.
-    partition = map(ranks, lcell_to_cell, lcell_to_part) do part, l2g, l2p
+    partition_arr = map(ranks, lcell_to_cell, lcell_to_part) do part, l2g, l2p
         LocalIndices(ncells, part, l2g, l2p)
     end
-    gids = PRange(partition)
+    gids = PRange(partition_arr)
 
-    # Build per-rank AtlasDiscreteModel (owned cells + ghost cells).
     models = map(lcell_to_cell) do local_to_global
-        # Restrict param model → local GridPortion + UnstructuredGridTopology + FaceLabeling.
         local_param_model = Gridap.Geometry.restrict(param_model, local_to_global)
-        local_param_grid  = Gridap.Geometry.get_grid(local_param_model)
-        local_topology    = Gridap.Geometry.get_grid_topology(local_param_model)
-        local_labeling    = Gridap.Geometry.get_face_labeling(local_param_model)
-
-        # Gather atlas data for the local cell subset.
-        local_chart_coords = lazy_map(Reindex(g.cell_chart_coords), local_to_global)
-        local_ambient_maps = lazy_map(Reindex(g.cell_ambient_maps), local_to_global)
-        local_metric       = lazy_map(Reindex(g.cell_metric), local_to_global)
-
-        local_atlas_grid = AtlasGrid(
-            local_param_grid,
-            local_chart_coords,
-            local_ambient_maps,
-            local_metric,
+        local_atlas_grid  = AtlasGrid(
+            Gridap.Geometry.get_grid(local_param_model),
+            lazy_map(Reindex(g.cell_chart_coords), local_to_global),
+            lazy_map(Reindex(g.cell_ambient_maps),  local_to_global),
+            lazy_map(Reindex(g.cell_metric),        local_to_global),
             Gridap.Geometry.OrientationStyle(g),
             manifold_style,
         )
-
-        AtlasDiscreteModel(local_atlas_grid, local_topology, local_labeling)
+        AtlasDiscreteModel(
+            local_atlas_grid,
+            Gridap.Geometry.get_grid_topology(local_param_model),
+            Gridap.Geometry.get_face_labeling(local_param_model),
+        )
     end
-    return GenericDistributedDiscreteModel(models, gids)
+    GenericDistributedDiscreteModel(models, gids)
+end
+
+function AtlasDiscreteModel(ranks::AbstractArray{<:Integer},
+                            mesh::CoarseMesh,
+                            num_refinements::Int;
+                            orientation_style=nothing,
+                            manifold_style=ExtrinsicManifold())
+
+    info   = get_coarse_mesh(mesh)
+    nparts = length(ranks)
+    Dc     = Gridap.Geometry.num_cell_dims(info.model)
+
+    # Decide how many refinements to do sequentially before distributing.
+    # We refine serially until ncells >= nparts so every rank can own at least
+    # one cell.  Each uniform refinement multiplies the cell count by 2^Dc.
+    ncells    = Gridap.Geometry.num_cells(info.model)
+    n_seq_ref = 0
+    while ncells < nparts && n_seq_ref < num_refinements
+        ncells   *= 2^Dc
+        n_seq_ref += 1
+    end
+    n_dist_ref = num_refinements - n_seq_ref
+
+    # Build the sequential serial model in one shot (uses a single call to
+    # Gridap's refine machinery internally, so no repeated allocation).
+    serial_model = AtlasDiscreteModel(info, n_seq_ref; orientation_style, manifold_style)
+    model        = _distribute_serial_atlas_model(ranks, serial_model, manifold_style)
+
+    # Refine distributedly for the remaining levels: each step is fully parallel
+    # with only a narrow MPI exchange for global cell-id assignment.
+    for _ in 1:n_dist_ref
+        refined = Gridap.Adaptivity.refine(model)
+        # Unwrap AdaptedDiscreteModel → plain AtlasDiscreteModel so the
+        # AtlasDistributedDiscreteModel type alias keeps matching on subsequent iterations.
+        plain_models = map(local_views(refined)) do lm
+            Gridap.Adaptivity.get_model(lm)
+        end
+        model = GenericDistributedDiscreteModel(plain_models, get_cell_gids(refined))
+    end
+    return model
+end
+
+"""
+    _atlas_model_portion(model::AtlasDiscreteModel, cell_ids) -> AtlasDiscreteModel
+
+Return a new `AtlasDiscreteModel` restricted to the subset of cells given by
+`cell_ids` (a vector of local cell indices).  Topology and face labels are
+restricted via `Gridap.Geometry.restrict`; atlas fields (`cell_chart_coords`,
+`cell_ambient_maps`, `cell_metric`) are restricted with `Reindex`.
+"""
+function _atlas_model_portion(model::AtlasDiscreteModel, cell_ids)
+  g = model.atlas_grid
+
+  param_model = Gridap.Geometry.UnstructuredDiscreteModel(
+    g.param_grid,
+    model.grid_topology,
+    model.face_labeling,
+  )
+  restricted_param    = Gridap.Geometry.restrict(param_model, cell_ids)
+  restricted_grid     = Gridap.Geometry.get_grid(restricted_param)
+  restricted_topology = Gridap.Geometry.get_grid_topology(restricted_param)
+  restricted_labeling = Gridap.Geometry.get_face_labeling(restricted_param)
+
+  restricted_atlas_grid = AtlasGrid(
+    restricted_grid,
+    lazy_map(Reindex(g.cell_chart_coords), cell_ids),
+    lazy_map(Reindex(g.cell_ambient_maps), cell_ids),
+    lazy_map(Reindex(g.cell_metric),       cell_ids),
+    Gridap.Geometry.OrientationStyle(g),
+    ManifoldStyle(g),
+  )
+  AtlasDiscreteModel(restricted_atlas_grid, restricted_topology, restricted_labeling)
+end
+
+"""
+    Gridap.Adaptivity.refine(cmodel::AtlasDistributedDiscreteModel) -> GenericDistributedDiscreteModel
+
+Uniformly refine a distributed `AtlasDistributedDiscreteModel` once.
+
+Each rank refines its local `AtlasDiscreteModel` independently — no global
+communication is needed for the local refinement step.  A one-layer ghost
+layer (vertex-adjacent) is then selected by the same filter used by
+GridapDistributed for unstructured model refinement, and global cell gids are
+updated via a narrow MPI exchange (`GridapDistributed.refine_cell_gids`).
+"""
+function Gridap.Adaptivity.refine(cmodel::AtlasDistributedDiscreteModel{Dc}) where Dc
+  cgids   = partition(get_cell_gids(cmodel))
+  cmodels = local_views(cmodel)
+
+  # Step 1: refine each local model independently — purely local, no communication.
+  fmodels_full = map(cmodels) do local_model
+    Gridap.Adaptivity.refine(local_model)
+  end
+
+  # Step 2: select owned fine cells and their vertex-adjacent ghosts.
+  # Mirrors the filter in GridapDistributed.refine_local_models.
+  Df = 0 # vertex dimension for neighbour lookup
+  f_own_or_ghost_ids, f_own_ids = map(cgids, fmodels_full) do cgids, fmodel
+    glue  = Gridap.Adaptivity.get_adaptivity_glue(fmodel)
+    f2c   = glue.n2o_faces_map[Dc+1]
+    ftopo = Gridap.Geometry.get_grid_topology(fmodel)
+    c_l2o = local_to_own(cgids)
+
+    f_cell_to_vertex = Gridap.Geometry.get_faces(ftopo, Dc, Df)
+    f_vertex_to_cell = Gridap.Geometry.get_faces(ftopo, Df, Dc)
+    c2v_cache        = array_cache(f_cell_to_vertex)
+    v2c_cache        = array_cache(f_vertex_to_cell)
+
+    f_own_mask         = fill(false, length(f2c))
+    f_own_or_ghost_mask = fill(false, length(f2c))
+    for (fcell, ccell) in enumerate(f2c)
+      if !iszero(c_l2o[ccell])
+        f_own_mask[fcell] = true
+        for vertex in getindex!(c2v_cache, f_cell_to_vertex, fcell)
+          for vcell in getindex!(v2c_cache, f_vertex_to_cell, vertex)
+            f_own_or_ghost_mask[vcell] = true
+          end
+        end
+      end
+    end
+
+    oog_ids = findall(f_own_or_ghost_mask)
+    own_ids = findall(i -> f_own_mask[i], oog_ids)  # local ids within restricted model
+    oog_ids, own_ids
+  end |> tuple_of_arrays
+
+  # Step 3: restrict each refined model to the selected cell subset.
+  fmodels = map(fmodels_full, f_own_or_ghost_ids) do fmodel, oog_ids
+    fine_atlas   = Gridap.Adaptivity.get_model(fmodel)
+    parent_model = Gridap.Adaptivity.get_parent(fmodel)
+    _glue        = Gridap.Adaptivity.get_adaptivity_glue(fmodel)
+
+    restricted_atlas = _atlas_model_portion(fine_atlas, oog_ids)
+
+    # Only populate the cell-level face map; the AdaptivityGlue constructor
+    # only accesses n2o_faces_map[end] to build o2n_faces_map.
+    n2o_faces_map        = Vector{Vector{Int}}(undef, Dc+1)
+    n2o_faces_map[Dc+1]  = _glue.n2o_faces_map[Dc+1][oog_ids]
+    n2o_cell_to_child_id = _glue.n2o_cell_to_child_id[oog_ids]
+    new_glue = Gridap.Adaptivity.AdaptivityGlue(
+      n2o_faces_map, n2o_cell_to_child_id, _glue.refinement_rules
+    )
+
+    Gridap.Adaptivity.AdaptedDiscreteModel(restricted_atlas, parent_model, new_glue)
+  end
+
+  # Step 4: compute new global cell gids via a narrow MPI key exchange.
+  fgids = GridapDistributed.refine_cell_gids(cmodel, fmodels, f_own_ids)
+
+  GenericDistributedDiscreteModel(fmodels, fgids)
 end
 
 function get_distributed_refined_models(ranks,
@@ -92,13 +220,16 @@ function get_distributed_refined_models(ranks,
                                         n_ref_lvls,
                                         manifold_style,
                                         coarse_model=false)
+
   models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
-  for (i,n) in enumerate(n_ref_lvls:-1:1)
-    model = AtlasDiscreteModel(ranks, coarse_mesh, n; manifold_style=manifold_style)
-    models[i] = model
+  coarse_model = AtlasDiscreteModel(ranks, coarse_mesh, 0; manifold_style=manifold_style)
+  model = coarse_model
+  for n in n_ref_lvls:-1:1
+    model = Gridap.Adaptivity.refine(model)
+    models[n] = model
   end
   if coarse_model
-    push!(models,AtlasDiscreteModel(ranks, coarse_mesh, 0; manifold_style=manifold_style))
+    push!(models,coarse_model)
   end
   models
 end 
@@ -172,6 +303,27 @@ function AmbientMapCellField(
   GridapDistributed.DistributedCellField(fields, trian)
 end
 
+function AmbientMapCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+  fields = map(ghosted_trian.trians) do t
+    AmbientMapCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
+function AmbientMapCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    AmbientMapCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
 function MetricCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}}
 ) where {Dc,Dp}
@@ -196,6 +348,27 @@ end
 function MetricCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.SkeletonTriangulation{Dc,Dp,
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
+function MetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+  fields = map(ghosted_trian.trians) do t
+    MetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
+function MetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
 ) where {Dc,Dp}
   fields = map(trian.trians) do t
@@ -215,6 +388,27 @@ function InvMetricCellField(
   GridapDistributed.DistributedCellField(fields, ghosted_trian)
 end
 
+function InvMetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+  fields = map(ghosted_trian.trians) do t
+    InvMetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
+function InvMetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    InvMetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
+
 function MeasureCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}}
 ) where {Dc,Dp}
@@ -247,7 +441,26 @@ function MeasureCellField(
   GridapDistributed.DistributedCellField(fields, trian)
 end
 
+function MeasureCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:BFTATDM{Dc,Dp}}}}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+  fields = map(ghosted_trian.trians) do t
+    MeasureCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
 
+function MeasureCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
+) where {Dc,Dp}
+  fields = map(trian.trians) do t
+    MeasureCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, trian)
+end
 
 function Δs(f::Function,
             trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:BFTATDM{Dc,Dp}}};

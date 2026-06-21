@@ -285,6 +285,21 @@ function MetricCellField(
   SkeletonPair(plus,minus)
 end
 
+function MetricCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = MetricCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function MetricCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
+) where {Dc,Dp}
+  cf = MetricCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
 function MeasureCellField(trian :: BFTATDM{Dc,Dp}) where {Dc,Dp}
     sqrt∘det∘MetricCellField(trian)
 end
@@ -321,6 +336,19 @@ function MeasureCellField(
   plus  = MeasureCellField(trian.trian.plus)
   minus = MeasureCellField(trian.trian.minus)
   SkeletonPair(plus,minus)
+end
+
+function MeasureCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  sqrt∘det∘MetricCellField(trian)
+end
+
+function MeasureCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
+) where {Dc,Dp}
+  sqrt∘det∘MetricCellField(trian)
 end
 
 """
@@ -374,6 +402,21 @@ function InvMetricCellField(
   SkeletonPair(plus,minus)
 end
 
+function InvMetricCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = InvMetricCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function InvMetricCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
+) where {Dc,Dp}
+  cf = InvMetricCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
 function AmbientMapCellField(
     trian :: BFTATDM{Dc,Dp},
 ) where {Dc,Dp}
@@ -415,6 +458,21 @@ function AmbientMapCellField(
   plus  = AmbientMapCellField(trian.trian.plus)
   minus = AmbientMapCellField(trian.trian.minus)
   SkeletonPair(plus,minus)
+end
+
+function AmbientMapCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
+) where {Dc,Dp}
+  cf = AmbientMapCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function AmbientMapCellField(
+    trian :: Gridap.Geometry.TriangulationView{Dc,Dp,
+              <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
+) where {Dc,Dp}
+  cf = AmbientMapCellField(trian.parent)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end
 
 # Only supported for the cubed sphere mesh
@@ -907,15 +965,6 @@ function get_refined_models(n_ref_lvls,
                             coarse_mesh,
                             manifold_style,
                             coarse_model=false)
-#   models = Vector{DiscreteModel}(undef,n_ref_lvls)
-#   for (i,n) in enumerate(n_ref_lvls:-1:1)
-#     model = AtlasDiscreteModel(coarse_mesh, n; manifold_style=manifold_style)
-#     models[i] = model
-#   end
-#   if coarse_model
-#     push!(models,AtlasDiscreteModel(coarse_mesh,0; manifold_style=manifold_style))
-#   end
-#   models
   model = AtlasDiscreteModel(coarse_mesh, 0; manifold_style=manifold_style)
   models = Vector{DiscreteModel}(undef,n_ref_lvls)
   for n in n_ref_lvls:-1:1

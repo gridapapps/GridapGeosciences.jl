@@ -241,39 +241,6 @@ function generate_cell_coordinates_and_panels(parts,
   end |> tuple_of_arrays
 end
 
-function dummy_grid_and_topology_function(pXest_type::GridapP4est.P4P8estType,
-                                            cell_corner_lids,
-                                            ptr_pXest_connectivity,
-                                            ptr_pXest,
-                                            ptr_pXest_ghost)
-  grid,topology=_generate_topology_grid_and_topology(pXest_type, cell_corner_lids)
-end
-
-function _generate_topology_grid_and_topology(pXest_type::GridapP4est.PXestType,
-                                              cell_corner_lids)
-
-  Dc = GridapP4est.num_cell_dims(pXest_type)
-  map(cell_corner_lids) do cell_corner_lids
-    n_corners = maximum(cell_corner_lids.data;init=0)
-    T=Point{Dc,Float64}
-    corner_coords = Vector{T}(undef,n_corners)
-    corner_coords .= zero(T)
-
-    poly  = (Dc==2) ? QUAD : HEX
-    reffe = Gridap.ReferenceFEs.ReferenceFE(poly,lagrangian,Float64,1)
-    cell_types = fill(1,length(cell_corner_lids))
-
-    grid = Gridap.Geometry.UnstructuredGrid(
-      corner_coords,cell_corner_lids,[reffe],cell_types,Gridap.Geometry.NonOriented()
-    )
-    topology = Gridap.Geometry.UnstructuredGridTopology(
-      corner_coords,cell_corner_lids,cell_types,[poly],Gridap.Geometry.NonOriented()
-    )
-    return grid, topology
-  end |> tuple_of_arrays
-end
-
-
 function _generate_octree_dmodel_alpha_beta_coordinates_and_panels(ranks,
                                                                    coarse_model::DiscreteModel{2,2},
                                                                    num_uniform_refinements,

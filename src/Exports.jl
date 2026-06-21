@@ -130,6 +130,12 @@ end
 @publish Distributed CubedSphere2DParametricDistributedDiscreteModel
 @publish Distributed CubedSphere3DParametricDistributedDiscreteModel
 @publish Distributed CubedSphereAmbientDistributedDiscreteModel
+@publish Distributed AtlasDistributedDiscreteModel
+@publish Distributed IntrinsicAtlasDistributedDiscreteModel
+@publish Distributed ExtrinsicAtlasDistributedDiscreteModel
+@publish Distributed AtlasOctreeDistributedDiscreteModel
+@publish Distributed get_atlas_model
+
 @publish Distributed geo_map_func
 @publish Distributed latlon_geo_map_func
 @publish Distributed ParametricCellField
@@ -164,7 +170,7 @@ end
 @publish Distributed AtlasOctreeDistributedDiscreteModel
 @publish Distributed IntrinsicAtlasDistributedDiscreteModel
 @publish Distributed ExtrinsicAtlasDistributedDiscreteModel
-@publish Distributed get_atlas_dmodel
+@publish Distributed get_atlas_model
 @publish Distributed LatLonMapCellField
 
 @publish MultilevelTools ModelHierarchy
