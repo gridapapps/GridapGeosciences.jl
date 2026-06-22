@@ -1,6 +1,8 @@
 struct Cartesian2SphericalMap <: Field
 end
 
+Gridap.Fields.Broadcasting(f::Cartesian2SphericalMap) = f
+
 """
 The forward map goes 3D -> 2D.
   θ = atan(Y,X)
@@ -58,7 +60,7 @@ end
 
 function Gridap.Arrays.evaluate!(cache,f::Cartesian2SphericalMap,x::VectorValue{3})
   out = cache
-
+  println("single")
   out = VectorValue(rem2pi(atan(x[2], x[1]),RoundDown),
                     asin(x[3]/ (sqrt(x[1]^2 + x[2]^2 + x[3]^2)))
                     )
