@@ -139,3 +139,37 @@ end
 
 
 const ParametricModels{Dc,Dp} = Union{CubedSphereParametricDiscreteModel{Dc,Dp},AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel}}
+
+function get_refined_models(n_ref_lvls::Int,radius::Real,coarse_model=false)
+  panel_model = coarse_parametric_model(radius)
+  panel_models = Vector{ParametricModels}(undef,n_ref_lvls)
+  for n in n_ref_lvls:-1:1
+    panel_model = Gridap.Adaptivity.refine(panel_model)
+    panel_models[n] = panel_model
+  end
+  if coarse_model
+    push!(panel_models,coarse_parametric_model(radius))
+  end
+  panel_models
+end
+
+
+"""
+perp
+
+computes u^⟂ = R u , where u is only defined for 2D parametric models.
+This function will fail if the background model is a 3D parametric model,
+or 2/3D ambient model
+"""
+
+function perp(u::CellField)
+  trian = get_triangulation(u)
+  model = get_background_model(trian)
+
+  @check isa(model,ParametricModels{2,Dp} where {Dp})
+
+  R = [0.0 -1.0
+       1.0 0.0]
+  R_cf = CellField(TensorValue(R),trian, PhysicalDomain())
+  R_cf⋅u
+end
