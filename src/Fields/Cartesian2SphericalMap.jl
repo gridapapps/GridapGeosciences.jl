@@ -57,10 +57,17 @@ function Gridap.Arrays.evaluate!(cache,f::Cartesian2SphericalMap,cellx::Abstract
   return out
 end
 
+function Gridap.Arrays.return_type(f::Cartesian2SphericalMap,x::VectorValue{3})
+  out = VectorValue{2,Float64}
+  return out
+end
+
 function Gridap.Arrays.evaluate!(cache,f::Cartesian2SphericalMap,x::VectorValue{3})
   out = cache
-  out = VectorValue(rem2pi(atan(x[2], x[1]),RoundDown),
-                    asin(x[3]/ (sqrt(x[1]^2 + x[2]^2 + x[3]^2)))
-                    )
-  return out
+  @check false """\n The Cartesian2SphericalMap cannot be evaluated on a single point.
+  This is because we need to know the position of the cell in ambient 3D space to properly
+  handle the periodicity of angles. Conseqeuently, evalaute Cartesian2SphericalMap on
+  an AbstractArray of cellwise points. Alternatively, implement a variant of Cartesian2SphericalMap
+  that uses the panel index to properly handle the periodicity of angles.
+  """
 end
