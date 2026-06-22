@@ -116,7 +116,7 @@ function CubedSphere2DParametricDiscreteModel(
     return coarse_parametric_model(radius)
   end
 
-  models = get_intrinsic_cubed_sphere_refined_models(num_initial_uniform_refinements,radius)
+  models = generate_refined_models(num_initial_uniform_refinements, CubedSphereMesh(radius), IntrinsicManifold())
   models[1]
 end
 
@@ -137,11 +137,5 @@ function CubedSphere3DParametricDiscreteModel(
   """
 end
 
-"""
-get_intrinsic_cubed_sphere_refined_models
-returns an array of refined serial models where
-  models[1] == most refined model
-  models[end] == coarsest model
-"""
 
 const ParametricModels{Dc,Dp} = Union{CubedSphereParametricDiscreteModel{Dc,Dp},AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel}}

@@ -234,7 +234,7 @@ function Gridap.Adaptivity.refine(cmodel::AdaptedAtlasDistributedDiscreteModel{D
   _refine_atlas_distributed(cmodel, fmodels_full, Dc)
 end
 
-function get_distributed_refined_models(ranks,
+function generate_distributed_refined_models(ranks,
                                         coarse_mesh,
                                         n_ref_lvls,
                                         manifold_style,
@@ -251,30 +251,6 @@ function get_distributed_refined_models(ranks,
     push!(models,cmodel)
   end
   models
-end 
-
-function get_distributed_cubed_sphere_refined_models(ranks,
-                                                     n_ref_lvls::Int, 
-                                                     radius::Real, 
-                                                     manifold_style, 
-                                                     coarse_model=false)
-  coarse_mesh = CubedSphereMesh(radius)
-  get_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, manifold_style, coarse_model)
-end
-
-
-function get_distributed_intrinsic_cubed_sphere_refined_models(ranks,
-                                                               n_ref_lvls::Int,
-                                                               radius::Real,
-                                                               coarse_model=false)
-  get_distributed_cubed_sphere_refined_models(ranks, n_ref_lvls, radius, IntrinsicManifold(), coarse_model)
-end
-
-function get_distributed_extrinsic_cubed_sphere_refined_models(ranks,
-                                                               n_ref_lvls::Int,
-                                                               radius::Real,
-                                                               coarse_model=false)
-  get_distributed_cubed_sphere_refined_models(ranks, n_ref_lvls, radius, ExtrinsicManifold(), coarse_model)
 end
 
 function LatLonMapCellField(

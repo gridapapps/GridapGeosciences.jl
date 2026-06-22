@@ -726,7 +726,6 @@ function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
 end
 
 
-
 function _divs_ad(f, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
@@ -770,35 +769,11 @@ end
 function _skew_divs_no_ad(f, Ω_atlas)
     # -1/m * div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) ), where J^†=inv(g)⋅Jᵀ
     # div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) )
-    #    
-    
-    metric_cf = MetricCellField(Ω_atlas)
-    det_metric_cf = det∘metric_cf
-    meas_cf = MeasureCellField(Ω_atlas)
-    inv_metric_cf = InvMetricCellField(Ω_atlas)
-    ambient_map_cf = AmbientMapCellField(Ω_atlas)
-    grad_ambient_map_cf = ∇(ambient_map_cf)
-    f_cf = f∘ambient_map_cf
-    grad_f_cf = ∇(f)∘ambient_map_cf
-    Jt_cf = ∇(ambient_map_cf)
-    grad_Jt_cf = ∇(Jt_cf)
-    grad_metric_cf = ∇(metric_cf)
-    grad_inv_metric_cf = ∇(inv_metric_cf)
-    pseudo_inv_J = pinvJ∘transpose∘grad_ambient_map_cf
-    grad_pseudo_inv_J = grad_inv_metric_cf⋅Jt_cf + inv_metric_cf⋅grad_Jt_cf
-
     # div( m^2 * inv(g) R(J^†⋅(f∘ϕ)) ) = 
     #   grad(m^2)⋅(inv(g) R(J^†⋅(f∘ϕ))) + m^2 * div(inv(g) R(J^†⋅(f∘ϕ)))
-
     # div(inv(g) R(J^†⋅(f∘ϕ))) = tr(grad(inv(g))⋅R(J^†⋅(f∘ϕ))) + tr(inv(g)⋅grad(R(J^†⋅(f∘ϕ))))
-    trace_1 = Operation(tr)(grad_inv_metric_cf⋅(perp∘(pseudo_inv_J⋅f_cf)))
-    trace_2 = Operation(tr)(inv_metric_cf⋅(perp∘(grad_pseudo_inv_J⋅f_cf)))
-    trace_3 = Operation(tr)(inv_metric_cf⋅(perp∘(pseudo_inv_J⋅((grad_f_cf)⋅(transpose∘grad_ambient_map_cf)))))
-    
-    term_1 = (Operation(cpAB)(deriv_det∘metric_cf,grad_metric_cf))⋅
-                                (inv_metric_cf⋅(perp∘(pseudo_inv_J⋅f_cf))) # VALIDATED!!
-    term_2 = det_metric_cf*(trace_1 + trace_2 + trace_3)
-    return -1.0/meas_cf * (term_1+term_2)
+    #
+    Gridap.Helpers.@notimplemented "skew_divs without automatic differentiation is not implemented yet"  
 end
 
 function _skew_divs_ad(f, Ω_atlas)
@@ -839,8 +814,29 @@ end
 
 
 function skew_divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
-                   use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
    use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas) : _skew_divs_no_ad(f, Ω_atlas)
+end
+
+function skew_divs(f::Function,
+                   Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  skew_divs_trian = use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas.trian) : _skew_divs_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(skew_divs_trian), Ω_atlas, Gridap.CellData.DomainStyle(skew_divs_trian))
+end
+
+function skew_divs(f::Function,
+                   Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas) : _skew_divs_no_ad(f, Ω_atlas)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+function skew_divs(f::Function,
+                   Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  ∇s_parametric_space = use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas.trian) : _skew_divs_no_ad(f, Ω_atlas.trian)
+  _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
 function _dagger_ad(f::Function, Ω_atlas)
@@ -961,7 +957,7 @@ function dagger(u::CellField)
   n×u
 end
 
-function get_refined_models(n_ref_lvls,
+function generate_refined_models(n_ref_lvls,
                             coarse_mesh,
                             manifold_style,
                             coarse_model=false)
@@ -982,21 +978,11 @@ function get_cubed_sphere_refined_models(n_ref_lvls::Int,
                                          manifold_style,
                                          coarse_model=false)
   coarse_mesh = CubedSphereMesh(radius)
-  get_refined_models(n_ref_lvls, coarse_mesh, manifold_style, coarse_model)
+  generate_refined_models(n_ref_lvls, coarse_mesh, manifold_style, coarse_model)
 end
 
 
-function get_intrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
-                                                   radius::Real,
-                                                   coarse_model=false)
-  get_cubed_sphere_refined_models(n_ref_lvls, radius, IntrinsicManifold(), coarse_model)
-end
 
-function get_extrinsic_cubed_sphere_refined_models(n_ref_lvls::Int,
-                                                   radius::Real,
-                                                   coarse_model=false)
-  get_cubed_sphere_refined_models(n_ref_lvls, radius, ExtrinsicManifold(), coarse_model)
-end
 
 """
     Gridap.Adaptivity.refine(model::AtlasDiscreteModel) -> AdaptedDiscreteModel

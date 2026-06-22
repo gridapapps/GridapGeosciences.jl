@@ -81,10 +81,9 @@ export IntrinsicAtlasDistributedDiscreteModel
 export ExtrinsicAtlasDistributedDiscreteModel
 export AtlasDistributedDiscreteModel
 export AdaptedAtlasDistributedDiscreteModel
-export get_distributed_refined_models
+export generate_distributed_refined_models
 export get_distributed_cubed_sphere_refined_models
-export get_distributed_intrinsic_cubed_sphere_refined_models
-export get_distributed_extrinsic_cubed_sphere_refined_models
+export generate_octree_distributed_refined_models
 export LatLonMapCellField
 
 import Gridap.FESpaces: FESpace, compute_cell_bases_changes
@@ -109,13 +108,11 @@ export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk
 
 export distributed_panel_ids
 export DistributedAdaptivityGlue
-export get_distributed_extrinsic_cubed_sphere_refined_models
+export get_distributed_refined_models
 export get_panel_ids, get_owned_panel_ids, get_skel_panel_ids
 # export BoundaryTriangulation
 export pullback_area_form
 export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
-export get_octree_refined_models, get_3D_octree_refined_models
-export get_octree_ambient_refined_models, get_3D_octree_ambient_refined_models
 
 export CellField
 

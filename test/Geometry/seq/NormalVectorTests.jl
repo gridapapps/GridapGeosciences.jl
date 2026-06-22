@@ -54,7 +54,7 @@ end
 
 n_ref_lvls = 4
 radius = 1.0
-models  = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
+models  = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 return_vtk = false
 dir = @__DIR__
 

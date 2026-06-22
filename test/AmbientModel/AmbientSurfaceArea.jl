@@ -43,7 +43,7 @@ function compute_surface_area(
 end
 
 function compute_surface_area(
-  model::GenericDistributedDiscreteModel{Dc,Dp,
+  model::GridapDistributed.GenericDistributedDiscreteModel{Dc,Dp,
     <:AbstractVector{<:AdaptedDiscreteModel{Dc,Dp,<:IntrinsicAtlasDiscreteModel}}},
   degree::Int) where {Dc,Dp}
   Ω = Triangulation(model)
@@ -54,7 +54,7 @@ function compute_surface_area(
 end
 
 function compute_surface_area(
-  model::GenericDistributedDiscreteModel{Dc,Dp,
+  model::GridapDistributed.GenericDistributedDiscreteModel{Dc,Dp,
     <:AbstractVector{<:AdaptedDiscreteModel{Dc,Dp,<:ExtrinsicAtlasDiscreteModel}}},
   degree::Int) where {Dc,Dp}
   Ω = Triangulation(model)

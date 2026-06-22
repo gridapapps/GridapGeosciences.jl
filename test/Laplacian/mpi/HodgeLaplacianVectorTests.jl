@@ -10,7 +10,7 @@ ranks = distribute_with_mpi(LinearIndices((prod(nprocs),)))
 # radius = 1.0
 # thickness = 0.19
 # coarse_mesh = CubedSphereWithThicknessMesh(radius, thickness)
-# models = get_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, IntrinsicManifold())
+# models = generate_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, IntrinsicManifold())
 # HodgeLaplacianVectorTests.main(models;_i_am_main=i_am_main(ranks))
 
 ### P4test model: 3D

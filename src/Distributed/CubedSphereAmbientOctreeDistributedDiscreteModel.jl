@@ -70,16 +70,3 @@ function get_parametric_model(dmodel::CubedSphereAmbientOctreeDistributedDiscret
   generic_dmodel = get_parametric_model(amodel)
   CubedSphere3DParametricOctreeDistributedDiscreteModel(octree_dmodel, generic_dmodel)
 end
-
-function get_octree_ambient_refined_models(ranks,n_ref_lvls::Int,radius::Real,coarse_model=false)
-  d_panel_models = get_octree_refined_models(ranks,n_ref_lvls,radius,coarse_model)
-  d_ambient_models = map(x->CubedSphereAmbientDistributedDiscreteModel(x),d_panel_models)
-  d_ambient_models
-end
-
-
-function get_3D_octree_ambient_refined_models(ranks,n_ref_lvls::Int,radius::Real,thickness::Real)
-  d_panel_models = get_3D_octree_refined_models(ranks,n_ref_lvls,radius,thickness)
-  d_ambient_models = map(x->CubedSphereAmbientDistributedDiscreteModel(x),d_panel_models)
-  d_ambient_models
-end

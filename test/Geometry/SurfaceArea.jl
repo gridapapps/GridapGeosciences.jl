@@ -40,21 +40,22 @@ end
 function main(distribute,nprocs;n_ref_lvls=3,radii=[1.0,2.0])
   ranks = distribute(LinearIndices((nprocs,)))
   for radius in radii
-    serial_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
-    # p4test_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
-    # for degree in collect([2,4,6,8])
-    #   for (s_model,d_model) in zip(serial_models,p4test_models)
+    serial_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
+    coarse_mesh = CubedSphereMesh(radius)
+    p4test_models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, IntrinsicManifold())
+    for degree in collect([2,4,6,8])
+      for (s_model,d_model) in zip(serial_models,p4test_models)
 
-    #     ### s_model
-    #     s_area = compute_surface_area(s_model, degree)
+        ### s_model
+        s_area = compute_surface_area(s_model, degree)
 
-    #     ### d_model
-    #     d_area = compute_surface_area(d_model, degree)
+        ### d_model
+        d_area = compute_surface_area(d_model, degree)
 
-    #     @test s_area ≈ d_area
+        @test s_area ≈ d_area
 
-    #   end
-    # end
+      end
+    end
   end
 
 end

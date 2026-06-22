@@ -5,6 +5,6 @@ n_ref_lvls = 4
 radii = [1.0, 2.0]
 
 for radius in radii
-  parametric_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
+  parametric_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
   SurfaceArea.main(parametric_models)
 end

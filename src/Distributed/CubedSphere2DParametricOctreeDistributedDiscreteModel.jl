@@ -407,28 +407,3 @@ function Gridap.Adaptivity.adapt(model::CubedSphere2DParametricOctreeDistributed
    generic_dmodel = GenericDistributedDiscreteModel(adaptive_models, get_cell_gids(adapted_octree_dmodel.dmodel))
    CubedSphere2DParametricOctreeDistributedDiscreteModel(adapted_octree_dmodel, generic_dmodel), adaptivity_glue
 end
-
-
-
-"""
-get_octree_refined_models
-
-returns array of dmodels that originate from an omodel
-"""
-function get_octree_refined_models(ranks,n_ref_lvls::Int,radius::Real,coarse_model=false)
-  dmodels = Vector{CubedSphere2DParametricDistributedDiscreteModel}(undef,n_ref_lvls)
-
-  for (i,n) in enumerate(n_ref_lvls:-1:1)
-    parametric_octree_dmodel = CubedSphere2DParametricOctreeDistributedDiscreteModel(ranks, radius;
-                                                                        num_initial_uniform_refinements=n)
-    dmodels[i] = parametric_octree_dmodel.parametric_dmodel
-  end
-
-  if coarse_model
-    parametric_octree_dmodel = CubedSphere2DParametricOctreeDistributedDiscreteModel(ranks, radius;
-                                                                        num_initial_uniform_refinements=0)
-    push!(dmodels,parametric_octree_dmodel.parametric_dmodel)
-  end
-
-  return dmodels
-end

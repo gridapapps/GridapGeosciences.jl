@@ -87,16 +87,8 @@ function CubedSphereAmbientDistributedDiscreteModel(
   num_initial_uniform_refinements=1)
   nprocs = length(ranks)
 
-  dmodels = get_distributed_refined_models(ranks,nprocs,num_initial_uniform_refinements,radius)
+  dmodels = generate_distributed_refined_models(ranks,nprocs,num_initial_uniform_refinements,radius)
   dpanel_model = dmodels[1]
   CubedSphereAmbientDistributedDiscreteModel(dpanel_model)
 end
 
-
-
-function get_distributed_extrinsic_cubed_sphere_refined_models(ranks,nprocs,n_ref_lvls::Int,radius::Real,coarse_s_model=false)
-  s_models  = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius,coarse_s_model)
-  dpanel_models, dpanel_ids, owned_panel_ids = get_distributed_refined_models(ranks,nprocs,s_models)
-  ambient_models = map(x->CubedSphereAmbientDistributedDiscreteModel(x),dpanel_models)
-  return ambient_models
-end

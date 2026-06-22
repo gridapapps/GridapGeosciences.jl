@@ -9,7 +9,7 @@ ranks = distribute_with_mpi(LinearIndices((prod(nprocs),)))
 
 radius = 1.0
 ## Distributed model: 2D
-models = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,3,radius)
+models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), 3, ExtrinsicManifold())
 AmbientTransientWaveEquationTests.main(models[1];_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D

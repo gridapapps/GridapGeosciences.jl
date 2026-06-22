@@ -3,7 +3,7 @@ include("../AmbientLaplaceBeltrami.jl")
 ## Serial model: 2D
 n_ref_lvls = 4
 radius = 1.0
-extrinsic_models = get_extrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
+extrinsic_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), ExtrinsicManifold())
 AmbientLaplaceBeltrami.main(extrinsic_models)
 
 # ### I do not like having this here, but need to think of a better way
@@ -19,7 +19,7 @@ e_ambient, = AmbientLaplaceBeltrami.laplace_beltrami_solver(
 
 include("../../Laplacian/LaplaceBeltrami.jl")
 
-intrinsic_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius)
+intrinsic_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 intrinsic_model = intrinsic_models[1]
 e_panel, = LaplaceBeltramiTests.laplace_beltrami_solver(
               intrinsic_model,p_fe,dir,

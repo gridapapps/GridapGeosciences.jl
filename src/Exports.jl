@@ -32,9 +32,7 @@ end
 @publish Geometry CubedSphere2DParametricDiscreteModel
 @publish Geometry CubedSphere3DParametricDiscreteModel
 @publish Geometry CubedSphereAmbientDiscreteModel
-@publish Geometry get_refined_models
-@publish Geometry get_intrinsic_cubed_sphere_refined_models
-@publish Geometry get_extrinsic_cubed_sphere_refined_models
+@publish Geometry generate_refined_models
 @publish Geometry get_inverse_map_generator
 @publish Geometry AmbientCellField
 @publish Geometry get_parametric_model
@@ -146,9 +144,8 @@ end
 @publish Distributed createvtk_with_cell_geomap
 @publish Distributed create_pvtk_file_with_cell_geomap
 
-@publish Distributed get_distributed_refined_models
-@publish Distributed get_distributed_extrinsic_cubed_sphere_refined_models
-@publish Distributed get_distributed_intrinsic_cubed_sphere_refined_models
+@publish Distributed generate_distributed_refined_models
+@publish Distributed generate_octree_distributed_refined_models
 @publish Distributed get_panel_ids
 @publish Distributed get_owned_panel_ids
 @publish Distributed get_skel_panel_ids
@@ -160,12 +157,8 @@ end
 @publish Distributed get_thickness
 @publish Distributed get_parametric_model
 @publish Distributed get_surface_normal
-@publish Distributed get_octree_refined_models
-@publish Distributed get_3D_octree_refined_models
 @publish Distributed CubedSphere2DAmbientOctreeDistributedDiscreteModel
 @publish Distributed CubedSphere3DAmbientOctreeDistributedDiscreteModel
-@publish Distributed get_octree_ambient_refined_models
-@publish Distributed get_3D_octree_ambient_refined_models
 @publish Distributed CellField
 
 @publish Distributed AtlasOctreeDistributedDiscreteModel

@@ -57,16 +57,18 @@ function main(distribute,nprocs)
   ## 2D parametric models:
   n_ref_lvls = 3
   for radius in [1.0,2.0]
-    dist_models = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
-    # p4est_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
-    # test_surface_area(dist_models,p4est_models)
+    dist_models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), n_ref_lvls, IntrinsicManifold())
+    coarse_mesh = CubedSphereMesh(radius)
+    p4est_models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, IntrinsicManifold())
+    test_surface_area(dist_models,p4est_models)
   end
 
   ## 2D ambient models:
   for radius in [1.0,2.0]
-    dist_models = get_distributed_extrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
-    # p4est_models = get_octree_ambient_refined_models(ranks,n_ref_lvls,radius)
-    # test_surface_area(dist_models,p4est_models)
+    dist_models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), n_ref_lvls, ExtrinsicManifold())
+    coarse_mesh = CubedSphereMesh(radius)
+    p4est_models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, ExtrinsicManifold())
+    test_surface_area(dist_models,p4est_models)
   end
 
   @test true

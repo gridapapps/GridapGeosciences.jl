@@ -27,7 +27,7 @@ atlas_model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=IntrinsicManifold(
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-atlas_models = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls, radius)
+atlas_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 for lev in 1:n_ref_lvls-1
   @test num_point_dims(atlas_models[lev]) == num_cell_dims(atlas_models[lev]) == 2
   @test is_child(atlas_models[lev],atlas_models[lev+1])
@@ -44,7 +44,7 @@ ambient_model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=ExtrinsicManifol
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-ambient_models = get_extrinsic_cubed_sphere_refined_models(n_ref_lvls, radius)
+ambient_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), ExtrinsicManifold())
 for lev in 1:n_ref_lvls-1
   @test num_point_dims(ambient_models[lev]) == 3
   @test num_cell_dims(ambient_models[lev]) == 2

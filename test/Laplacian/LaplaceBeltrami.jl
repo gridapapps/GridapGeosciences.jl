@@ -99,7 +99,6 @@ end
 #### Auto convergence test
 ################################################################################
 function main(models::AbstractArray;ps=[2],_i_am_main=true)
-
   ls = LUSolver()
   dir = @__DIR__
   p_convergence_auto_test(ps,models,laplace_beltrami_solver,dir,fX,ls;_i_am_main=_i_am_main)

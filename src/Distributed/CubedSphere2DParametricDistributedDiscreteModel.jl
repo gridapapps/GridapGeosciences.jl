@@ -119,7 +119,7 @@ const CubedSphereParametricDistributedDiscreteModel{T} = Union{CubedSphere2DPara
 #   nprocs = length(ranks)
 
 
-#   dmodels = get_distributed_refined_models(ranks,nprocs,num_initial_uniform_refinements,radius)
+#   dmodels = generate_distributed_refined_models(ranks,nprocs,num_initial_uniform_refinements,radius)
 #   dmodels[1]
 # end
 
@@ -182,19 +182,19 @@ const CubedSphereParametricDistributedDiscreteModel{T} = Union{CubedSphere2DPara
 
 
 # """
-# get_distributed_refined_models
+# generate_distributed_refined_models
 # returns an array of refined serial models where
 #   models[1] == most refined model
 #   models[end] == coarsest model
 # """
 
-# function get_distributed_refined_models(ranks,nprocs,n_ref_lvls::Int,radius::Real,coarse_s_model=false)
+# function generate_distributed_refined_models(ranks,nprocs,n_ref_lvls::Int,radius::Real,coarse_s_model=false)
 #   s_models  = get_intrinsic_cubed_sphere_refined_models(n_ref_lvls,radius,coarse_s_model)
-#   dmodels, dpanel_ids, owned_panel_ids = get_distributed_refined_models(ranks,nprocs,s_models)
+#   dmodels, dpanel_ids, owned_panel_ids = generate_distributed_refined_models(ranks,nprocs,s_models)
 #   dmodels
 # end
 
-# function get_distributed_refined_models(ranks,nprocs,s_models::Vector{<:DiscreteModel})
+# function generate_distributed_refined_models(ranks,nprocs,s_models::Vector{<:DiscreteModel})
 #   # get refined models in serial
 #   spanel_ids = map(m->get_panel_ids(m),s_models)
 #   s_model_coarse = s_models[end]

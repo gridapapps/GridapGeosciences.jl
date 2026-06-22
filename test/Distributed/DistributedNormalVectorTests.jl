@@ -33,7 +33,7 @@ function main(distribute,nprocs)
 
   n_ref_lvls = 2
   radius = 1.0
-  dmodels = get_distributed_intrinsic_cubed_sphere_refined_models(ranks,n_ref_lvls,radius)
+  dmodels = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), n_ref_lvls, IntrinsicManifold())
   panel_model = dmodels[2]
 
   Ω_panel = Triangulation(panel_model)

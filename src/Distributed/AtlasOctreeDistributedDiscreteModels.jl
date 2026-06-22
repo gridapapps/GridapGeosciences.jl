@@ -658,3 +658,22 @@ function Gridap.Adaptivity.adapt(
   ), adaptivity_glue
 end
 
+function generate_octree_distributed_refined_models(ranks,
+                                               coarse_mesh,
+                                               n_ref_lvls,
+                                               manifold_style,
+                                               coarse_model=false)
+
+  models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
+  cmodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0; manifold_style=manifold_style)
+  model = cmodel
+  for n in n_ref_lvls:-1:1
+    model, _ = Gridap.Adaptivity.refine(model)
+    models[n] = get_atlas_model(model)
+  end
+  if coarse_model
+    push!(models,get_atlas_model(cmodel))
+  end
+  models
+end 
+
