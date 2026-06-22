@@ -11,6 +11,8 @@ using PartitionedArrays
 using GridapGeosciences.Geometry
 using GridapGeosciences.Distributed
 
+import GridapGeosciences.Geometry: _chart_maps
+
 include("Tools.jl")
 
 export p_convergence_auto_test, h_convergence_auto_test

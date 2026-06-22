@@ -106,6 +106,28 @@ function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
   return ncells_per_panel
 end
 
+function nc_horizontal(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
+
+  grid = get_grid(model)
+  gids = get_cell_gids(model)
+
+  ## find the number of cells that are on the surface.
+  ## i.e. with γ = 0.0
+  ## make sure to extract only the owned
+  f = map(local_views(grid),partition(gids)) do grid, cids
+    cmap = _chart_maps(grid)
+    pts = get_cell_ref_coordinates(grid)
+    f = lazy_map(evaluate,cmap,pts)
+    g = lazy_map(FindSurfaceCells(),f)
+    owned_cells = own_to_local(cids)
+    sum(g[owned_cells])
+  end
+  nsurface = sum(f)
+  ncells_per_panel = Int(nsurface/6)
+  return ncells_per_panel
+end
+
 ## nc = num cells per panel in horizontal
 function nc_horizontal(model::ATDMCS3D)
   ## find the number of cells that are on the surface.
@@ -120,14 +142,18 @@ function nc_horizontal(model::ATDMCS3D)
 end
 
 # return square here so vertical is 'like' horitzontal
-function nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+function nc_vertical(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                  AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                  IntrinsicAtlasDistributedDiscreteModel{3,3},
                                   AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   n = _nc_vertical(model)
   return Int(n^2)
 end
 
 # the actual number of cells in vertical per panel
-function _nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+function _nc_vertical(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                   AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                   IntrinsicAtlasDistributedDiscreteModel{3,3},
                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   ncells_per_panel = nc_horizontal(model)
   n = num_cells(model)/6
