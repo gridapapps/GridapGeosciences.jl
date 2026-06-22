@@ -133,10 +133,8 @@ function _generate_octree_alpha_beta_gamma_coordinates_and_panels(ranks,
                                                     grid_and_topology_bottom_function=dummy_grid_and_topology_function)
 
     cell_coordinates, panels=generate_cell_alpha_beta_gamma_coordinates_and_panels(ranks,
-                                          coarse_model,
                                           setup_coarse_cell_vertices_alpha_beta_coordinates(),
                                           coarse_cell_panel,
-                                          ptr_pXest_connectivity,
                                           ptr_pXest,
                                           ptr_pXest_ghost)
 
@@ -186,10 +184,8 @@ function vertically_uniformly_refine(parametric_model::CubedSphere3DParametricOc
                                               grid_and_topology_bottom_function=dummy_grid_and_topology_function)
 
   cell_coordinates, panels=generate_cell_alpha_beta_gamma_coordinates_and_panels(ranks,
-                                          coarse_model,
                                           setup_coarse_cell_vertices_alpha_beta_coordinates(),
                                           collect(1:NPANELS),
-                                          ptr_pXest_connectivity,
                                           ptr_new_pXest,
                                           ptr_pXest_ghost)
 
@@ -287,10 +283,8 @@ function horizontally_uniformly_refine(parametric_model::CubedSphere3DParametric
                                               grid_and_topology_bottom_function=dummy_grid_and_topology_function)
 
     cell_coordinates, panels=generate_cell_alpha_beta_gamma_coordinates_and_panels(ranks,
-                                          coarse_model,
                                           setup_coarse_cell_vertices_alpha_beta_coordinates(),
                                           collect(1:NPANELS),
-                                          ptr_pXest_connectivity,
                                           ptr_new_pXest,
                                           ptr_pXest_ghost)
 

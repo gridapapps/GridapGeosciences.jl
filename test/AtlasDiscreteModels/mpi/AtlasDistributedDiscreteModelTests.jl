@@ -43,14 +43,14 @@ module AtlasDistributedDiscreteModelTests
     nprocs = MPI.Comm_size(MPI.COMM_WORLD)
     ranks  = distribute_with_mpi(LinearIndices((nprocs,)))
 
-    #println("=== CylinderMesh, num_ref=2 (9×16=144 cells) ===")
-    #test_atlas_distributed(ranks, CylinderMesh(1.0, 1.0), 2, 9 * 4^2)
+    println("=== CylinderMesh, num_ref=2 (9×16=144 cells) ===")
+    test_atlas_distributed(ranks, CylinderMesh(1.0, 1.0), 2, 9 * 4^2)
 
     println("=== CubedSphereMesh, num_ref=1 (6×4=24 cells) ===")
     test_atlas_distributed(ranks, CubedSphereMesh(1.0), 1, 6 * 4^1)
 
-    # println("=== CylinderMesh, num_ref=0 (9 coarse cells) ===")
-    # test_atlas_distributed(ranks, CylinderMesh(1.0, 1.0), 0, 9)
+    println("=== CylinderMesh, num_ref=0 (9 coarse cells) ===")
+    test_atlas_distributed(ranks, CylinderMesh(1.0, 1.0), 0, 9)
 
     println("ALL TESTS PASSED")
 

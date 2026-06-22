@@ -35,6 +35,43 @@ get_cell_metric(m::ExtrudedAtlasOctreeDistributedDiscreteModel) =
 # p6est helper functions (also used by CubedSphere3DParametricOctreeDistributedDiscreteModel)
 # ============================================================
 
+"""
+    get_p6est_vertex_coord(panel_corners, x, y, z, xylevel, zlevel, p6est_vertex)
+
+Compute the (γ, α, β) chart-space coordinates of corner `p6est_vertex` (0-based,
+0–7) of the p6est cell given by horizontal p4est integer coordinates `(x, y)` at
+`xylevel` and vertical coordinate `z` at `zlevel`.
+
+The horizontal (α, β) part is obtained by bilinear interpolation of `panel_corners`
+(four `Point{2}` values in p4est corner order: v0=(xi=0,yi=0), v1=(xi=1,yi=0),
+v2=(xi=0,yi=1), v3=(xi=1,yi=1)), reusing `get_quad_vertex_coord`.
+
+The vertical γ coordinate follows from p6est extrusion with height vector [0,0,1]:
+p6est even vertices (0,2,4,6) sit at the bottom of the layer (z), odd vertices
+(1,3,5,7) at the top (z + layer_len), and γ = z_corner / ROOT_LEN.
+
+This is equivalent to the chain
+  `set_coarse_cell_vertices_coordinates!` + `pXest_get_quadrant_vertex_coordinates`
+but without mutating the shared p6est connectivity.
+"""
+function get_p6est_vertex_coord(panel_corners,
+                                x::p4est_qcoord_t,
+                                y::p4est_qcoord_t,
+                                z::p4est_qcoord_t,
+                                xylevel::Int8,
+                                zlevel::Int8,
+                                p6est_vertex::Cint)
+  p4est_corner = Cint(p6est_vertex >> 1)
+  α, β = get_quad_vertex_coord(panel_corners, x, y, xylevel, p4est_corner)
+
+  P4EST_ROOT_LEN = p4est_qcoord_t(1) << P4est_wrapper.P4EST_MAXLEVEL
+  layer_len = p4est_qcoord_t(1) << (P4est_wrapper.P4EST_MAXLEVEL - Int(zlevel))
+  z_corner  = iseven(Int(p6est_vertex)) ? z : z + layer_len
+  γ = Float64(z_corner) / Float64(P4EST_ROOT_LEN)
+
+  Point{3,Float64}(γ, α, β)
+end
+
 function _dummy_grid_and_topology_function(pXest_type::GridapP4est.P6estType,
                                           non_conforming_glue,
                                           cell_vertices,
@@ -50,10 +87,8 @@ function _dummy_grid_and_topology_function(pXest_type::GridapP4est.P6estType,
 end
 
 function generate_cell_alpha_beta_gamma_coordinates_and_panels(parts,
-                                   coarse_discrete_model,
                                    coarse_coarse_cell_wise_vertex_alpha_beta_coordinates,
                                    coarse_cell_panel,
-                                   ptr_pXest_connectivity,
                                    ptr_pXest,
                                    ptr_pXest_ghost)
 
@@ -67,34 +102,20 @@ function generate_cell_alpha_beta_gamma_coordinates_and_panels(parts,
      panels = Int[]
      data = Point{Dc,Float64}[]
      ncells = 0
-     vxy=Vector{Cdouble}(undef,Dc)
-     pvxy=pointer(vxy,1)
      for itree=1:pXest_ghost.num_trees
+       panel_corners = coarse_coarse_cell_wise_vertex_alpha_beta_coordinates[itree]
        tree = GridapP4est.pXest_tree_array_index(pXest_type, pXest, itree-1)[]
-       if tree.quadrants.elem_count > 0
-          set_coarse_cell_vertices_coordinates!( ptr_pXest_connectivity[].conn4,
-                                                 coarse_discrete_model,
-                                                 itree,
-                                                 coarse_coarse_cell_wise_vertex_alpha_beta_coordinates[itree])
-       end
        for cell=1:tree.quadrants.elem_count
           quadrant=GridapP4est.pXest_quadrant_array_index(pXest_type,tree,cell-1)[]
 
           # Loop over layers in the current column
           for l=1:GridapP4est.pXest_num_quadrant_layers(pXest_type,quadrant)
             layer=GridapP4est.pXest_get_layer(pXest_type, quadrant, pXest, l-1)
-            coords=GridapP4est.pXest_cell_coords(pXest_type,quadrant,layer)
-            levels=GridapP4est.pXest_get_quadrant_and_layer_levels(pXest_type,quadrant,layer)
+            x, y, z = GridapP4est.pXest_cell_coords(pXest_type,quadrant,layer)
+            xylevel, zlevel = GridapP4est.pXest_get_quadrant_and_layer_levels(pXest_type,quadrant,layer)
             push!(panels, coarse_cell_panel[itree])
-            for vertex=1:PXEST_CORNERS
-              GridapP4est.pXest_get_quadrant_vertex_coordinates(pXest_type,
-                                                               ptr_pXest_connectivity,
-                                                               p4est_topidx_t(itree-1),
-                                                               coords,
-                                                               levels,
-                                                               Cint(vertex-1),
-                                                               pvxy)
-              push!(data, Point{Dc,Float64}(vxy[3],vxy[1],vxy[2]))
+            for vertex=0:PXEST_CORNERS-1
+              push!(data, get_p6est_vertex_coord(panel_corners, x, y, z, xylevel, zlevel, Cint(vertex)))
             end
             ncells = ncells+1
           end
@@ -118,31 +139,18 @@ function generate_cell_alpha_beta_gamma_coordinates_and_panels(parts,
 
      # Go over ghost cells
      for i=1:pXest_ghost.num_trees
-       if tree_offsets[i+1]-tree_offsets[i] > 0
-          set_coarse_cell_vertices_coordinates!( ptr_pXest_connectivity[].conn4,
-                                                 coarse_discrete_model,
-                                                 i,
-                                                 coarse_coarse_cell_wise_vertex_alpha_beta_coordinates[i])
-       end
-
+       panel_corners = coarse_coarse_cell_wise_vertex_alpha_beta_coordinates[i]
        for j=tree_offsets[i]:tree_offsets[i+1]-1
           p4est_quadrant = ptr_p4est_ghost_quadrants[j+1]
           k = sc_array_p4est_locidx_t_index(pXest_ghost.column_layer_offsets[],current_ghost_column)
           l = sc_array_p4est_locidx_t_index(pXest_ghost.column_layer_offsets[],current_ghost_column+1)
           for m=k:l-1
             p2est_quadrant = ptr_p2est_ghost_quadrants[m+1]
-            coords=GridapP4est.pXest_cell_coords(pXest_type,p4est_quadrant,p2est_quadrant)
-            levels=GridapP4est.pXest_get_quadrant_and_layer_levels(pXest_type,p4est_quadrant,p2est_quadrant)
+            x, y, z = GridapP4est.pXest_cell_coords(pXest_type,p4est_quadrant,p2est_quadrant)
+            xylevel, zlevel = GridapP4est.pXest_get_quadrant_and_layer_levels(pXest_type,p4est_quadrant,p2est_quadrant)
             push!(panels, coarse_cell_panel[i])
-            for vertex=1:PXEST_CORNERS
-                GridapP4est.pXest_get_quadrant_vertex_coordinates(pXest_type,
-                                                      ptr_pXest_connectivity,
-                                                      p4est_topidx_t(i-1),
-                                                      coords,
-                                                      levels,
-                                                      Cint(vertex-1),
-                                                      pvxy)
-                push!(data, Point{Dc,Float64}(vxy[3],vxy[1],vxy[2]))
+            for vertex=0:PXEST_CORNERS-1
+              push!(data, get_p6est_vertex_coord(panel_corners, x, y, z, xylevel, zlevel, Cint(vertex)))
             end
             ncells=ncells+1
           end
@@ -171,10 +179,9 @@ return:
   horizontal chart coordinates interpolated from `coarse_cell_chart_coords`
 - per-rank `Vector{Int}` mapping each fine cell to the coarse panel/chart index
 
-The 2D coarse chart coordinate corners in `coarse_cell_chart_coords[k]` (one
-`Vector{Point{2}}` per coarse cell k) are embedded into the p4est connectivity so that
-`generate_cell_alpha_beta_gamma_coordinates_and_panels` can perform bilinear interpolation
-without requiring cubed-sphere-specific logic.
+Per-fine-cell (γ,α,β) coordinates are computed by direct bilinear interpolation of
+`coarse_cell_chart_coords` (one `Vector{Point{2}}` per coarse cell), without mutating
+the p6est connectivity.
 """
 function _generate_extruded_octree_cell_chart_coords_and_chart_id(
     ranks,
@@ -224,18 +231,13 @@ function _generate_extruded_octree_cell_chart_coords_and_chart_id(
     grid_and_topology_bottom_function=_dummy_grid_and_topology_function,
   )
 
-  # Generate 3D chart coords (γ,α,β) and chart (panel) IDs per fine cell.
-  # `generate_cell_alpha_beta_gamma_coordinates_and_panels` encodes the 2D
-  # coarse_cell_chart_coords into the p4est connectivity vertex positions and then
-  # uses bilinear interpolation (horizontal) + p6est layer coordinates (vertical γ)
-  # to compute the 3D reference-frame corners of every fine hexahedral cell.
+  # Generate 3D chart coords (γ,α,β) and chart (panel) IDs per fine cell via direct
+  # bilinear interpolation of coarse_cell_chart_coords, without mutating the connectivity.
   cell_chart_coords_3d, cell_to_chart_id =
     generate_cell_alpha_beta_gamma_coordinates_and_panels(
       ranks,
-      coarse_model,
       coarse_cell_chart_coords,
       coarse_cell_panels,
-      ptr_pXest_connectivity,
       ptr_pXest,
       ptr_pXest_ghost,
     )

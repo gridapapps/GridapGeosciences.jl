@@ -12,7 +12,7 @@ using GridapGeosciences
 using Test
 
 function test_debug_equiv(p,q)
-  map(p,q  )do p,q
+  map(p,q) do p,q
     dif = p - q
     max_dif = map(x->maximum(norm.(x)),dif)
     @test all(max_dif .< 1e-12)
@@ -77,8 +77,6 @@ function main(distribute,nprocs)
   p = n_Λ_mapped.minus(pts_panel)
   q = n_Λ_ambient.minus(pts_ambient)
   test_debug_equiv(p,q)
-
-
 
   @test true
 

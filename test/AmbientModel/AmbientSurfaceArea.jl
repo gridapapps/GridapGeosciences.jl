@@ -9,6 +9,7 @@ module AmbientSurfaceArea
 
 using Gridap
 using GridapGeosciences
+using GridapDistributed
 using GridapP4est
 using Test
 using Gridap.Adaptivity
@@ -39,6 +40,27 @@ function compute_surface_area(
   model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel},
   degree::Int) where {Dc,Dp}
   compute_surface_area(model.model, degree)
+end
+
+function compute_surface_area(
+  model::GenericDistributedDiscreteModel{Dc,Dp,
+    <:AbstractVector{<:AdaptedDiscreteModel{Dc,Dp,<:IntrinsicAtlasDiscreteModel}}},
+  degree::Int) where {Dc,Dp}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(
+  model::GenericDistributedDiscreteModel{Dc,Dp,
+    <:AbstractVector{<:AdaptedDiscreteModel{Dc,Dp,<:ExtrinsicAtlasDiscreteModel}}},
+  degree::Int) where {Dc,Dp}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
 end
 
 

@@ -25,11 +25,13 @@ function test_triangulation(trian::GridapDistributed.DistributedTriangulation)
 end
 
 function main(distribute,nprocs)
-  test_DistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
-  test_OctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
-  test_3DDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
-  test_3DOctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
-  test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,IntrinsicManifold())
+  for manifold_style in (IntrinsicManifold(), ExtrinsicManifold())
+    test_DistributedDiscreteModel(distribute,nprocs,manifold_style)
+    test_OctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
+    test_3DDistributedDiscreteModel(distribute,nprocs,manifold_style)
+    test_3DOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
+    test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
+  end
 end
 
 function _test_2D_trians(atlas_model)

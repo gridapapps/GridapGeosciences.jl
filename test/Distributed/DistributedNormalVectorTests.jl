@@ -41,10 +41,10 @@ function main(distribute,nprocs)
   n_Λ = get_normal_vector(Λ)
   pts = get_cell_points(Λ)
   ##############################################################################
-  ## Face normals: skeleton trian
+  ## Face normals: skeleton triangulation
   ##############################################################################
 
-  # Method 1: Use gridap machinary
+  # Method 1: Use gridap machinery
   n = pushforward_reference_normal(Λ)
   out = (n.plus+n.minus)(pts)
   test_debug_vector_equality(out)
@@ -57,13 +57,8 @@ function main(distribute,nprocs)
   # test_debug_vector_equality(out) #### For some reason this is failing, I am unsure why
   #### Test the equality of n.plus and n.minus using local evaluation
   map(local_views(Λ),local_views(n.plus),local_views(n.minus)) do strian,cfplus,cfminus
-    plus = strian.plus
-    pts_plus = get_cell_points(plus)
-
-    minus = strian.minus
-    pts_minus = get_cell_points(minus)
-
-    o = cfplus(pts_plus) + cfminus(pts_minus)
+    strian_pts = get_cell_points(strian)
+    o = cfplus(strian_pts) + cfminus(strian_pts)
     @test all( lazy_map(x-> all(myisless.(x,1e-12)), o))
   end
 
