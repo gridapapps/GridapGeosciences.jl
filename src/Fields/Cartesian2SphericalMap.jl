@@ -24,7 +24,6 @@ end
 
 
 function Gridap.Arrays.evaluate!(cache,f::Cartesian2SphericalMap,cellx::AbstractArray{<:VectorValue{3}} )
-  # println("cell map")
   out = cache
 
   x = map(x->x[1],cellx)
@@ -60,7 +59,6 @@ end
 
 function Gridap.Arrays.evaluate!(cache,f::Cartesian2SphericalMap,x::VectorValue{3})
   out = cache
-  println("single")
   out = VectorValue(rem2pi(atan(x[2], x[1]),RoundDown),
                     asin(x[3]/ (sqrt(x[1]^2 + x[2]^2 + x[3]^2)))
                     )
