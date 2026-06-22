@@ -13,7 +13,7 @@ models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), 3, 
 AmbientTransientWaveEquationTests.main(models[1];_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D
-#omodel = CubedSphere2DAmbientOctreeDistributedDiscreteModel(ranks, radius;
-#  num_initial_uniform_refinements=3)
-#ambient_model = omodel.ambient_dmodel
-#AmbientTransientWaveEquationTests.main(ambient_model;_i_am_main=i_am_main(ranks))
+omodel = AtlasOctreeDistributedDiscreteModel(ranks, CubedSphereMesh(radius), 3; manifold_style=ExtrinsicManifold())
+ambient_model = get_atlas_model(omodel)
+AmbientTransientWaveEquationTests.main(ambient_model;_i_am_main=i_am_main(ranks))
+

@@ -127,7 +127,7 @@ end
 function test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
     ranks = distribute(LinearIndices((nprocs,)))
     radius,thickness = 1.0, 0.19
-    coarse_mesh = CubedSphereMesh(radius)
+    coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
     n_horiz_ref_lvls = 2
     n_vert_ref_lvls = 1
     o3model = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks,
