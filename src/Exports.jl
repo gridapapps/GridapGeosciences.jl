@@ -132,6 +132,8 @@ end
 @publish Distributed AtlasDistributedDiscreteModel
 @publish Distributed IntrinsicAtlasDistributedDiscreteModel
 @publish Distributed ExtrinsicAtlasDistributedDiscreteModel
+@publish Distributed AdaptedIntrinsicAtlasDistributedDiscreteModel
+@publish Distributed AdaptedExtrinsicAtlasDistributedDiscreteModel
 @publish Distributed AtlasOctreeDistributedDiscreteModel
 @publish Distributed get_atlas_model
 

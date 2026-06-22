@@ -14,7 +14,6 @@ models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), n_r
 LaplaceBeltramiTests.main(models;_i_am_main=i_am_main(ranks))
 
 ## Distributed model: 3D
-n_ref_lvls = 3
 radius = 1.0
 thickness = 0.19
 coarse_mesh = CubedSphereWithThicknessMesh(radius, thickness)

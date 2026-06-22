@@ -85,7 +85,7 @@ function nc_vertical(model::AtlasOctreeDistributedDiscreteModel{3,3})
 end 
 
 function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
-                                    AdaptedAtlasDistributedDiscreteModel{3,3}})
+                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
 
   grid = get_grid(model)
   gids = get_cell_gids(model)
@@ -121,14 +121,14 @@ end
 
 # return square here so vertical is 'like' horitzontal
 function nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
-                                  AdaptedAtlasDistributedDiscreteModel{3,3}})
+                                  AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   n = _nc_vertical(model)
   return Int(n^2)
 end
 
 # the actual number of cells in vertical per panel
 function _nc_vertical(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
-                                   AdaptedAtlasDistributedDiscreteModel{3,3}})
+                                   AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   ncells_per_panel = nc_horizontal(model)
   n = num_cells(model)/6
   _n =  n /ncells_per_panel

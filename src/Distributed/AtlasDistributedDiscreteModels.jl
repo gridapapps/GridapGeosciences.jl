@@ -2,10 +2,14 @@ const AtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O,M} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:AtlasDiscreteModel{Dc,Dp,G,A,P,C,O,M}}}
 const AdaptedAtlasDistributedDiscreteModel{Dc,Dp} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:Gridap.Adaptivity.AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp}}}}
-const IntrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} = 
+const IntrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:IntrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}}
-const ExtrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} = 
+const ExtrinsicAtlasDistributedDiscreteModel{Dc,Dp,G,A,P,C,O} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:ExtrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}}
+const AdaptedIntrinsicAtlasDistributedDiscreteModel{Dc,Dp} =
+     GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:Gridap.Adaptivity.AdaptedDiscreteModel{Dc,Dp,<:IntrinsicAtlasDiscreteModel{Dc,Dp}}}}
+const AdaptedExtrinsicAtlasDistributedDiscreteModel{Dc,Dp} =
+     GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:Gridap.Adaptivity.AdaptedDiscreteModel{Dc,Dp,<:ExtrinsicAtlasDiscreteModel{Dc,Dp}}}}
 
 
 # Distribute a (small) serial AtlasDiscreteModel across MPI ranks.

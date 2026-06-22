@@ -22,7 +22,22 @@ function compute_surface_area(model::IntrinsicAtlasDistributedDiscreteModel, deg
   return surface_area
 end
 
+function compute_surface_area(model::AdaptedIntrinsicAtlasDistributedDiscreteModel, degree::Int)
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
 function compute_surface_area(model::ExtrinsicAtlasDistributedDiscreteModel{2,Dp}, degree::Int) where {Dp}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(model::AdaptedExtrinsicAtlasDistributedDiscreteModel{2,Dp}, degree::Int) where {Dp}
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
   surface_area = sum( ∫( 1.0 )dΩ )
