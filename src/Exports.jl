@@ -148,6 +148,7 @@ end
 
 @publish Distributed generate_distributed_refined_models
 @publish Distributed generate_octree_distributed_refined_models
+@publish Distributed generate_extruded_octree_distributed_refined_models
 @publish Distributed get_panel_ids
 @publish Distributed get_owned_panel_ids
 @publish Distributed get_skel_panel_ids

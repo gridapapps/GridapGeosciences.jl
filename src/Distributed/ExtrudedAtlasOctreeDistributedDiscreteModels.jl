@@ -291,8 +291,8 @@ Use `ExtrudedCubedSphereWithThicknessMesh(radius, thickness)` or similar extrude
 function ExtrudedAtlasOctreeDistributedDiscreteModel(
     ranks,
     info  :: CoarseMeshInfo{2},
-    num_vertical_refinements,
-    num_horizontal_refinements;
+    num_horizontal_refinements,
+    num_vertical_refinements;
     manifold_style = ExtrinsicManifold(),
 )
   ambient_maps             = info.ambient_maps
@@ -367,15 +367,316 @@ model = ExtrudedAtlasOctreeDistributedDiscreteModel(
 function ExtrudedAtlasOctreeDistributedDiscreteModel(
     ranks,
     mesh  :: CoarseMesh,
-    num_vertical_refinements,
-    num_horizontal_refinements;
+    num_horizontal_refinements,
+    num_vertical_refinements;
     manifold_style = ExtrinsicManifold(),
 )
   ExtrudedAtlasOctreeDistributedDiscreteModel(
     ranks,
     get_coarse_mesh(mesh),
-    num_vertical_refinements,
-    num_horizontal_refinements;
+    num_horizontal_refinements,
+    num_vertical_refinements;
     manifold_style,
   )
+end
+
+# ============================================================
+# Anisotropic uniform refinement
+# ============================================================
+
+function vertically_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteModel)
+  pXest_type             = m.octree_dmodel.pXest_type
+  ranks                  = m.octree_dmodel.parts
+  coarse_model           = m.octree_dmodel.coarse_model
+  ptr_pXest_connectivity = m.octree_dmodel.ptr_pXest_connectivity
+  info                   = m.coarse_info
+  manifold_style         = ManifoldStyle(m)
+
+  ptr_new_pXest = GridapP4est._vertically_uniformly_refine!(m.octree_dmodel)
+
+  ptr_pXest_ghost  = GridapP4est.setup_pXest_ghost(pXest_type, ptr_new_pXest)
+  ptr_pXest_lnodes = GridapP4est.setup_pXest_lnodes_nonconforming(pXest_type, ptr_new_pXest, ptr_pXest_ghost)
+
+  fmodel, non_conforming_glue = GridapP4est.setup_non_conforming_distributed_discrete_model(
+    pXest_type,
+    m.octree_dmodel.pXest_refinement_rule_type,
+    ranks,
+    coarse_model,
+    ptr_pXest_connectivity,
+    ptr_new_pXest,
+    ptr_pXest_ghost,
+    ptr_pXest_lnodes;
+    grid_and_topology_function=_dummy_grid_and_topology_function,
+    grid_and_topology_bottom_function=_dummy_grid_and_topology_function,
+  )
+
+  cell_wise_chart_coords_3d, cell_to_chart_id =
+    generate_cell_alpha_beta_gamma_coordinates_and_panels(
+      ranks,
+      info.cell_chart_coords,
+      collect(1:Gridap.Geometry.num_cells(coarse_model)),
+      ptr_new_pXest,
+      ptr_pXest_ghost,
+    )
+
+  GridapP4est.pXest_ghost_destroy(pXest_type, ptr_pXest_ghost)
+  GridapP4est.pXest_lnodes_destroy(pXest_type, ptr_pXest_lnodes)
+
+  pXest_vertical_rule = GridapP4est.PXestVerticalRefinementRuleType()
+  _refinement_and_coarsening_flags = map(partition(get_cell_gids(m.octree_dmodel))) do indices
+    flags  = Vector{Cint}(undef, length(local_to_global(indices)))
+    flags .= refine_flag
+  end
+
+  stride = GridapP4est.pXest_stride_among_children(
+    pXest_type, pXest_vertical_rule, m.octree_dmodel.ptr_pXest)
+  adaptivity_glue = GridapP4est._compute_fine_to_coarse_model_glue(
+    pXest_type,
+    pXest_vertical_rule,
+    ranks,
+    m.octree_dmodel.dmodel,
+    fmodel,
+    _refinement_and_coarsening_flags,
+    stride,
+  )
+
+  adaptive_models = map(
+    local_views(m.octree_dmodel),
+    local_views(fmodel),
+    adaptivity_glue,
+  ) do model, fmodel, glue
+    parent = isa(model, AdaptedDiscreteModel) ? model.model : model
+    Gridap.Adaptivity.AdaptedDiscreteModel(fmodel, parent, glue)
+  end
+  fmodel = GridapDistributed.GenericDistributedDiscreteModel(
+    adaptive_models, get_cell_gids(fmodel))
+
+  ref_octree_dmodel = OctreeDistributedDiscreteModel(
+    3, 3,
+    ranks,
+    fmodel,
+    non_conforming_glue,
+    coarse_model,
+    ptr_pXest_connectivity,
+    ptr_new_pXest,
+    pXest_type,
+    m.octree_dmodel.pXest_refinement_rule_type,
+    false,
+    m,
+  )
+
+  atlas_models = map(
+    local_views(ref_octree_dmodel.dmodel),
+    cell_wise_chart_coords_3d,
+    cell_to_chart_id,
+  ) do omodel, cell_chart_coords, cell_to_chart_local
+    param_grid        = Gridap.Geometry.get_grid(omodel)
+    grid_topology     = Gridap.Geometry.get_grid_topology(omodel)
+    face_labeling     = Gridap.Geometry.get_face_labeling(omodel)
+    orientation_style = Gridap.Geometry.OrientationStyle(param_grid)
+
+    cell_ambient_maps = lazy_map(Reindex(info.ambient_maps), cell_to_chart_local)
+    cell_metric       = lazy_map(Reindex(info.metric_fields), cell_to_chart_local)
+
+    atlas_grid = AtlasGrid(
+      param_grid, cell_chart_coords, cell_ambient_maps,
+      cell_metric, orientation_style, manifold_style,
+    )
+    AtlasDiscreteModel(atlas_grid, grid_topology, face_labeling)
+  end
+
+  adaptive_atlas_models = map(
+    atlas_models,
+    local_views(m.atlas_dmodel),
+    local_views(ref_octree_dmodel.dmodel),
+  ) do atlas_model, atlas_model_parent, octree_adapted_model
+    parent = isa(atlas_model_parent, AdaptedDiscreteModel) ? atlas_model_parent.model : atlas_model_parent
+    Gridap.Adaptivity.AdaptedDiscreteModel(
+      atlas_model, parent, get_adaptivity_glue(octree_adapted_model))
+  end
+
+  atlas_dmodel = GenericDistributedDiscreteModel(
+    adaptive_atlas_models, get_cell_gids(ref_octree_dmodel.dmodel))
+
+  M = typeof(manifold_style)
+  ExtrudedAtlasOctreeDistributedDiscreteModel{
+    typeof(ref_octree_dmodel), typeof(atlas_dmodel), M}(
+    ref_octree_dmodel, atlas_dmodel, info)
+end
+
+## TO-DO: this function does not currently work as expected. It refines less elements than
+##       it should. I believe the BUG might be in GridapP4est.jl.
+function horizontally_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteModel)
+  pXest_type             = m.octree_dmodel.pXest_type
+  ranks                  = m.octree_dmodel.parts
+  coarse_model           = m.octree_dmodel.coarse_model
+  ptr_pXest_connectivity = m.octree_dmodel.ptr_pXest_connectivity
+  info                   = m.coarse_info
+  manifold_style         = ManifoldStyle(m)
+
+  num_cols = GridapP4est.num_locally_owned_columns(m.octree_dmodel)
+  println("Number of locally owned columns: ", num_cols.item_ref[])
+  _refinement_and_coarsening_flags = map(num_cols) do num_cols
+    flags  = Vector{Cint}(undef, num_cols)
+    flags .= refine_flag
+  end
+
+  ptr_new_pXest = GridapP4est._horizontally_refine_coarsen_balance!(
+    m.octree_dmodel, _refinement_and_coarsening_flags)
+
+  ptr_pXest_ghost  = GridapP4est.setup_pXest_ghost(pXest_type, ptr_new_pXest)
+  ptr_pXest_lnodes = GridapP4est.setup_pXest_lnodes_nonconforming(pXest_type, ptr_new_pXest, ptr_pXest_ghost)
+
+  fmodel, non_conforming_glue = GridapP4est.setup_non_conforming_distributed_discrete_model(
+    pXest_type,
+    m.octree_dmodel.pXest_refinement_rule_type,
+    ranks,
+    coarse_model,
+    ptr_pXest_connectivity,
+    ptr_new_pXest,
+    ptr_pXest_ghost,
+    ptr_pXest_lnodes;
+    grid_and_topology_function=_dummy_grid_and_topology_function,
+    grid_and_topology_bottom_function=_dummy_grid_and_topology_function,
+  )
+
+  cell_wise_chart_coords_3d, cell_to_chart_id =
+    generate_cell_alpha_beta_gamma_coordinates_and_panels(
+      ranks,
+      info.cell_chart_coords,
+      collect(1:Gridap.Geometry.num_cells(coarse_model)),
+      ptr_new_pXest,
+      ptr_pXest_ghost,
+    )
+
+  GridapP4est.pXest_ghost_destroy(pXest_type, ptr_pXest_ghost)
+  GridapP4est.pXest_lnodes_destroy(pXest_type, ptr_pXest_lnodes)
+
+  pXest_horizontal_rule = GridapP4est.PXestHorizontalRefinementRuleType()
+
+  extruded_ref_coarsen_flags = map(
+    partition(get_cell_gids(m.octree_dmodel.dmodel)),
+    _refinement_and_coarsening_flags,
+  ) do indices, flags
+    similar(flags, length(local_to_global(indices)))
+  end
+
+  GridapP4est._extrude_refinement_and_coarsening_flags!(
+    extruded_ref_coarsen_flags,
+    _refinement_and_coarsening_flags,
+    m.octree_dmodel.ptr_pXest,
+    ptr_new_pXest,
+  )
+
+  stride = GridapP4est.pXest_stride_among_children(
+    pXest_type, pXest_horizontal_rule, m.octree_dmodel.ptr_pXest)
+  adaptivity_glue = GridapP4est._compute_fine_to_coarse_model_glue(
+    pXest_type,
+    pXest_horizontal_rule,
+    ranks,
+    m.octree_dmodel.dmodel,
+    fmodel,
+    extruded_ref_coarsen_flags,
+    stride,
+  )
+
+  adaptive_models = map(
+    local_views(m.octree_dmodel),
+    local_views(fmodel),
+    adaptivity_glue,
+  ) do model, fmodel, glue
+    parent = isa(model, AdaptedDiscreteModel) ? model.model : model
+    Gridap.Adaptivity.AdaptedDiscreteModel(fmodel, parent, glue)
+  end
+  fmodel = GridapDistributed.GenericDistributedDiscreteModel(
+    adaptive_models, get_cell_gids(fmodel))
+
+  ref_octree_dmodel = OctreeDistributedDiscreteModel(
+    3, 3,
+    ranks,
+    fmodel,
+    non_conforming_glue,
+    coarse_model,
+    ptr_pXest_connectivity,
+    ptr_new_pXest,
+    pXest_type,
+    m.octree_dmodel.pXest_refinement_rule_type,
+    false,
+    m,
+  )
+
+  atlas_models = map(
+    local_views(ref_octree_dmodel.dmodel),
+    cell_wise_chart_coords_3d,
+    cell_to_chart_id,
+  ) do omodel, cell_chart_coords, cell_to_chart_local
+    param_grid        = Gridap.Geometry.get_grid(omodel)
+    grid_topology     = Gridap.Geometry.get_grid_topology(omodel)
+    face_labeling     = Gridap.Geometry.get_face_labeling(omodel)
+    orientation_style = Gridap.Geometry.OrientationStyle(param_grid)
+
+    cell_ambient_maps = lazy_map(Reindex(info.ambient_maps), cell_to_chart_local)
+    cell_metric       = lazy_map(Reindex(info.metric_fields), cell_to_chart_local)
+
+    atlas_grid = AtlasGrid(
+      param_grid, cell_chart_coords, cell_ambient_maps,
+      cell_metric, orientation_style, manifold_style,
+    )
+    AtlasDiscreteModel(atlas_grid, grid_topology, face_labeling)
+  end
+
+  adaptive_atlas_models = map(
+    atlas_models,
+    local_views(m.atlas_dmodel),
+    local_views(ref_octree_dmodel.dmodel),
+  ) do atlas_model, atlas_model_parent, octree_adapted_model
+    parent = isa(atlas_model_parent, AdaptedDiscreteModel) ? atlas_model_parent.model : atlas_model_parent
+    Gridap.Adaptivity.AdaptedDiscreteModel(
+      atlas_model, parent, get_adaptivity_glue(octree_adapted_model))
+  end
+
+  atlas_dmodel = GenericDistributedDiscreteModel(
+    adaptive_atlas_models, get_cell_gids(ref_octree_dmodel.dmodel))
+
+  M = typeof(manifold_style)
+  ExtrudedAtlasOctreeDistributedDiscreteModel{
+    typeof(ref_octree_dmodel), typeof(atlas_dmodel), M}(
+    ref_octree_dmodel, atlas_dmodel, info)
+end
+
+function Gridap.Adaptivity.refine(m::ExtrudedAtlasOctreeDistributedDiscreteModel)
+  m_vert = vertically_uniformly_refine(m)
+  m_fine = horizontally_uniformly_refine(m_vert)
+  m_fine, nothing
+end
+
+
+function generate_extruded_octree_distributed_refined_models(ranks,
+                                               coarse_mesh,
+                                               n_ref_lvls,
+                                               manifold_style,
+                                               coarse_model=false)
+
+#   models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
+#   cmodel = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)
+#   model = cmodel
+#   for n in n_ref_lvls:-1:1
+#     model, _ = Gridap.Adaptivity.refine(model)
+#     models[n] = get_atlas_model(model)
+#   end
+#   if coarse_model
+#     push!(models,get_atlas_model(cmodel))
+#   end
+#   models
+
+  models = Vector{Any}(undef, n_ref_lvls)
+  for n in n_ref_lvls:-1:1
+    models[n] = get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
+      ranks, coarse_mesh, n_ref_lvls - n + 1, n_ref_lvls - n + 1; manifold_style=manifold_style))
+  end
+  if coarse_model
+    push!(models, get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
+      ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)))
+  end
+  models
 end

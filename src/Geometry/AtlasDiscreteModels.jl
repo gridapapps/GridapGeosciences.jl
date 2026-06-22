@@ -81,6 +81,7 @@ end
 
 Gridap.Geometry.get_grid(m::AtlasDiscreteModel)          = m.atlas_grid
 Gridap.Geometry.get_cell_map(m::AtlasDiscreteModel)      = get_cell_map(m.atlas_grid)
+Gridap.Geometry.get_cell_map(m::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp} = get_cell_map(m.model)
 Gridap.Geometry.get_grid_topology(m::AtlasDiscreteModel) = m.grid_topology
 Gridap.Geometry.get_face_labeling(m::AtlasDiscreteModel) = m.face_labeling
 Gridap.Geometry.num_point_dims(m::AtlasDiscreteModel)    = num_point_dims(get_grid(m))
@@ -158,6 +159,14 @@ function Gridap.Visualization.visualization_data(
       Gridap.Visualization.VisualizationData(phys_viz_grid, "$(filebase)_$(Dc)"; celldata=cdata)
     end
   end
+end
+
+function Gridap.Visualization.visualization_data(
+    model    :: AdaptedDiscreteModel{Dc,Da,<:AtlasDiscreteModel},
+    filebase :: AbstractString;
+    labels   :: Gridap.Geometry.FaceLabeling = Gridap.Geometry.get_face_labeling(model.model),
+) where {Dc,Da}
+  Gridap.Visualization.visualization_data(model.model, filebase; labels=labels)
 end
 
 # ============================================================
@@ -528,6 +537,40 @@ function InvAmbientMapCellField(
   ambient_maps = cell_ambient_maps.values
   radius = ambient_maps[1].radius
   inv_ambient_maps = [CubedSphereInvMap(panel, radius) for panel in 1:length(ambient_maps)]
+  cell_inv_ambient_maps = CompressedArray(inv_ambient_maps, ptrs)
+  Gridap.CellData.GenericCellField(cell_inv_ambient_maps, trian, Gridap.CellData.PhysicalDomain())
+end
+
+# Right now only supported by AtlasDiscreteModel of the sphere
+function InvAmbientMapCellField(
+    trian :: AdaptedTriangulation{Dc,Da,<:Gridap.Geometry.BodyFittedTriangulation{Dc,Da,
+                                        <:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:CubedSphereWithThicknessMap},
+                                        C,
+                                        O,
+                                        <:ExtrinsicManifold}}},
+) where {Dc,Da,G,A,C,O}
+  cf = InvAmbientMapCellField(trian.trian)
+  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+end
+
+function InvAmbientMapCellField(
+    trian :: Gridap.Geometry.BodyFittedTriangulation{Dc,Da,<:AtlasDiscreteModel{Dc,Da,
+                                        G,
+                                        A,
+                                        <:AbstractVector{<:CubedSphereWithThicknessMap},
+                                        C,
+                                        O,
+                                        <:ExtrinsicManifold}}) where {Dc,Da,G,A,C,O}
+  model = Gridap.Geometry.get_background_model(trian)
+  cell_ambient_maps = get_cell_ambient_maps(model)
+  ptrs = cell_ambient_maps.ptrs
+  ambient_maps = cell_ambient_maps.values
+  radius = ambient_maps[1].radius
+  inv_ambient_maps = 
+     [CubedSphereWithThicknessInvMap(panel, radius, ambient_maps[panel].thickness) for panel in 1:length(ambient_maps)]
   cell_inv_ambient_maps = CompressedArray(inv_ambient_maps, ptrs)
   Gridap.CellData.GenericCellField(cell_inv_ambient_maps, trian, Gridap.CellData.PhysicalDomain())
 end

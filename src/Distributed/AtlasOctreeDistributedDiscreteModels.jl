@@ -490,10 +490,11 @@ end
 # ============================================================
 
 function _adapt_atlas_octree_dmodel(
-    octree_dmodel::OctreeDistributedDiscreteModel,
+    atlas_dmodel::AtlasOctreeDistributedDiscreteModel,
     coarse_cell_chart_coords,
     refinement_and_coarsening_flags::MPIArray{<:Vector},
 )
+  octree_dmodel           = atlas_dmodel.octree_dmodel
   pXest_type              = octree_dmodel.pXest_type
   Dc                      = GridapP4est.num_cell_dims(pXest_type)
   pXest_refinement_rule_type = octree_dmodel.pXest_refinement_rule_type
@@ -577,8 +578,7 @@ function _adapt_atlas_octree_dmodel(
     octree_dmodel.pXest_type,
     GridapP4est.PXestUniformRefinementRuleType(),
     false,
-    octree_dmodel,
-  )
+    atlas_dmodel)
 
   adapted_omodel, cell_wise_chart_coords, cell_to_chart_id, adaptivity_glue
 end
@@ -604,7 +604,7 @@ function Gridap.Adaptivity.adapt(
 
   adapted_octree_dmodel, cell_wise_chart_coords, cell_to_chart_id, adaptivity_glue =
     _adapt_atlas_octree_dmodel(
-      model.octree_dmodel,
+      model,
       info.cell_chart_coords,
       refinement_and_coarsening_flags,
     )

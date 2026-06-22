@@ -76,37 +76,19 @@ function nc(model::Union{<:ATDMCS3D,
   nc_horizontal(model) + _nc_vertical(model)
 end
 
-function nc_horizontal(model::AtlasOctreeDistributedDiscreteModel{3,3})
+function nc_horizontal(model::Union{AtlasOctreeDistributedDiscreteModel{3,3},
+                                    ExtrudedAtlasOctreeDistributedDiscreteModel})
     nc_horizontal(get_atlas_model(model))
 end 
 
-function nc_vertical(model::AtlasOctreeDistributedDiscreteModel{3,3})
+function nc_vertical(model::Union{AtlasOctreeDistributedDiscreteModel{3,3},
+                                   ExtrudedAtlasOctreeDistributedDiscreteModel})
    nc_vertical(get_atlas_model(model))
 end 
 
-function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
-                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
-
-  grid = get_grid(model)
-  gids = get_cell_gids(model)
-
-  ## find the number of cells that are on the surface.
-  ## i.e. with γ = 0.0
-  ## make sure to extract only the owned
-  f = map(local_views(grid),partition(gids)) do grid, cids
-    cmap = get_cell_map(grid)
-    pts = get_cell_ref_coordinates(grid)
-    f = lazy_map(evaluate,cmap,pts)
-    g = lazy_map(FindSurfaceCells(),f)
-    owned_cells = own_to_local(cids)
-    sum(g[owned_cells])
-  end
-  nsurface = sum(f)
-  ncells_per_panel = Int(nsurface/6)
-  return ncells_per_panel
-end
-
-function nc_horizontal(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},                                       
+                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    ExtrinsicAtlasDistributedDiscreteModel{3,3},
                                     AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
 
   grid = get_grid(model)
