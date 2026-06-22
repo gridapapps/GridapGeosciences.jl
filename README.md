@@ -1,8 +1,7 @@
 # GridapGeosciences 
 
  
-GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) to the numerical approximation of partial differential equations on two and three dimensional cubed sphere manifolds. 
-The cubed sphere meshes are designed with high performance computing in mind.
+GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) to the numerical approximation of partial differential equations on two and three dimensional general manifolds (including the cubed sphere for atmospheric dynamic simulations).  The manifold meshes are designed with high performance computing in mind.
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](PENDING)
 [![Build Status](https://github.com/gridapapps/GridapGeosciences.jl/workflows/CI/badge.svg?branch=master)](https://github.com/gridapapps/GridapGeosciences.jl/actions?query=workflow%3ACI)
