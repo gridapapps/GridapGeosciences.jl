@@ -245,6 +245,8 @@ function _generate_extruded_octree_cell_chart_coords_and_chart_id(
   GridapP4est.pXest_lnodes_destroy(pXest_type, ptr_pXest_lnodes)
   GridapP4est.pXest_ghost_destroy(pXest_type, ptr_pXest_ghost)
 
+  connectivity_ref = GridapP4est.PXestConnectivityRef(pXest_type, ptr_pXest_connectivity)
+
   omodel = OctreeDistributedDiscreteModel(
     Dc, Dc,
     ranks,
@@ -255,9 +257,7 @@ function _generate_extruded_octree_cell_chart_coords_and_chart_id(
     ptr_pXest,
     pXest_type,
     pXest_refinement_rule_type,
-    true,
-    nothing,
-  )
+    connectivity_ref)
 
   omodel, cell_chart_coords_3d, cell_to_chart_id
 end
@@ -461,9 +461,7 @@ function vertically_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteMo
     ptr_new_pXest,
     pXest_type,
     m.octree_dmodel.pXest_refinement_rule_type,
-    false,
-    m,
-  )
+    m.octree_dmodel.connectivity_ref)
 
   atlas_models = map(
     local_views(ref_octree_dmodel.dmodel),
@@ -601,9 +599,7 @@ function horizontally_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscrete
     ptr_new_pXest,
     pXest_type,
     m.octree_dmodel.pXest_refinement_rule_type,
-    false,
-    m,
-  )
+    m.octree_dmodel.connectivity_ref)
 
   atlas_models = map(
     local_views(ref_octree_dmodel.dmodel),
