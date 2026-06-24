@@ -50,7 +50,6 @@ function main(distribute,nprocs)
   test_debug_vector_equality(out)
 
   # Method 2: Santi's formula
-  panel_ids = get_panel_ids(panel_model)
   n = pushforward_parametric_normal(Λ)
   out = (n.plus+n.minus)(pts)
 

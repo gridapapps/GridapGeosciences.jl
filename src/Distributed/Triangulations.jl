@@ -50,17 +50,17 @@ BoundaryTriangulation
 For the boundary triangulation of the 2D ambient model, we  want to mask all cells
 as the boundary
 """
-function GridapDistributed.BoundaryTriangulation(
-  portion,model::CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel},
-  labels::GridapDistributed.DistributedFaceLabeling;tags=nothing)
-  Dc = num_cell_dims(model)
+# TO-DO: function GridapDistributed.BoundaryTriangulation(
+#   portion,model::CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel},
+#   labels::GridapDistributed.DistributedFaceLabeling;tags=nothing)
+#   Dc = num_cell_dims(model)
 
-  topo = GridapDistributed.get_grid_topology(model)
-  face_to_mask = GridapDistributed.get_isboundary_face(topo,Dc-1) # This is globally consistent
+#   topo = GridapDistributed.get_grid_topology(model)
+#   face_to_mask = GridapDistributed.get_isboundary_face(topo,Dc-1) # This is globally consistent
 
-  # For the 2D model, we want to mask all cells
-  _face_to_mask = map(face_to_mask) do f
-    .!f
-  end
-  GridapDistributed.BoundaryTriangulation(portion,model,_face_to_mask)
-end
+#   # For the 2D model, we want to mask all cells
+#   _face_to_mask = map(face_to_mask) do f
+#     .!f
+#   end
+#   GridapDistributed.BoundaryTriangulation(portion,model,_face_to_mask)
+# end

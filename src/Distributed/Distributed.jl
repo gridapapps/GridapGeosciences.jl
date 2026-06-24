@@ -21,35 +21,17 @@ import GridapDistributed: BoundaryTriangulation
 import GridapDistributed: CellField
 
 using GridapGeosciences.Geometry
-import GridapGeosciences.Geometry: _CCAM_panel_wise_node_ids
-import GridapGeosciences.Geometry: _CCAM_cube_nodes_3d
-import GridapGeosciences.Geometry: setup_panel_cmaps
-import GridapGeosciences.Geometry: ParametricCellField, geo_map_func, latlon_geo_map_func
-import GridapGeosciences.Geometry: AmbientCellField
-import GridapGeosciences.Geometry: get_panel_ids, get_forward_map_generator, get_radius, get_thickness
+import GridapGeosciences.Geometry: get_radius, get_thickness
 import GridapGeosciences.Geometry: pullback_area_form, pushforward_normal, 
                                    pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
-import GridapGeosciences.Geometry: ParametricModels, get_parametric_model
 import GridapGeosciences.Geometry: get_surface_normal
 
 using GridapGeosciences.Fields
-import GridapGeosciences.Fields: CubedSphereForwardMap, Cartesian2SphericalMap
-
 using GridapGeosciences.Visualisation
 import GridapGeosciences.Visualisation: writevtk_with_cell_geomap, write_vtk_file_with_cell_geomap
 import GridapGeosciences.Visualisation: createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap
 
-
-include("CubedSphere2DParametricOctreeDistributedDiscreteModel.jl")
-include("CubedSphere3DParametricOctreeDistributedDiscreteModel.jl")
-include("CubedSphere2DParametricDistributedDiscreteModel.jl")
-include("CubedSphereAmbientDistributedDiscreteModel.jl")
-include("CubedSphereAmbientOctreeDistributedDiscreteModel.jl")
-include("ParametricCellField.jl")
-include("AmbientCellField.jl")
-include("CellFields.jl")
-include("PanelIds.jl")
 include("Vtk.jl")
 include("Triangulations.jl")
 
@@ -94,31 +76,16 @@ import GridapDistributed: add_ghost_cells
 import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type
 include("GradConformingFESpaces.jl")
 
-export CubedSphere2DParametricOctreeDistributedDiscreteModel
-export CubedSphere3DParametricOctreeDistributedDiscreteModel
-export CubedSphereParametricDistributedDiscreteModel
-export CubedSphere2DParametricDistributedDiscreteModel, CubedSphere3DParametricDistributedDiscreteModel
-export CubedSphereAmbientDistributedDiscreteModel
-export CubedSphereAmbientOctreeDistributedDiscreteModel
-export CubedSphere2DAmbientOctreeDistributedDiscreteModel, CubedSphere3DAmbientOctreeDistributedDiscreteModel
-export ParametricCellField, geo_map_func, get_panel_ids, latlon_geo_map_func
-export AmbientCellField
-export get_forward_map_generator, get_radius, get_thickness
-export get_parametric_model
+export get_radius, get_thickness
 export writevtk_with_cell_geomap, write_vtk_file_with_cell_geomap
 export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk_file_with_cell_geomap
 
-export distributed_panel_ids
 export DistributedAdaptivityGlue
 export get_distributed_refined_models
-export get_panel_ids, get_owned_panel_ids, get_skel_panel_ids
 # export BoundaryTriangulation
 export pullback_area_form
 export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
-
 export CellField
-
-
 
 
 end

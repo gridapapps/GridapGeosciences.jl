@@ -1,8 +1,3 @@
-function get_panel_ids(strian::SkeletonTriangulation)
-  plus = get_panel_ids(strian.plus)
-  minus = get_panel_ids(strian.plus)
-  SkeletonPair(plus,minus)
-end
 
 function pushforward_normal(trian::SkeletonTriangulation{Dc,Dp,
                                                          <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}, <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}) where {Dc,Dp}

@@ -583,6 +583,14 @@ function get_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) whe
   get_radius(model.model)
 end
 
+function get_thickness(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
+   model.atlas_grid.cell_ambient_maps.values[1].thickness
+end
+
+function get_thickness(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_thickness(model.model)
+end
+
 
 function _fm(f, m)
    function fm(m)

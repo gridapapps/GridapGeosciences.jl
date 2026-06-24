@@ -6,16 +6,9 @@ end
 
 @publish Adaptivity refine
 
-
 @publish Fields Cartesian2SphericalMap
-@publish Fields CubedSphereForwardMap
-@publish Fields CubedSphereInverseMap
 @publish Fields normal_vec
 
-@publish Geometry get_panel_ids
-@publish Geometry geo_map_func
-@publish Geometry latlon_geo_map_func
-@publish Geometry pullback_area_form
 @publish Geometry pushforward_normal
 @publish Geometry pushforward_reference_normal
 @publish Geometry pushforward_parametric_normal
@@ -23,21 +16,10 @@ end
 @publish Geometry SkeletonTriangulation
 @publish Geometry generate_ptr
 @publish Geometry coarse_cube_model
-@publish Geometry coarse_parametric_model
-@publish Geometry get_forward_map_generator
 @publish Geometry get_radius
 @publish Geometry get_thickness
-@publish Geometry ParametricCellField
-@publish Geometry CubedSphereParametricDiscreteModel
-@publish Geometry CubedSphere2DParametricDiscreteModel
-@publish Geometry CubedSphere3DParametricDiscreteModel
-@publish Geometry CubedSphereAmbientDiscreteModel
 @publish Geometry generate_refined_models
-@publish Geometry get_inverse_map_generator
-@publish Geometry AmbientCellField
-@publish Geometry get_parametric_model
 @publish Geometry get_surface_normal
-@publish Geometry AmbientModels
 
 # BEGIN AtlasDiscreteModels-specific exports
 # At the present moment, I am solely exporting the symbols
@@ -123,12 +105,6 @@ end
 @publish Helpers pinvJ
 @publish Helpers perp
 
-@publish Distributed CubedSphere2DParametricOctreeDistributedDiscreteModel
-@publish Distributed CubedSphere3DParametricOctreeDistributedDiscreteModel
-@publish Distributed CubedSphereParametricDistributedDiscreteModel
-@publish Distributed CubedSphere2DParametricDistributedDiscreteModel
-@publish Distributed CubedSphere3DParametricDistributedDiscreteModel
-@publish Distributed CubedSphereAmbientDistributedDiscreteModel
 @publish Distributed AtlasDistributedDiscreteModel
 @publish Distributed IntrinsicAtlasDistributedDiscreteModel
 @publish Distributed ExtrinsicAtlasDistributedDiscreteModel
@@ -137,39 +113,15 @@ end
 @publish Distributed AtlasOctreeDistributedDiscreteModel
 @publish Distributed get_atlas_model
 
-@publish Distributed geo_map_func
-@publish Distributed latlon_geo_map_func
-@publish Distributed ParametricCellField
-@publish Distributed AmbientCellField
-
-@publish Distributed writevtk_with_cell_geomap
-@publish Distributed createvtk_with_cell_geomap
 @publish Distributed create_pvtk_file_with_cell_geomap
 
 @publish Distributed generate_distributed_refined_models
 @publish Distributed generate_octree_distributed_refined_models
 @publish Distributed generate_extruded_octree_distributed_refined_models
-@publish Distributed get_panel_ids
-@publish Distributed get_owned_panel_ids
-@publish Distributed get_skel_panel_ids
-# @publish Distributed BoundaryTriangulation
-@publish Distributed pullback_area_form
-@publish Distributed pushforward_normal
-@publish Distributed get_forward_map_generator
-@publish Distributed get_radius
-@publish Distributed get_thickness
-@publish Distributed get_parametric_model
-@publish Distributed get_surface_normal
-@publish Distributed CubedSphere2DAmbientOctreeDistributedDiscreteModel
-@publish Distributed CubedSphere3DAmbientOctreeDistributedDiscreteModel
+
 @publish Distributed CellField
 
-@publish Distributed AtlasOctreeDistributedDiscreteModel
 @publish Distributed ExtrudedAtlasOctreeDistributedDiscreteModel
-@publish Distributed IntrinsicAtlasDistributedDiscreteModel
-@publish Distributed ExtrinsicAtlasDistributedDiscreteModel
-@publish Distributed get_atlas_model
-@publish Distributed LatLonMapCellField
 
 @publish MultilevelTools ModelHierarchy
 @publish MultilevelTools adapt_model
