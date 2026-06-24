@@ -245,6 +245,8 @@ function _generate_extruded_octree_cell_chart_coords_and_chart_id(
   GridapP4est.pXest_lnodes_destroy(pXest_type, ptr_pXest_lnodes)
   GridapP4est.pXest_ghost_destroy(pXest_type, ptr_pXest_ghost)
 
+  connectivity_ref = GridapP4est.PXestConnectivityRef(pXest_type, ptr_pXest_connectivity)
+
   omodel = OctreeDistributedDiscreteModel(
     Dc, Dc,
     ranks,
@@ -255,9 +257,7 @@ function _generate_extruded_octree_cell_chart_coords_and_chart_id(
     ptr_pXest,
     pXest_type,
     pXest_refinement_rule_type,
-    true,
-    nothing,
-  )
+    connectivity_ref)
 
   omodel, cell_chart_coords_3d, cell_to_chart_id
 end
@@ -461,9 +461,7 @@ function vertically_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteMo
     ptr_new_pXest,
     pXest_type,
     m.octree_dmodel.pXest_refinement_rule_type,
-    false,
-    m,
-  )
+    m.octree_dmodel.connectivity_ref)
 
   atlas_models = map(
     local_views(ref_octree_dmodel.dmodel),
@@ -504,8 +502,6 @@ function vertically_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteMo
     ref_octree_dmodel, atlas_dmodel, info)
 end
 
-## TO-DO: this function does not currently work as expected. It refines less elements than
-##       it should. I believe the BUG might be in GridapP4est.jl.
 function horizontally_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteModel)
   pXest_type             = m.octree_dmodel.pXest_type
   ranks                  = m.octree_dmodel.parts
@@ -601,9 +597,7 @@ function horizontally_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscrete
     ptr_new_pXest,
     pXest_type,
     m.octree_dmodel.pXest_refinement_rule_type,
-    false,
-    m,
-  )
+    m.octree_dmodel.connectivity_ref)
 
   atlas_models = map(
     local_views(ref_octree_dmodel.dmodel),
@@ -657,26 +651,15 @@ function generate_extruded_octree_distributed_refined_models(ranks,
                                                manifold_style,
                                                coarse_model=false)
 
-#   models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
-#   cmodel = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)
-#   model = cmodel
-#   for n in n_ref_lvls:-1:1
-#     model, _ = Gridap.Adaptivity.refine(model)
-#     models[n] = get_atlas_model(model)
-#   end
-#   if coarse_model
-#     push!(models,get_atlas_model(cmodel))
-#   end
-#   models
-
-  models = Vector{Any}(undef, n_ref_lvls)
+  models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
+  cmodel = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)
+  model = cmodel
   for n in n_ref_lvls:-1:1
-    models[n] = get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
-      ranks, coarse_mesh, n_ref_lvls - n + 1, n_ref_lvls - n + 1; manifold_style=manifold_style))
+    model, _ = Gridap.Adaptivity.refine(model)
+    models[n] = get_atlas_model(model)
   end
   if coarse_model
-    push!(models, get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
-      ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)))
+    push!(models,get_atlas_model(cmodel))
   end
   models
 end

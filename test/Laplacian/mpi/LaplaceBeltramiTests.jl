@@ -30,3 +30,8 @@ thickness = 0.19
 coarse_mesh = CubedSphereWithThicknessMesh(radius, thickness)
 models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls-2, IntrinsicManifold())
 LaplaceBeltramiTests.main(models;_i_am_main=i_am_main(ranks))
+
+### P4test model: Extruded 3D
+coarse_mesh = ExtrudedCubedSphereWithThicknessMesh(radius, thickness)
+models = generate_extruded_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls-2, IntrinsicManifold())
+LaplaceBeltramiTests.main(models;_i_am_main=i_am_main(ranks))

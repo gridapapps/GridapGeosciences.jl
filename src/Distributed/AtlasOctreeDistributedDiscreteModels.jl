@@ -306,6 +306,8 @@ function generate_octree_dmodel_cell_chart_coords_and_cell_to_chart_id(ranks,
 
    GridapP4est.pXest_lnodes_destroy(pXest_type,ptr_pXest_lnodes)
 
+   connectivity_ref = GridapP4est.PXestConnectivityRef(pXest_type, ptr_pXest_connectivity)
+
    omodel=OctreeDistributedDiscreteModel(Dc,
                                   Dc,
                                   ranks,
@@ -316,8 +318,7 @@ function generate_octree_dmodel_cell_chart_coords_and_cell_to_chart_id(ranks,
                                   ptr_pXest,
                                   pXest_type,
                                   pXest_refinement_rule_type,
-                                  true,
-                                  nothing)
+                                  connectivity_ref)
 
   cell_to_chart_id = generate_cell_to_chart_id(ranks,
                                                coarse_model,
@@ -576,8 +577,7 @@ end
     ptr_new_pXest,
     octree_dmodel.pXest_type,
     GridapP4est.PXestUniformRefinementRuleType(),
-    false,
-    octree_dmodel)
+    octree_dmodel.connectivity_ref)
 
   adapted_omodel, cell_wise_chart_coords, cell_to_chart_id, adaptivity_glue
 end
