@@ -502,8 +502,6 @@ function vertically_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteMo
     ref_octree_dmodel, atlas_dmodel, info)
 end
 
-## TO-DO: this function does not currently work as expected. It refines less elements than
-##       it should. I believe the BUG might be in GridapP4est.jl.
 function horizontally_uniformly_refine(m::ExtrudedAtlasOctreeDistributedDiscreteModel)
   pXest_type             = m.octree_dmodel.pXest_type
   ranks                  = m.octree_dmodel.parts
