@@ -653,26 +653,15 @@ function generate_extruded_octree_distributed_refined_models(ranks,
                                                manifold_style,
                                                coarse_model=false)
 
-#   models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
-#   cmodel = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)
-#   model = cmodel
-#   for n in n_ref_lvls:-1:1
-#     model, _ = Gridap.Adaptivity.refine(model)
-#     models[n] = get_atlas_model(model)
-#   end
-#   if coarse_model
-#     push!(models,get_atlas_model(cmodel))
-#   end
-#   models
-
-  models = Vector{Any}(undef, n_ref_lvls)
+  models = Vector{GenericDistributedDiscreteModel}(undef,n_ref_lvls)
+  cmodel = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)
+  model = cmodel
   for n in n_ref_lvls:-1:1
-    models[n] = get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
-      ranks, coarse_mesh, n_ref_lvls - n + 1, n_ref_lvls - n + 1; manifold_style=manifold_style))
+    model, _ = Gridap.Adaptivity.refine(model)
+    models[n] = get_atlas_model(model)
   end
   if coarse_model
-    push!(models, get_atlas_model(ExtrudedAtlasOctreeDistributedDiscreteModel(
-      ranks, coarse_mesh, 0, 0; manifold_style=manifold_style)))
+    push!(models,get_atlas_model(cmodel))
   end
   models
 end
