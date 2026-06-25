@@ -22,7 +22,6 @@ export metric, inv_metric
 export surflap, surfdiv, sgrad, skew_surfdiv, skew_surfgrad
 
 export xyz2θϕr
-export pinvJ
 export J
 
 end

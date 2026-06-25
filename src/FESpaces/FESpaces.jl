@@ -23,6 +23,7 @@ import Gridap.Helpers: @notimplemented
 import Gridap.ReferenceFEs: linear_combination
 import LinearAlgebra: I, ⋅
 import Gridap.CellData: get_data
+import GridapGeosciences.Helpers: pinvJ
 include("GradConformingFESpaces.jl")
 export _generate_change_of_basis_matrices
 export _get_value_type
