@@ -24,6 +24,18 @@ function get_thickness(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
   return thickness
 end
 
+function get_radius(model::Union{IntrinsicAtlasDistributedDiscreteModel,
+                                  AdaptedIntrinsicAtlasDistributedDiscreteModel,
+                                  ExtrinsicAtlasDistributedDiscreteModel,
+                                  AdaptedExtrinsicAtlasDistributedDiscreteModel})
+  Rs = map(get_radius, local_views(model))
+  radius = zero(eltype(Rs))
+  map(Rs) do r
+    radius = r
+  end
+  return radius
+end
+
 # Distribute a (small) serial AtlasDiscreteModel across MPI ranks.
 # Assigns cells with a linear partition, then gives each rank owned cells
 # plus their vertex-adjacent ghosts.  Only called on the coarse mesh (tiny),

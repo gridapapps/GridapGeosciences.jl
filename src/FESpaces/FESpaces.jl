@@ -15,8 +15,7 @@ import Gridap.Arrays: array_cache, CachedMatrix, return_type, getindex!,
 import GridapGeosciences.Geometry: BFTATDMIM, IntrinsicAtlasDiscreteModel
 import GridapGeosciences.Geometry: AtlasDiscreteModel,
                                    get_cell_ambient_maps,
-                                   IntrinsicManifold
-import GridapGeosciences.Helpers: J, forward_pinv_jacobian, pinvJ
+                                   AmbientMapCellField, IntrinsicManifold
 import Gridap.Geometry: Triangulation
 import Gridap.FESpaces: compute_cell_bases_changes, _use_clagrangian, H1Conformity
 import Gridap.Adaptivity: AdaptedDiscreteModel, AdaptedTriangulation

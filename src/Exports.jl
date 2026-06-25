@@ -7,11 +7,11 @@ end
 @publish Adaptivity refine
 
 @publish Fields Cartesian2SphericalMap
-@publish Fields normal_vec
 
 @publish Geometry pushforward_normal
 @publish Geometry pushforward_reference_normal
 @publish Geometry pushforward_parametric_normal
+@publish Geometry pullback_area_form
 @publish Geometry BoundaryTriangulation
 @publish Geometry SkeletonTriangulation
 @publish Geometry generate_ptr
@@ -19,6 +19,8 @@ end
 @publish Geometry get_radius
 @publish Geometry get_thickness
 @publish Geometry generate_refined_models
+@publish Geometry normal_vec
+@publish Geometry tangent_vec
 @publish Geometry get_surface_normal
 
 # BEGIN AtlasDiscreteModels-specific exports
@@ -88,19 +90,9 @@ end
 @publish Helpers surfdiv
 @publish Helpers sgrad
 
-@publish Helpers ambient_surflap
-@publish Helpers ambient_surfdiv
-@publish Helpers ambient_sgrad
-
-@publish Helpers panel_to_cartesian
-
-@publish Helpers tangent_vec
-@publish Helpers contra_v
-@publish Helpers piola
 
 @publish Helpers forward_jacobian
 @publish Helpers covariant_basis
-@publish Helpers forward_pinv_jacobian
 
 @publish Helpers pinvJ
 @publish Helpers perp

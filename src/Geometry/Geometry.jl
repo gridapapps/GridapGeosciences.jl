@@ -14,6 +14,8 @@ using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap
 using Gridap.Adaptivity, Gridap.Visualization
 import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
 import Gridap.Geometry: Grid
+import GridapGeosciences.Helpers: J
+
 include("CoarseMeshes.jl")
 include("AtlasGrids.jl")
 include("AtlasDiscreteModels.jl")
@@ -36,7 +38,7 @@ export skew_divs
 export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField
 export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
 export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
-export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap
+export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap, CubedSphereWithThicknessInvMap, CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
 export CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
 export ExtrudedCubedSphereWithThicknessMesh
 export get_atlas_grid
@@ -50,10 +52,9 @@ import Gridap.Geometry: TriangulationView
 import Gridap.Geometry: FaceToCellGlue, FaceCompressedVector, push_normal
 
 using GridapGeosciences.Fields
-import GridapGeosciences.Fields: CubedSphereInverseMap
 
 using GridapGeosciences.Helpers
-import GridapGeosciences.Helpers: inv_metric, forward_jacobian
+import GridapGeosciences.Helpers: inv_metric, forward_jacobian, forward_pinv_jacobian
 import GridapGeosciences.Helpers: perp
 
 include("CubeSurface.jl")
@@ -73,6 +74,7 @@ export NPANELS, CUBE_HALF_EDGE
 export get_nodes_from_coords
 
 export get_radius, get_thickness
+export normal_vec, tangent_vec
 export get_surface_normal
 
 end

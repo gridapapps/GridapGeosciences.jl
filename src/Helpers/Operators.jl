@@ -1,7 +1,5 @@
-# here Field means ForwardMap2Dor3D
-# J comes from Fields
 
-
+J(m::Field,x) = transpose(∇(m)(x))
 Jt(m::Field,x) = transpose(J(m,x))
 metric(m::Field,x) = Jt(m,x)⋅J(m,x)
 inv_metric(m::Field,x) = inv(metric(m,x))
@@ -58,8 +56,7 @@ skew_surfdiv(f::Function,m::Field) = αβ ->  -1.0/sqrtg(m,αβ)*(divergence(_sk
 skew_surfgrad(vec::Function) = m -> skew_surfgrad(vec,m)
 skew_surfgrad(f::Function,m::Field) = αβ ->  1.0/sqrtg(m,αβ)*J(m)(αβ)⋅perp(gradient(f(m))(αβ))
 
-dagger(vec::Function) = m -> dagger(vec,m)
-dagger(vec::Function,m::Field) = αβ ->  J(m)(αβ)⋅(inv_metric(m,αβ)⋅perp( contra_v(vec(m))(αβ) )) * sqrtg(m,αβ)
+
 
 """
 perp

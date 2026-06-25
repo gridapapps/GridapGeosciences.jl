@@ -777,6 +777,12 @@ function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
 end
 
 
+# Contravariant components of 3D vector vecX
+# The contravariatn mapping is  ̃u = J u
+# so u = J^† ̃u
+contra_v(vecX::Function,m::Field) = αβ -> forward_pinv_jacobian(m)(αβ)⋅vecX(m)(αβ)
+contra_v(vecX::Function) = p -> contra_v(vecX,p)
+
 function _divs_ad(f, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
@@ -890,6 +896,9 @@ function skew_divs(f::Function,
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
+dagger(vec::Function) = m -> dagger(vec,m)
+dagger(vec::Function,m::Field) = αβ ->  J(m)(αβ)⋅(inv_metric(m,αβ)⋅perp( contra_v(vec(m))(αβ) )) * sqrtg(m,αβ)
+
 function _dagger_ad(f::Function, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
@@ -987,6 +996,14 @@ function curls(f::Function, Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,
   Gridap.CellData.GenericCellField(get_data(curls_trian), Ω_atlas, Gridap.CellData.DomainStyle(curls_trian))
 end
 
+################################################################################
+########## 3D ########
+################################################################################
+# unit normal
+normal_vec(XYZ) = 1.0/sqrt(XYZ[1]*XYZ[1] + XYZ[2]*XYZ[2] + XYZ[3]*XYZ[3])*VectorValue(XYZ[1],XYZ[2],XYZ[3])
+
+# tangent component of aribitary 3D vector vecX
+tangent_vec(vecX::Function) = XYZ -> vecX(XYZ) - (vecX(XYZ)⋅normal_vec(XYZ))⋅normal_vec(XYZ)
 
 function get_surface_normal(trian::BFTATDM{Dc,3}) where {Dc}
   ns = CellField(normal_vec,trian)

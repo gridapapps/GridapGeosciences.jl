@@ -46,7 +46,7 @@ end
 
 ## Atlas cell fields for the parametric (intrinsic) model
 ambient_map_cf = AmbientMapCellField(Ω_parametric)
-J_cf           = transpose∘∇(ambient_map_cf)         # J^T : chart → ambient covariant basis
+J_cf           = transpose∘∇(ambient_map_cf)               # J^T : chart → ambient covariant basis
 meas_cf        = MeasureCellField(Ω_parametric)            # √det g
 inv_metric_cf  = InvMetricCellField(Ω_parametric)          # g^{-1}
 

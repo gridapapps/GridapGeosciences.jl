@@ -16,3 +16,8 @@ function pullback_area_form(atrian::AdaptedTriangulation)
   minus = GenericCellField(get_data(cf.minus),atrian,DomainStyle(cf.minus))
   SkeletonPair(plus,minus)
 end
+
+function get_surface_normal(trian::AdaptedTriangulation)
+  ns = get_surface_normal(trian.trian)
+  GenericCellField(get_data(ns),trian,DomainStyle(ns))
+end
