@@ -23,7 +23,6 @@
 using GridapGeosciences
 using Gridap
 using GridapDistributed
-using GridapP4est
 using GridapSolvers
 using PartitionedArrays
 using MPI
@@ -35,10 +34,9 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 # To obtain a refined 3D parametric model, we pass $\ell$ levels of refinement to the vertical and horizontal:
 ℓ = 2
 radius,thickness = 1.0, 0.19
-octree3_model = CubedSphere3DParametricOctreeDistributedDiscreteModel(ranks,radius,thickness;
-                  num_horizontal_uniform_refinements=ℓ,
-                  num_vertical_uniform_refinements=ℓ);
-model = octree3_model.parametric_dmodel
+coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
+octree3_model = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
+model = get_atlas_model(octree3_model)
 
 
 # ## Triangulation
@@ -64,73 +62,52 @@ X = MultiFieldFESpace([U, P, B])
 # ## Initial conditions
 # Define the initial conditions as analytic julia functions that take the forward
 # map of the three dimensional cubed sphere:
-function φ₀(forward_map)
-  function _p(α)
-    0.0
-  end
+function φ₀(x)
+  0.0
 end
 
-function b₀(forward_map)
-  function b(α)
-    x = forward_map(α)
-    θ,ϕ,r = xyz2θϕr(x)
-
-    θc = 2*π/3
-    ϕc = 0.0
-    d = 0.095
-    ζ = 0.38
-
-    k = sqrt(x[1]^2 + x[2]^2 + x[3]^2) - radius
-
-    q = acos( sin(ϕc)*sin(ϕ) + cos(ϕc)*cos(ϕ)*cos(θ-θc)    )
-    s = d^2/(d^2 + q^2)
-    s*sin( 2*π*k/ζ  )
-  end
+function b₀(x)
+  θ,ϕ,_ = xyz2θϕr(x)
+  θc = 2*π/3
+  ϕc = 0.0
+  d = 0.095
+  ζ = 0.38
+  k = sqrt(x[1]^2 + x[2]^2 + x[3]^2) - radius
+  q = acos(sin(ϕc)*sin(ϕ) + cos(ϕc)*cos(ϕ)*cos(θ-θc))
+  s = d^2/(d^2 + q^2)
+  s*sin(2*π*k/ζ)
 end
 
-function u₀(forward_map)
-  function u(α)
-    x = forward_map(α)
-    u_0 = 0.058
-    u_0*VectorValue(-x[2],x[1],0.0)
-  end
+function u₀(x)
+  u_0 = 0.058
+  u_0*VectorValue(-x[2],x[1],0.0)
 end
 
-
-function ω(forward_map)
-  function w(α)
-    x = forward_map(α)
-    θ,ϕ,r = xyz2θϕr(x)
-    Ωr = 0.01
-    2*Ωr*sin(ϕ)
-  end
-end
-
-# Define the associated ParametricCellField, and interpolate the initial condition
-# into the finite element space
-h_cf = ParametricCellField(φ₀,Ω)
-u_cf = ParametricCellField(piola(u₀),Ω)
-b_cf = ParametricCellField(b₀,Ω)
-omega_cf = ParametricCellField(ω,Ω)
-
-xh0 = interpolate([u_cf,h_cf,b_cf],X)
-
-function Gridap.CellData.get_triangulation(a::GridapDistributed.DistributedMultiFieldCellField)
-  trians = map(get_triangulation,a.field_fe_fun)
-  # @check all(map(t -> t === first(trians), trians))
-  return first(trians)
+function ω(x)
+  _,ϕ,_ = xyz2θϕr(x)
+  Ωr = 0.01
+  2*Ωr*sin(ϕ)
 end
 
 # ## Weak forms
 # To define the weak forms, we extract the metric information, and define the
-# pushforward of the surface normal vector:
-g = ParametricCellField(metric,Ω)
-meas = ParametricCellField(sqrtg,Ω)
-covariant_basis_cf = ParametricCellField(covariant_basis,Ω)
-_area_meas(p) = x->  forward_jacobian(p,x) ⋅ (inv_metric(p,x) ⋅ VectorValue(1,0,0))
-area_meas(p) = x-> norm(_area_meas(p)(x))
-normal_3D(p) = x-> (1/area_meas(p)(x) )*VectorValue(1,0,0)
-normal_3D_cf = ParametricCellField(normal_3D,Ω)
+# radial unit normal vector from the first parametric coordinate direction (1,0,0):
+ambient_map_cf = AmbientMapCellField(Ω)
+covariant_basis_cf = transpose∘∇(ambient_map_cf)
+g = MetricCellField(Ω)
+meas = MeasureCellField(Ω)
+n3D = CellField(VectorValue(1.0,0.0,0.0),Ω)
+ff = Operation(sqrt)(n3D ⋅ (InvMetricCellField(Ω) ⋅ n3D))
+normal_3D_cf = n3D/ff
+
+# Define the associated cell fields and interpolate the initial condition
+# into the finite element space:
+h_cf = φ₀∘ambient_map_cf
+u_cf = meas*((pinvJ∘covariant_basis_cf)⋅(u₀∘ambient_map_cf))
+b_cf = b₀∘ambient_map_cf
+omega_cf = ω∘ambient_map_cf
+
+xh0 = interpolate_everywhere([u_cf,h_cf,b_cf],X);
 
 # Mass term:
 mass(t, (dtu,dtp,dtb), (v,q,r)) = ( ∫( (v⋅ (g⋅ dtu) )*(1/meas) )dΩ
@@ -173,11 +150,11 @@ solT = solve(solver, opT, t0, tF, xh0)
 # Iterate and visualise the solution
 mkpath("output_path/results")
 
-uh,ph,bh = xh0
+uh,ph,bh = xh0;
 uproj = covariant_basis_cf⋅(1/meas*uh)
 writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,
     "output_path/results/results_0",
-    cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false)
+    cellfields=["uh"=>uproj, "ph"=>ph, "bh"=>bh],append=false);
 
 
 it = iterate(solT)
@@ -187,7 +164,7 @@ while !isnothing(it)
 
   println("t = $t")
 
-  uh,ph,bh = xh
+  uh,ph,bh = xh;
   uproj = covariant_basis_cf⋅(1/meas*uh)
 
   writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,

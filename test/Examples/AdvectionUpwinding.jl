@@ -52,7 +52,7 @@ using GridapSolvers
 ℓ = 3
 radius = 1.0
 coarse_mesh = CubedSphereMesh(radius)
-model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=IntrinsicManifold())
+model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=IntrinsicManifold())
 
 
 # ## Triangulation

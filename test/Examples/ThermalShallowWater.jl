@@ -51,8 +51,9 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 # To obtain a refined 2D parametric model, we pass $\ell$ levels of refinement:
 ℓ = 2
 radius = 1.0
-omodel = CubedSphere2DParametricOctreeDistributedDiscreteModel(ranks, radius; num_initial_uniform_refinements=ℓ)
-model = omodel.parametric_dmodel
+coarse_mesh = CubedSphereMesh(radius)
+omodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
+model = get_atlas_model(omodel)
 
 # ## Triangulation
 # Now we extract the triangulation, volume and skeleton, associated to each cell:
@@ -98,18 +99,17 @@ H₀ = Hₑ/aₑ
 u₀ = uₑ/aₑ*(1/ωₑ)
 
 
-# The initial conditions are defined as a function of the ambient space.
-# Then converted to a function of the parametric space using `panel_to_cartesian`
-# and to a panelwise cellfield, where we extract the contravariant components
-# for the velocity:
+# The initial conditions are defined as functions of the ambient space.
+# They are composed with AmbientMapCellField in the weak form section below,
+# where we also extract the contravariant components for the velocity:
 function u0(xyz)
   ζ = 0.0
   θϕr   = xyz2θϕr(xyz)
-  θ,ϕ,r = θϕr
+  θ,ϕ,_ = θϕr
   u     = u₀*(cos(ϕ)*cos(ζ) + cos(θ)*sin(ϕ)*sin(ζ))
   v     = - u₀*sin(θ)*sin(ζ)
   function _spherical_to_cartesian_matrix(θϕr)
-    θ,ϕ,r = θϕr
+    θ,ϕ,_ = θϕr
     TensorValue(-sin(θ)       , cos(θ)       ,      0,
                 -sin(ϕ)*cos(θ),-sin(ϕ)*sin(θ), cos(ϕ),
                 cos(ϕ)*cos(θ), cos(ϕ)*sin(θ), sin(ϕ))
@@ -121,7 +121,7 @@ end
 function h0(xyz)
   ζ = 0.0
   θϕr   = xyz2θϕr(xyz)
-  θ,ϕ,r = θϕr
+  θ,ϕ,_ = θϕr
   h  = -cos(θ)*cos(ϕ)*sin(ζ) + sin(ϕ)*cos(ζ)
   H₀- (ω*u₀  + 0.5*u₀*u₀)*h*h/gravity
 end
@@ -141,24 +141,26 @@ end
 function f0(xyz)
   ζ = 0.0
   θϕr   = xyz2θϕr(xyz)
-  θ,ϕ,r = θϕr
+  θ,ϕ,_ = θϕr
   2.0*ω*( -cos(θ)*cos(ϕ)*sin(ζ) + sin(ϕ)*cos(ζ) )
 end
-
-u_cf = ParametricCellField(piola(panel_to_cartesian(u0)),Ω)
-h_cf = ParametricCellField(panel_to_cartesian(h0),Ω)
-B_cf = ParametricCellField(panel_to_cartesian(B0),Ω)
-f_cf = ParametricCellField(panel_to_cartesian(f0),Ω)
-
 
 # ## Weak form
 # To define the weak form, we require the metric and measure, as well as the
 # the matrix that represents the perp operator.
 # We use an increased degree of quadrature to exactly approximate the geometrical map included in the weak form.
-g = ParametricCellField(metric,Ω)
-ginv = ParametricCellField(inv_metric,Ω)
-meas = ParametricCellField(sqrtg,Ω)
-covariant_basis_cf = ParametricCellField(covariant_basis,Ω)
+ambient_map_cf = AmbientMapCellField(Ω)
+g = MetricCellField(Ω)
+ginv = InvMetricCellField(Ω)
+meas = MeasureCellField(Ω)
+covariant_basis_cf = transpose∘∇(ambient_map_cf)
+
+# Then converted into a cellfield, where we extract the contravariant components
+# for the velocity:
+u_cf = meas*((pinvJ∘covariant_basis_cf)⋅(u0∘ambient_map_cf))
+h_cf = h0∘ambient_map_cf
+B_cf = B0∘ambient_map_cf
+f_cf = f0∘ambient_map_cf
 Aperp = [0 -1
         1 0]
 Rperp = TensorValue(Aperp)

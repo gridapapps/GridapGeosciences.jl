@@ -279,8 +279,10 @@ function MetricCellField(
               <:BFTATDM{Dc,Dp}}, <:BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
-  plus = MetricCellField(trian.plus)
-  minus = MetricCellField(trian.minus)
+  m_cf_plus_bt = MetricCellField(trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = MetricCellField(trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -289,8 +291,10 @@ function MetricCellField(
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
 ) where {Dc,Dp}
-  plus  = MetricCellField(trian.trian.plus)
-  minus = MetricCellField(trian.trian.minus)
+  m_cf_plus_bt = MetricCellField(trian.trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = MetricCellField(trian.trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -332,8 +336,10 @@ function MeasureCellField(
               <:BFTATDM{Dc,Dp}}, <:BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
-  plus = MeasureCellField(trian.plus)
-  minus = MeasureCellField(trian.minus)
+  m_cf_plus_bt = MeasureCellField(trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = MeasureCellField(trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -342,8 +348,10 @@ function MeasureCellField(
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
 ) where {Dc,Dp}
-  plus  = MeasureCellField(trian.trian.plus)
-  minus = MeasureCellField(trian.trian.minus)
+  m_cf_plus_bt = MeasureCellField(trian.trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = MeasureCellField(trian.trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -396,8 +404,10 @@ function InvMetricCellField(
               <:BFTATDM{Dc,Dp}}, <:BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
-  plus = InvMetricCellField(trian.plus)
-  minus = InvMetricCellField(trian.minus)
+  m_cf_plus_bt = InvMetricCellField(trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = InvMetricCellField(trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -406,8 +416,10 @@ function InvMetricCellField(
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
 ) where {Dc,Dp}
-  plus  = InvMetricCellField(trian.trian.plus)
-  minus = InvMetricCellField(trian.trian.minus)
+  m_cf_plus_bt = InvMetricCellField(trian.trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = InvMetricCellField(trian.trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -454,8 +466,10 @@ function AmbientMapCellField(
               <:BFTATDM{Dc,Dp}}, <:BoundaryTriangulation{Dc,Dp,
               <:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
-  plus = AmbientMapCellField(trian.plus)
-  minus = AmbientMapCellField(trian.minus)
+  m_cf_plus_bt = AmbientMapCellField(trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = AmbientMapCellField(trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -464,8 +478,10 @@ function AmbientMapCellField(
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
 ) where {Dc,Dp}
-  plus  = AmbientMapCellField(trian.trian.plus)
-  minus = AmbientMapCellField(trian.trian.minus)
+  m_cf_plus_bt = AmbientMapCellField(trian.trian.plus)
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  m_cf_minus_bt = AmbientMapCellField(trian.trian.minus)
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
