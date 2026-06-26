@@ -7,7 +7,7 @@ makedocs(;
     authors = "Tamara A. Tambyah, Alberto F. Martin, Santiago Badia, David Lee",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://gridap.github.io/GridapGeosciences.jl",
+        canonical = "https://gridapapps.github.io/GridapGeosciences.jl",
         edit_link = "master",
         assets = String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo = "github.com/gridap/GridapGeosciences.jl",
+    repo = "github.com/gridapapps/GridapGeosciences.jl",
     devbranch = "atlas_discrete_models",
 )
