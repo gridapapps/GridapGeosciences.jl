@@ -33,7 +33,7 @@ if TESTCASE ∈ ("all", "seq", "seq-multigrid")
 end
 
 if TESTCASE ∈ ("all", "seq", "seq-tutorials")
-  include("Examples/seq/runtests.jl")
+  include("Tutorials/seq/runtests.jl")
 end
 
 if TESTCASE ∈ ("all", "seq", "seq-fields")
@@ -82,7 +82,7 @@ if TESTCASE ∈ ("all", "mpi", "mpi-multigrid")
 end
 
 if TESTCASE ∈ ("all", "mpi", "mpi-tutorials")
-  include("Examples/mpi/runtests.jl")
+  include("Tutorials/mpi/runtests.jl")
 end
 
 if TESTCASE ∈ ("all", "mpi", "mpi-ambient-model")

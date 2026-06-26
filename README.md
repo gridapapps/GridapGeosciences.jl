@@ -4,7 +4,8 @@
 GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) to the numerical approximation of partial differential equations on two and three dimensional cubed sphere manifolds. 
 The cubed sphere meshes are designed with high performance computing in mind.
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](PENDING)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://gridap.github.io/GridapGeosciences.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://gridap.github.io/GridapGeosciences.jl/dev)
 [![Build Status](https://github.com/gridapapps/GridapGeosciences.jl/workflows/CI/badge.svg?branch=master)](https://github.com/gridapapps/GridapGeosciences.jl/actions?query=workflow%3ACI)
 [![Codecov](https://codecov.io/gh/gridapapps/GridapGeosciences.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridapapps/GridapGeosciences.jl)
 
@@ -24,9 +25,9 @@ pkg> add GridapGeosciences
 - **Mapped vtk files**: We extend the visualisation framework in `Gridap` by applying a cell-wise geometrical map the parametric triangulation to visualise solutions in the ambient space.  
 
 
-## Examples
+## Tutorials
 
-A list of examples is available in `test/Examples`. 
+A list of tutorials is available in `test/Tutorials`. 
 These include well known atmospheric applications such as scalar advection, linear wave equation, and the shallow water equations. 
 The benchmark Laplace Beltrami problem is also available. 
 
