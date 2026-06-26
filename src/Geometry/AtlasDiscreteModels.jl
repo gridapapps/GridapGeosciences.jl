@@ -787,9 +787,19 @@ function _skew_∇s_ad(f, Ω_atlas)
   CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
 end
 
+function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{2,2,Da,G,A,P,C,O};
+                   use_automatic_differentiation=false) where {Da, G, A, P, C, O}
+   use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas) : _skew_∇s_no_ad(f, Ω_atlas)
+end
+
 function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
                    use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-   use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas) : _skew_∇s_no_ad(f, Ω_atlas)
+  @notimplemented "skew_∇s is only implemented for 2D surfaces"
+end
+
+function skew_∇s(f::Function, Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  @notimplemented "skew_∇s is only implemented for intrinsic manifolds"
 end
 
 
@@ -886,8 +896,8 @@ function divs(f::Function,
 end
 
 
-function skew_divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
-                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+function skew_divs(f::Function, Ω_atlas::BFTATDMIM{2,2,Da,G,A,P,C,O};
+                   use_automatic_differentiation=true) where {Da, G, A, P, C, O}
    use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas) : _skew_divs_no_ad(f, Ω_atlas)
 end
 
@@ -899,17 +909,27 @@ function skew_divs(f::Function,
 end
 
 function skew_divs(f::Function,
-                   Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
-                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+                   Ω_atlas::BFTATDMEM{2,2,Da,G,A,P,C,O};
+                   use_automatic_differentiation=true) where {Da, G, A, P, C, O}
   ∇s_parametric_space = use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas) : _skew_divs_no_ad(f, Ω_atlas)
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
 function skew_divs(f::Function,
-                   Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
+                   Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{2,2,Da,G,A,P,C,O}};
                    use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
   ∇s_parametric_space = use_automatic_differentiation ? _skew_divs_ad(f, Ω_atlas.trian) : _skew_divs_no_ad(f, Ω_atlas.trian)
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
+end
+
+function skew_divs(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  @notimplemented "skew_divs is only implemented for 2D surfaces"
+end
+
+function skew_divs(f::Function, Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+                   use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
+  @notimplemented "skew_divs is only implemented for 2D surfaces"
 end
 
 dagger(vec::Function) = m -> dagger(vec,m)
@@ -932,9 +952,19 @@ function _dagger_no_ad(f::Function, Ω_atlas)
   J_cf⋅(inv_metric_cf⋅(perp∘f_cf_parametric))*measure_cf
 end
 
+function dagger(f::Function, Ω_atlas::BFTATDMIM{2,2,Da,G,A,P,C,O};
+                use_automatic_differentiation=false) where {Da, G, A, P, C, O}
+  use_automatic_differentiation ? _dagger_ad(f, Ω_atlas) : _dagger_no_ad(f, Ω_atlas)
+end
+
 function dagger(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
                 use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  use_automatic_differentiation ? _dagger_ad(f, Ω_atlas) : _dagger_no_ad(f, Ω_atlas)
+  @notimplemented "dagger is only implemented for 2D surfaces"
+end
+
+function dagger(f::Function, Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
+                use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
+  @notimplemented "dagger is only implemented for 2D surfaces"
 end
 
 
