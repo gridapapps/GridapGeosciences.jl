@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>LinearBoussinesq · GridapGeosciences.jl</title><meta name="title" content="LinearBoussinesq · GridapGeosciences.jl"/><meta property="og:title" content="LinearBoussinesq · GridapGeosciences.jl"/><meta property="twitter:title" content="LinearBoussinesq · GridapGeosciences.jl"/><meta name="description" content="Documentation for GridapGeosciences.jl."/><meta property="og:description" content="Documentation for GridapGeosciences.jl."/><meta property="twitter:description" content="Documentation for GridapGeosciences.jl."/><meta property="og:url" content="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/LinearBoussinesq/"/><meta property="twitter:url" content="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/LinearBoussinesq/"/><link rel="canonical" href="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/LinearBoussinesq/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GridapGeosciences.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../AdvectionUpwinding/">AdvectionUpwinding</a></li><li><a class="tocitem" href="../AmbientAdvectionSUPG/">AmbientAdvectionSUPG</a></li><li><a class="tocitem" href="../AmbientAdvectionUpwinding/">AmbientAdvectionUpwinding</a></li><li><a class="tocitem" href="../AmbientModelHodgeLaplacianScalar/">AmbientModelHodgeLaplacianScalar</a></li><li><a class="tocitem" href="../LaplaceBeltrami/">LaplaceBeltrami</a></li><li class="is-active"><a class="tocitem" href>LinearBoussinesq</a><ul class="internal"><li><a class="tocitem" href="#Set-up"><span>Set up</span></a></li><li><a class="tocitem" href="#Discrete-model"><span>Discrete model</span></a></li><li><a class="tocitem" href="#Triangulation"><span>Triangulation</span></a></li><li><a class="tocitem" href="#Finite-element-spaces"><span>Finite element spaces</span></a></li><li><a class="tocitem" href="#Initial-conditions"><span>Initial conditions</span></a></li><li><a class="tocitem" href="#Weak-forms"><span>Weak forms</span></a></li><li><a class="tocitem" href="#Post-processing"><span>Post processing</span></a></li></ul></li><li><a class="tocitem" href="../ShallowWater/">ShallowWater</a></li><li><a class="tocitem" href="../ThermalShallowWater/">ThermalShallowWater</a></li><li><a class="tocitem" href="../WaveEquation/">WaveEquation</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>LinearBoussinesq</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>LinearBoussinesq</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/gridapapps/GridapGeosciences.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/gridapapps/GridapGeosciences.jl/blob/master/test/Tutorials/LinearBoussinesq.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Linearised-Boussinesq-equations-on-the-cubed-sphere-manifold"><a class="docs-heading-anchor" href="#Linearised-Boussinesq-equations-on-the-cubed-sphere-manifold">Linearised Boussinesq equations on the cubed sphere manifold</a><a id="Linearised-Boussinesq-equations-on-the-cubed-sphere-manifold-1"></a><a class="docs-heading-anchor-permalink" href="#Linearised-Boussinesq-equations-on-the-cubed-sphere-manifold" title="Permalink"></a></h1><p>The evolution of fluid velocity, density and bouyancy is:</p><p>This example solves the shallow water equations. The evolution of the prognostic variables, <span>$\widetilde{\boldsymbol{u}}$</span> and <span>$\widetilde{\varphi}$</span> is:</p><p class="math-container">\[\begin{align*}
+\partial_t \widetilde{\boldsymbol{u}} 	+ \omega (\widetilde{\boldsymbol{k}}\times \widetilde{\boldsymbol{u}} )
++ \nabla_{\mathcal{S}} \widetilde{\varphi}  - \widetilde{b}  \widetilde{\boldsymbol{k}}
+ &amp;=  0  \quad \text{in} \quad \mathcal{S}\times[0,t),
+\\
+\partial_t \widetilde{\varphi}  + c^2 \nabla_{\mathcal{S}} \cdot \widetilde{\boldsymbol{u}}
+&amp;= 0 	\quad  \text{on } \mathcal{S}\times (0,t),	\\
+\partial_t \widetilde{b} + N^2 \widetilde{\boldsymbol{u}} \cdot \widetilde{\boldsymbol{k}} 	&amp;= 0 \quad  \text{on } \mathcal{S}\times (0,t),
+\end{align*}\]</p><p>where <span>$\widetilde{\boldsymbol{k}}$</span> is the outward pointing normal vector to the surface</p><h2 id="Set-up"><a class="docs-heading-anchor" href="#Set-up">Set up</a><a id="Set-up-1"></a><a class="docs-heading-anchor-permalink" href="#Set-up" title="Permalink"></a></h2><p>First load all required pacakges. In this example, we will use a distributed model. So we also initialise MPI.</p><pre><code class="language-julia hljs">using GridapGeosciences
+using Gridap
+using GridapDistributed
+using GridapSolvers
+using PartitionedArrays
+using MPI
+
+MPI.Init()
+ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))</code></pre><h2 id="Discrete-model"><a class="docs-heading-anchor" href="#Discrete-model">Discrete model</a><a id="Discrete-model-1"></a><a class="docs-heading-anchor-permalink" href="#Discrete-model" title="Permalink"></a></h2><p>To obtain a refined 3D parametric model, we pass <span>$\ell$</span> levels of refinement to the vertical and horizontal:</p><pre><code class="language-julia hljs">ℓ = 2
+radius,thickness = 1.0, 0.19
+coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
+octree3_model = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
+model = get_atlas_model(octree3_model)</code></pre><h2 id="Triangulation"><a class="docs-heading-anchor" href="#Triangulation">Triangulation</a><a id="Triangulation-1"></a><a class="docs-heading-anchor-permalink" href="#Triangulation" title="Permalink"></a></h2><pre><code class="language-julia hljs">order = 1
+Ω = Triangulation(model)
+dΩ = Measure(Ω,4*(order+1))</code></pre><h2 id="Finite-element-spaces"><a class="docs-heading-anchor" href="#Finite-element-spaces">Finite element spaces</a><a id="Finite-element-spaces-1"></a><a class="docs-heading-anchor-permalink" href="#Finite-element-spaces" title="Permalink"></a></h2><p>Define the finite element spaces, where the Hdiv space has no-flux boundary conditions:</p><pre><code class="language-julia hljs">Q = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+P = TrialFESpace(Q)
+
+V = TestFESpace(model, ReferenceFE(raviart_thomas,Float64,order);
+    conformity=:HDiv,dirichlet_tags=[&quot;bottom_boundary&quot;,  &quot;top_boundary&quot;])
+U = TrialFESpace(V,VectorValue(0.0,0.0,0.0))
+
+W = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+B = TrialFESpace(W)
+
+Y = MultiFieldFESpace([V, Q, W])
+X = MultiFieldFESpace([U, P, B])</code></pre><h2 id="Initial-conditions"><a class="docs-heading-anchor" href="#Initial-conditions">Initial conditions</a><a id="Initial-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-conditions" title="Permalink"></a></h2><p>Define the initial conditions as analytic julia functions that take the forward map of the three dimensional cubed sphere:</p><pre><code class="language-julia hljs">function φ₀(x)
+  0.0
+end
+
+function b₀(x)
+  θ,ϕ,_ = xyz2θϕr(x)
+  θc = 2*π/3
+  ϕc = 0.0
+  d = 0.095
+  ζ = 0.38
+  k = sqrt(x[1]^2 + x[2]^2 + x[3]^2) - radius
+  q = acos(sin(ϕc)*sin(ϕ) + cos(ϕc)*cos(ϕ)*cos(θ-θc))
+  s = d^2/(d^2 + q^2)
+  s*sin(2*π*k/ζ)
+end
+
+function u₀(x)
+  u_0 = 0.058
+  u_0*VectorValue(-x[2],x[1],0.0)
+end
+
+function ω(x)
+  _,ϕ,_ = xyz2θϕr(x)
+  Ωr = 0.01
+  2*Ωr*sin(ϕ)
+end</code></pre><h2 id="Weak-forms"><a class="docs-heading-anchor" href="#Weak-forms">Weak forms</a><a id="Weak-forms-1"></a><a class="docs-heading-anchor-permalink" href="#Weak-forms" title="Permalink"></a></h2><p>To define the weak forms, we extract the metric information, and define the radial unit normal vector from the first parametric coordinate direction (1,0,0):</p><pre><code class="language-julia hljs">ambient_map_cf = AmbientMapCellField(Ω)
+covariant_basis_cf = transpose∘∇(ambient_map_cf)
+g = MetricCellField(Ω)
+meas = MeasureCellField(Ω)
+n3D = CellField(VectorValue(1.0,0.0,0.0),Ω)
+ff = Operation(sqrt)(n3D ⋅ (InvMetricCellField(Ω) ⋅ n3D))
+normal_3D_cf = n3D/ff</code></pre><p>Define the associated cell fields and interpolate the initial condition into the finite element space:</p><pre><code class="language-julia hljs">h_cf = φ₀∘ambient_map_cf
+u_cf = meas*((pinvJ∘covariant_basis_cf)⋅(u₀∘ambient_map_cf))
+b_cf = b₀∘ambient_map_cf
+omega_cf = ω∘ambient_map_cf
+
+xh0 = interpolate_everywhere([u_cf,h_cf,b_cf],X);
+nothing #hide</code></pre><p>Mass term:</p><pre><code class="language-julia hljs">mass(t, (dtu,dtp,dtb), (v,q,r)) = ( ∫( (v⋅ (g⋅ dtu) )*(1/meas) )dΩ
+                                  + ∫( (q*dtp)*meas )dΩ
+                                  + ∫( (r*dtb)*meas )dΩ )</code></pre><p>Velocity residual:</p><pre><code class="language-julia hljs">resu(t,(u,p,b),(v,q,r)) = (
+   ∫( omega_cf*( normal_3D_cf ×( g⋅u*(1/meas)  ) )⋅(g⋅v)*(1/meas)  )dΩ
+  - ∫( p*(∇⋅v) )dΩ
+  - ∫( b*(normal_3D_cf⋅v)  )dΩ
+                          )</code></pre><p>Pressure residual:</p><pre><code class="language-julia hljs">c = 1.0
+resp(t,(u,p,b),(v,q,r)) = ∫( c^2*(q*(∇⋅u)) )dΩ</code></pre><p>Bouyancy residual:</p><pre><code class="language-julia hljs">N = 1.48
+resb(t,(u,p,b),(v,q,r)) = ∫( N^2*r*(normal_3D_cf⋅u)  )dΩ</code></pre><p>Define the full transient system, and the transient operator:</p><pre><code class="language-julia hljs">res(t,(u,p,b),(v,q,r)) = resu(t,(u,p,b),(v,q,r)) + resp(t,(u,p,b),(v,q,r)) + resb(t,(u,p,b),(v,q,r))
+jac(t,(u,p,b),(du,dp,db),(v,q,r)) = resu(t,(du,dp,db),(v,q,r)) + resp(t,(du,dp,db),(v,q,r)) + resb(t,(du,dp,db),(v,q,r))
+jac_t(t,(u,p,b),(dut,dpt,dbt),(v,q,r)) =  mass(t, (dut,dpt,dbt), (v,q,r))
+opT = TransientSemilinearFEOperator(mass, res, (jac,jac_t), X, Y; constant_mass=true)</code></pre><p>Transient parameters:</p><pre><code class="language-julia hljs">t0 = 0.0
+tF = 1.0
+nsteps = 100
+dt = tF/nsteps</code></pre><p>Solve with SSP RK 3</p><pre><code class="language-julia hljs">ls = LUSolver()
+nls = GridapSolvers.NonlinearSolvers.NewtonSolver(ls;verbose=i_am_main(ranks))
+solver = ThetaMethod(nls, dt, 0.5)
+solT = solve(solver, opT, t0, tF, xh0)</code></pre><h2 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h2><p>Iterate and visualise the solution</p><pre><code class="language-julia hljs">mkpath(&quot;output_path/results&quot;)
+
+uh,ph,bh = xh0;
+uproj = covariant_basis_cf⋅(1/meas*uh)
+writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,
+    &quot;output_path/results/results_0&quot;,
+    cellfields=[&quot;uh&quot;=&gt;uproj, &quot;ph&quot;=&gt;ph, &quot;bh&quot;=&gt;bh],append=false);
+
+
+it = iterate(solT)
+while !isnothing(it)
+  data, state = it
+  t, xh = data
+
+  println(&quot;t = $t&quot;)
+
+  uh,ph,bh = xh;
+  uproj = covariant_basis_cf⋅(1/meas*uh)
+
+  writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,
+    &quot;output_path/results/results_$t&quot;,
+    cellfields=[&quot;uh&quot;=&gt;uproj, &quot;ph&quot;=&gt;ph, &quot;bh&quot;=&gt;bh],append=false)
+  it = iterate(solT, state)
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../LaplaceBeltrami/">« LaplaceBeltrami</a><a class="docs-footer-nextpage" href="../ShallowWater/">ShallowWater »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 07:04">Friday 26 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
