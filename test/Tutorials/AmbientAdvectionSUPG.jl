@@ -16,7 +16,7 @@
 #
 # We use a SUPG method to solve in the ambient space of the cubed sphere.
 # For more information about the SUPG method for scalar transport, refer to
-# [Brookes \& Huges 1982](https://doi.org/10.1016/0045-7825(82)90071-8).
+# [Brookes \& Hughes 1982](https://doi.org/10.1016/0045-7825(82)90071-8).
 #
 # The weak formulation in the ambient space is: find $\widetilde{u}_h \in \mathbb{V} \subset H^1(\gamma)$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
 # ```math
@@ -32,17 +32,19 @@
 
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a serial model
+# First load all required packages. In this example, we will use a serial model
 using GridapGeosciences
 using Gridap
 using GridapSolvers
 
 
 # ## Discrete Model
-# To obtain a refined 2D ambient model, we pass $\ell$ levels of refinement:
+# To obtain a refined 2D ambient model, we first define the coarse mesh and
+# then apply $\ell$ levels of refinement:
 radius = 1.0
 ℓ = 2
-model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+coarse_mesh = CubedSphereMesh(radius)
+model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=ExtrinsicManifold())
 
 # ## Triangulation and FE spaces
 # Triangulate the model and extract finite element spaces in the typical way:
@@ -67,7 +69,7 @@ uh0 = interpolate_everywhere(u_cf, P(0.0))
 
 
 # ## Transient weak form
-# To define the transient weak form, we follow the metholody of transient problems
+# To define the transient weak form, we follow the methodology of transient problems
 # in here, refer [here](https://gridap.github.io/Tutorials/dev/pages/t017_transient_linear/)
 a_mass_Ω(dtu,v) = ∫( (dtu*v) )dΩ
 a_mass_s(dtu,v) = ∫( (dtu*(vel⋅∇(v))) )dΩ

@@ -25,7 +25,7 @@
 
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a serial model, and the
+# First load all required packages. In this example, we will use a serial model, and the
 #  basic LU solver provided in Gridap.
 using GridapGeosciences
 using Gridap
@@ -41,7 +41,7 @@ model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=IntrinsicManifold())
 
 # Each cell is assigned a panel identifier, $p$, which is extracted as a cellwise array.
 # Using the panel ids, we can visualise the triangulation in the ambient space of the sphere
-# or in latitiude-longitude by passing a cellwise array of geometrical maps to writevtk_with_cell_geomap:
+# or in latitude-longitude by passing a cellwise array of geometrical maps to writevtk_with_cell_geomap:
 Ω = Triangulation(model)
 writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,"sphere_model",append=false)
 writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"latlon_model",append=false)
@@ -64,15 +64,11 @@ end
 
 ambient_map_cf = AmbientMapCellField(Ω)
 
-# This function is passed to the ParametricCellField:
+# The function is composed with the ambient map to obtain a cell field in terms of ambient coordinates:
 u_cf = uₓ∘ambient_map_cf
 
-# Similar to CellField, ParametricCellField returns an GenericCellField object, where the cell_field is an
-# array of cell-wise functions. However, the acutal input function of ParametricCellField is defined
-# differently  to CellField, where the user passes a function that takes points
-# in physical space and returns the function evaluated in physical space.
-#
-# The cooresponding rhs forcing function is defined panelwise, as follows:
+# The corresponding rhs forcing function uses the surface Laplacian operator Δs,
+# which takes an ambient function and a triangulation and returns a cell field:
 slap_cf = Δs(uₓ,Ω)
 rhs = -slap_cf
 
@@ -87,12 +83,12 @@ poisson_biform(u,v) = ∫((gradient(v)⋅(invg⋅gradient(u)))*meas )dΩ
 poisson_liform(v) = ∫((rhs*v)*meas)dΩ
 
 # ## FE problem
-# Now we can build the FE operator that represents the Lapalce Beltrami equation,
+# Now we can build the FE operator that represents the Laplace Beltrami equation,
 # and solve using LU factorisation
 op = AffineFEOperator(poisson_biform,poisson_liform,U,V)
 uh = solve(LUSolver(),op)
 
-# The $L^2$ norm of the error between the exact and numerical soltuions is computed as
+# The $L^2$ norm of the error between the exact and numerical solutions is computed as
 e = u_cf-uh
 el2 = sqrt(sum(∫((e⋅e)*meas)dΩ))
 

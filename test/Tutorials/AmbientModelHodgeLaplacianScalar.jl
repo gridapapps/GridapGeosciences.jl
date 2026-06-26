@@ -38,7 +38,7 @@
 
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a serial model.
+# First load all required packages. In this example, we will use a serial model.
 using GridapGeosciences
 using Gridap
 
@@ -62,7 +62,7 @@ P = TrialFESpace(Q)
 V = TestFESpace(Ω, ReferenceFE(raviart_thomas,Float64,order); conformity=:HDiv)
 U = TrialFESpace(V)
 
-# The assoicated multifields are:
+# The associated multifields are:
 Y = MultiFieldFESpace([V, Q])
 X = MultiFieldFESpace([U, P])
 
@@ -73,13 +73,8 @@ X = MultiFieldFESpace([U, P])
 # and returns a scalar:
 φₓ(x) = x[1]*x[2]*x[3]
 
-# The cooresponding rhs forcing function is defined panelwise, using the AmbientCellField.
-# Similar to ParametricCellField, AmbientCellField returns an GenericCellField object, where the cell_field is an
-# array of cell-wise functions. However, the acutal input function of AmbientCellField is defined
-# differently  to CellField, where the user passes a function that takes points
-# in physical space and returns the function evaluated in physical space.
-# To manufacture the solution, we use the ambient_surflap, which computes the surface
-# Laplacian operator for ambient functions
+# The corresponding rhs forcing function uses the surface gradient ∇s and surface Laplacian Δs,
+# which take an ambient function and a triangulation and return a cell field:
 u_cf = ∇s(φₓ,Ω)
 slap_cf = Δs(φₓ,Ω)
 rhs_cf = -slap_cf
@@ -101,7 +96,7 @@ op = AffineFEOperator(biform,liform,X,Y)
 uh,ph = solve(LUSolver(),op)
 
 # For the pressure and velocity, the $L^2$ norm of the error between the exact
-# and numerical soltuions is computed as (recall $\widetilde{\boldsymbol{u}} = - \nabla_\gamma \widetilde{\varphi}$)
+# and numerical solutions is computed as (recall $\widetilde{\boldsymbol{u}} = - \nabla_\gamma \widetilde{\varphi}$)
 ep = φₓ - ph
 el2_p = sqrt(sum(∫( ep*ep  )dΩ))
 

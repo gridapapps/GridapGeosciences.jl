@@ -39,7 +39,7 @@
 
 
 # ## Set up
-# First load all required pacakges. In this example, we use a serial model, and the
+# First load all required packages. In this example, we use a serial model, and the
 # basic LU and Newton solvers provided in Gridap and GridapSolvers.
 using GridapGeosciences
 using Gridap
@@ -60,7 +60,7 @@ model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=IntrinsicManifold())
 # For more information about skeleton triangulations in Gridap, refer to
 # [Tutorial 6](https://gridap.github.io/Tutorials/dev/pages/t006_dg_discretization/).
 #
-# The volume triangulation and assoicated panel ides can be extracted as per usual:
+# The volume triangulation and associated panel ids can be extracted as per usual:
 Ω = Triangulation(model)
 
 # The skeleton triangulation, skeleton normal vector and skeleton panel ids are:

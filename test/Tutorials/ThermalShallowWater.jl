@@ -35,7 +35,7 @@
 # ``DAEFEOperator`` that builds on Gridap's ODE API.
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a distributed model
+# First load all required packages. In this example, we will use a distributed model
 # and iterative solvers. So we initialise MPI.
 using GridapGeosciences
 using Gridap
@@ -74,7 +74,7 @@ U = TransientTrialFESpace(V)
 Q = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 P = TransientTrialFESpace(Q)
 
-# The multifield FE spaces for the prognostic and diagonstic variables are:
+# The multifield FE spaces for the prognostic and diagnostic variables are:
 X_prog = MultiFieldFESpace([U,P,P]) # u, p, B
 Y_prog = MultiFieldFESpace([V,Q,Q]) # u, p, B
 
@@ -82,7 +82,7 @@ X_diag = MultiFieldFESpace([H,U,P,P]) # q, F, Φ, b
 Y_diag = MultiFieldFESpace([R,V,Q,Q]) # q, F, Φ, b
 
 # ## Initial conditions
-# The initial condition for velocity, fluid depth, bouyancy and Coriolis are defined
+# The initial condition for velocity, fluid depth, buoyancy and Coriolis are defined
 # as per the thermogeostrophic balance test case, in [Ricardo et al. 2023](https://doi.org/10.1016/j.jcp.2023.112605).
 #
 # The dimensional parameters are:
@@ -195,7 +195,7 @@ jac_y(t,((u,p,B),(q,F,Φ,b)),(dq,dF,dΦ,db),(w,v,ψ,r)) = (
 # ### Prognostic variables
 # The weak forms for the prognostic variables are as follows, where we use
 # SUPG stabilisation for the vorticity the velocity equation,
-# and dG upwinding for the bouyancy in the velocity and weighted bouyancy equation.
+# and dG upwinding for the buoyancy in the velocity and weighted buoyancy equation.
 # Note the temperature $\vartheta = 0.5 \varphi$ is used directly
 mass(t,(dut,dpt,dBt),(v,r,w)) = (
     ∫( (dut⋅ (g⋅v))*(1/meas) )dΩ
@@ -274,8 +274,8 @@ jac_xt(t,((u,p,B),(q,F,Φ,b)),(dut,dpt,dBt),(v,r,w),(q0,F0,Φ0,b0)) = (
 # ## Transient problem
 # The transient problem requires a linear solver for both the prognostic and diagnostic problem.
 # In this example, we using a Conjugate Gradient method for both.
-ls_diag = CGSolver(JacobiLinearSolver();rtol=1-12,verbose=i_am_main(ranks),name="diagnostic_solver")
-ls_ode = CGSolver(JacobiLinearSolver();rtol=1-12,verbose=i_am_main(ranks),name="ode_solver")
+ls_diag = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="diagnostic_solver")
+ls_ode = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="ode_solver")
 
 # The transient parameters are:
 t0 = 0.0

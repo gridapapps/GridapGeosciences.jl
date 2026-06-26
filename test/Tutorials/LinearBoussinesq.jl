@@ -1,8 +1,8 @@
 # # Linearised Boussinesq equations on the cubed sphere manifold
-# The evolution of fluid velocity, density and bouyancy is:
+# The evolution of fluid velocity, density and buoyancy is:
 #
-# This example solves the shallow water equations.
-# The evolution of the prognostic variables, $\widetilde{\boldsymbol{u}}$ and $\widetilde{\varphi}$ is:
+# This example solves the linearised Boussinesq equations.
+# The evolution of the prognostic variables, $\widetilde{\boldsymbol{u}}$, $\widetilde{\varphi}$, and $\widetilde{b}$ is:
 #
 # ```math
 # \begin{align*}
@@ -19,7 +19,7 @@
 # where $\widetilde{\boldsymbol{k}}$ is the outward pointing normal vector to the surface
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a distributed model. So we also initialise MPI.
+# First load all required packages. In this example, we will use a distributed model. So we also initialise MPI.
 using GridapGeosciences
 using Gridap
 using GridapDistributed
@@ -124,7 +124,7 @@ resu(t,(u,p,b),(v,q,r)) = (
 c = 1.0
 resp(t,(u,p,b),(v,q,r)) = ∫( c^2*(q*(∇⋅u)) )dΩ
 
-# Bouyancy residual:
+# Buoyancy residual:
 N = 1.48
 resb(t,(u,p,b),(v,q,r)) = ∫( N^2*r*(normal_3D_cf⋅u)  )dΩ
 

@@ -40,7 +40,7 @@
 
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a distributed model. So we also initialise MPI.
+# First load all required packages. In this example, we will use a distributed model. So we also initialise MPI.
 using GridapGeosciences
 using Gridap
 using PartitionedArrays
@@ -64,7 +64,7 @@ model = get_atlas_model(octree3_model)
 # TO-DO: writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,"sphere_model",append=false)
 
 # The 3D cubed sphere model has tags associated to the bottom, top and intermediate
-# boundary cells. We can visualise each componeont of the model by passing the appropriate tag
+# boundary cells. We can visualise each component of the model by passing the appropriate tag
 # to the BoundaryTriangulation constructor
 Γ_top = BoundaryTriangulation(model,tags=["top_boundary"])
 Γ_bottom = BoundaryTriangulation(model,tags=["bottom_boundary"])
@@ -89,7 +89,7 @@ P = TrialFESpace(Q)
 V = TestFESpace(Ω, ReferenceFE(raviart_thomas,Float64,order); conformity=:HDiv)
 U = TrialFESpace(V)
 
-# The assoicated multifields are:
+# The associated multifields are:
 Y = MultiFieldFESpace([V, Q])
 X = MultiFieldFESpace([U, P])
 
@@ -122,12 +122,12 @@ g = MetricCellField(Ω)
 u_cf = meas*(pinvJ∘covariant_basis_cf)⋅u
 phi_cf = φ∘ambient_map_cf
 
-# Interpolate the exact solution into the FE spae
+# Interpolate the exact solution into the FE space
 p_int = interpolate(phi_cf,P)
 u_int = interpolate(u_cf,U)
 
 # ## Weak form
-# The weak form is written as a mulitifield problem using  using Gridap's high level API.
+# The weak form is written as a multifield problem using Gridap's high level API.
 # We use an increased degree of quadrature to exactly approximate the geometrical map included in the weak form.
 degree = 4*(order+1)
 dΩ = Measure(Ω,degree)
@@ -137,7 +137,7 @@ biform_u((u,p),(v,q)) = ∫( (u⋅ (g⋅v))*(1/meas) )dΩ - ∫( p*(∇⋅v) )d�
 biform_p((u,p),(v,q)) = ∫( (p*q)*meas )dΩ + ∫( q*(∇⋅u) )dΩ
 biform((u,p),(v,q)) = biform_u((u,p),(v,q)) + biform_p((u,p),(v,q))
 
-# The cooresponding rhs forcing function is manufactured as, as follows, where
+# The corresponding rhs forcing function is manufactured as follows, where
 # we assume regularity to IBP:
 liform((v,q)) = ( ∫( (u_int⋅ (g⋅v))*(1/meas) )dΩ + ∫( gradient(p_int)⋅v )dΩ
                 + ∫( (p_int*q)*meas )dΩ + ∫( q*(∇⋅u_int) )dΩ
@@ -159,13 +159,13 @@ solve!(x,ns,b)
 xh = FEFunction(X,x)
 uh,ph = xh
 
-# For the depth, the $L^2$ norm of the error between the exact and numerical soltuions is computed as
+# For the depth, the $L^2$ norm of the error between the exact and numerical solutions is computed as
 ep = phi_cf - ph
 ep_l2 = sqrt(sum(∫((ep⋅ep)*meas)dΩ))
 
 # For the velocity, the parametric velocity field is pushed to the ambient space
 # via the contraviant Piola map. Then the $L^2$ norm of the error between
-# the exact and numerical soltuions is computed as
+# the exact and numerical solutions is computed as
 uh_proj = covariant_basis_cf ⋅ (1.0/meas * uh)
 u_proj_cf = covariant_basis_cf ⋅ (1.0/meas *u_cf )
 eu = u_cf - uh

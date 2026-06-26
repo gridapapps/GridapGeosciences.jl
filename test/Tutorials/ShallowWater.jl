@@ -30,7 +30,7 @@
 # ``DAEFEOperator`` that builds on Gridap's ODE API.
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a distributed model
+# First load all required packages. In this example, we will use a distributed model
 # and iterative solvers. So we initialise MPI.
 using GridapGeosciences
 using Gridap
@@ -68,7 +68,7 @@ U = TransientTrialFESpace(V)
 Q = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 P = TransientTrialFESpace(Q)
 
-# The multifield FE spaces for the prognostic and diagonstic variables are:
+# The multifield FE spaces for the prognostic and diagnostic variables are:
 X_prog = MultiFieldFESpace([U,P]) # u, p
 Y_prog = MultiFieldFESpace([V,Q]) # u, p
 
@@ -173,8 +173,8 @@ jac_xt(t,((u,p),(q,F,Φ)),(dut,dpt),(v,r),(q0,F0,Φ0)) =  ∫( (dut⋅(g⋅v))*(
 # ## Transient problem
 # The transient problem requires a linear solver for both the prognostic and diagnostic problem.
 # In this example, we using a Conjugate Gradient method for both.
-ls_diag = CGSolver(JacobiLinearSolver();rtol=1-12,verbose=i_am_main(ranks),name="diagnostic_solver")
-ls_ode = CGSolver(JacobiLinearSolver();rtol=1-12,verbose=i_am_main(ranks),name="ode_solver")
+ls_diag = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="diagnostic_solver")
+ls_ode = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="ode_solver")
 
 # The transient parameters are:
 t0 = 0.0

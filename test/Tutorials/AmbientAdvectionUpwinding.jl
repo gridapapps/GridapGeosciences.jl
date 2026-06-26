@@ -19,7 +19,7 @@
 # [Brezzi et al. 2004](https://doi.org/10.1142/S0218202504003866).
 #
 #
-# The weak formulation in the parametric space is: find $\widetilde{u}_h \in \mathbb{V} \subset L^2(\gamma)$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
+# The weak formulation in the ambient space is: find $\widetilde{u}_h \in \mathbb{V} \subset L^2(\gamma)$ such that $\forall \widetilde{v}_h \in \mathbb{V}$
 # ```math
 # \begin{align*}
 # a(\widetilde{u}_h,\widetilde{v}_h) &+ s(\widetilde{u}_h,\widetilde{v}_h) = 0  , \\
@@ -32,17 +32,19 @@
 # where $[a] = a^+ - a^-$ for any scalar $a$.
 
 # ## Set up
-# First load all required pacakges. In this example, we will use a serial model
+# First load all required packages. In this example, we will use a serial model
 using GridapGeosciences
 using Gridap
 using GridapSolvers
 
 
 # ## Discrete Model
-# To obtain a refined 2D ambient model, we pass $\ell$ levels of refinement:
+# To obtain a refined 2D ambient model, we first define the coarse mesh and
+# then apply $\ell$ levels of refinement:
 radius = 1.0
 ℓ = 2
-model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=ℓ)
+coarse_mesh = CubedSphereMesh(radius)
+model = AtlasDiscreteModel(coarse_mesh,ℓ,manifold_style=ExtrinsicManifold())
 
 # ## Triangulation and FE spaces
 # Triangulate the model, both volume and skeleton
@@ -75,7 +77,7 @@ uh0 = interpolate_everywhere(u_cf, P(0.0))
 
 
 # ## Transient weak form
-# To define the transient weak form, we follow the metholody of transient problems
+# To define the transient weak form, we follow the methodology of transient problems
 # in here, refer [here](https://gridap.github.io/Tutorials/dev/pages/t017_transient_linear/)
 a_mass(t,dtu,v) = ∫( (dtu*v)  )dΩ
 a_Ω(u,v) =   ∫( -(u*(∇(v)⋅vel) )  )dΩ
