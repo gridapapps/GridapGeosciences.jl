@@ -1,9 +1,8 @@
 # GridapGeosciences.jl
 
-GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) to the numerical approximation of partial differential equations on two and three dimensional cubed sphere manifolds.
-The cubed sphere meshes are designed with high performance computing in mind.
+GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) to the numerical approximation of partial differential equations on two and three dimensional manifolds.
+The meshes used to discretize the manifolds are designed with high performance computing in mind.
 
-Documentation for [GridapGeosciences.jl](https://github.com/gridap/GridapGeosciences.jl).
 
 ## Tutorials
 
