@@ -29,20 +29,30 @@ function create_vtk_file_with_cell_geomap(geo_map::AbstractArray,
 end
 
 function writevtk_with_cell_geomap(geo_map::DistributedCellField,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
+  arg::GridapDistributed.DistributedTriangulation,args...;
   compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
 )
-  local_geo_maps = map(get_data, local_views(geo_map))
-  writevtk_with_cell_geomap(local_geo_maps, arg, args...;
+  gid = get_cell_gids(arg.model)
+  owned_geo_maps = map(local_views(geo_map),partition(gid)) do gm,cids
+    owned_cells = own_to_local(cids)
+    get_data(gm)[owned_cells]
+  end
+
+  writevtk_with_cell_geomap(owned_geo_maps, arg, args...;
     compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
 end
 
 function createvtk_with_cell_geomap(geo_map::DistributedCellField,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
+  arg::GridapDistributed.DistributedTriangulation,args...;
   compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
 )
-  local_geo_maps = map(get_data, local_views(geo_map))
-  createvtk_with_cell_geomap(local_geo_maps, arg, args...;
+  gid = get_cell_gids(arg.model)
+  owned_geo_maps = map(local_views(geo_map),partition(gid)) do gm,cids
+    owned_cells = own_to_local(cids)
+    get_data(gm)[owned_cells]
+  end
+
+  createvtk_with_cell_geomap(owned_geo_maps, arg, args...;
     compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
 end
 
