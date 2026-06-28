@@ -118,9 +118,7 @@ if return_vtk
             "chart_n_plus", "chart_n_minus", "chart_n_total"]
   cellfields = map((x,y) -> x=>y, labels,panel_cfs)
 
-  # TO-DO: skel_panel_ids = get_panel_ids(trian)
-  # TO-DO: skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
-  # TO-DO: writevtk_with_cell_geomap(skel_geo_map,trian,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
+  writevtk_with_cell_geomap(AmbientMapCellField(trian),trian,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
 end
 ################################################################################
 ## DG tests
@@ -156,9 +154,7 @@ if return_vtk
             "a_plus", "a_minus", "a_diff"]
   cellfields = map((x,y) -> x=>y, labels,panel_cfs)
 
-  # TO-DO: skel_panel_ids = get_panel_ids(Λ)
-  # TO-DO: skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
-  # TO-DO: writevtk_with_cell_geomap(skel_geo_map,Λ,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
+  writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/ambient_model_skeleton",cellfields=cellfields,append=false)
 end
 
 ################################################################################
@@ -185,12 +181,10 @@ diff_cf = (abs((vel⋅ n_Λ).minus) .- abs((vel⋅ n_Λ).plus))
 @test all(all.(lazy_map(x->isless.(x, 1e-14), diff_cf(pts))))
 
 if return_vtk
-  # TO-DO: skel_panel_ids = get_panel_ids(Λ)
-  # TO-DO: skel_geo_map = lazy_map(p -> CubedSphereForwardMap(p), skel_panel_ids.plus)
-  # TO-DO: labels = ["upwind_plus","upwind_minus","upwind_diff"]
-  # TO-DO: panel_cfs = [abs((vel⋅ n_Λ).plus),abs((vel⋅ n_Λ).minus),abs((vel⋅ n_Λ).minus)-abs((vel⋅ n_Λ).plus)]
-  # TO-DO: cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-  # TO-DO: writevtk_with_cell_geomap(skel_geo_map,Λ,dir*"/ambient_model_skeleton", cellfields=cellfields,append=false)
+  labels = ["upwind_plus","upwind_minus","upwind_diff"]
+  panel_cfs = [abs((vel⋅ n_Λ).plus),abs((vel⋅ n_Λ).minus),abs((vel⋅ n_Λ).minus)-abs((vel⋅ n_Λ).plus)]
+  cellfields = map((x,y) -> x=>y, labels,panel_cfs)
+  writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/ambient_model_skeleton", cellfields=cellfields,append=false)
 end
 
 @test true
