@@ -16,6 +16,8 @@ include("Helpers/Helpers.jl")
 
 include("Geometry/Geometry.jl")
 
+include("CellData/CellData.jl")
+
 include("FESpaces/FESpaces.jl")
 
 include("ODEs/ODEs.jl")

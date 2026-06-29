@@ -31,18 +31,21 @@ end
 @publish Geometry AtlasGrid
 @publish Geometry IntrinsicManifold
 @publish Geometry ExtrinsicManifold
-@publish Geometry MetricCellField
-@publish Geometry InvMetricCellField
-@publish Geometry MeasureCellField
-@publish Geometry AmbientMapCellField
-@publish Geometry LatLonMapCellField
-@publish Geometry Δs
-@publish Geometry vecΔs
-@publish Geometry ∇s
-@publish Geometry divs
-@publish Geometry curls
-@publish Geometry skew_∇s
-@publish Geometry skew_divs
+
+@publish CellData MetricCellField
+@publish CellData InvMetricCellField
+@publish CellData MeasureCellField
+@publish CellData AmbientMapCellField
+@publish CellData LatLonMapCellField
+@publish CellData Δs
+@publish CellData vecΔs
+@publish CellData ∇s
+@publish CellData divs
+@publish CellData curls
+@publish CellData skew_∇s
+@publish CellData skew_divs
+@publish CellData dagger
+
 
 @publish Geometry CylinderMesh
 @publish Geometry MobiusStripMesh
@@ -58,9 +61,11 @@ end
 @publish Fields   MobiusMetric
 @publish Fields   MobiusInvMetric
 @publish Fields   CubedSphereMap
+@publish Fields   CubedSphereInvMap
 @publish Fields   CubedSphereMetric
 @publish Fields   CubedSphereInvMetric
 @publish Fields   CubedSphereWithThicknessMap
+@publish Fields   CubedSphereWithThicknessInvMap
 
 @publish Geometry get_coarse_mesh
 @publish Geometry get_cell_ambient_maps
@@ -69,7 +74,6 @@ end
 @publish Geometry JtJ
 @publish Geometry get_atlas_grid
 @publish Geometry get_ambient_dim
-@publish Geometry dagger
 
 # END AtlasDiscreteModels-specific exports
 

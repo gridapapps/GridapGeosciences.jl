@@ -27,19 +27,6 @@ include("AtlasDiscreteModels.jl")
 export AtlasGrid, AtlasDiscreteModel
 export IntrinsicAtlasDiscreteModel, ExtrinsicAtlasDiscreteModel
 export IntrinsicManifold, ExtrinsicManifold
-export MetricCellField
-export InvMetricCellField
-export MeasureCellField
-export AmbientMapCellField, LatLonMapCellField
-
-
-export Δs
-export vecΔs
-export curls
-export ∇s
-export divs
-export skew_∇s
-export skew_divs
 
 export CylinderMesh
 export MobiusStripMesh

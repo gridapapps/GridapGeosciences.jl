@@ -44,12 +44,14 @@ import GridapGeosciences.Geometry: AtlasDiscreteModel
 import GridapGeosciences.Geometry: AtlasGrid
 import GridapGeosciences.Geometry: get_atlas_grid
 import GridapGeosciences.Geometry: BFTATDM
-import GridapGeosciences.Geometry: AmbientMapCellField, LatLonMapCellField
-import GridapGeosciences.Geometry: MetricCellField
-import GridapGeosciences.Geometry: InvMetricCellField
-import GridapGeosciences.Geometry: MeasureCellField
-import GridapGeosciences.Geometry: Δs
-import GridapGeosciences.Geometry: ∇s
+
+import GridapGeosciences.CellData: AmbientMapCellField, LatLonMapCellField
+import GridapGeosciences.CellData: MetricCellField
+import GridapGeosciences.CellData: InvMetricCellField
+import GridapGeosciences.CellData: MeasureCellField
+import GridapGeosciences.CellData: Δs
+import GridapGeosciences.CellData: ∇s
+
 import GridapGeosciences.Geometry: BFTATDMIM, 
                                    IntrinsicAtlasDiscreteModel, 
                                    ExtrinsicAtlasDiscreteModel
