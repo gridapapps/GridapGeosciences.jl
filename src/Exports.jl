@@ -47,20 +47,22 @@ end
 @publish Geometry skew_divs
 
 @publish Geometry CylinderMesh
-@publish Geometry CylinderChartMap
-@publish Geometry CylinderMetricField
-@publish Geometry CylinderInvMetricField
 @publish Geometry MobiusStripMesh
-@publish Geometry MobiusChartMap
-@publish Geometry MobiusMetricField
-@publish Geometry MobiusInvMetricField
 @publish Geometry CubedSphereMesh
-@publish Geometry CubedSphereMap
-@publish Geometry CubedSphereMetricField
-@publish Geometry CubedSphereInvMetricField
 @publish Geometry CubedSphereWithThicknessMesh
-@publish Geometry CubedSphereWithThicknessMap
 @publish Geometry ExtrudedCubedSphereWithThicknessMesh
+
+
+@publish Fields   CylinderMap
+@publish Fields   CylinderMetric
+@publish Fields   CylinderInvMetric
+@publish Fields   MobiusMap
+@publish Fields   MobiusMetric
+@publish Fields   MobiusInvMetric
+@publish Fields   CubedSphereMap
+@publish Fields   CubedSphereMetric
+@publish Fields   CubedSphereInvMetric
+@publish Fields   CubedSphereWithThicknessMap
 
 @publish Geometry get_coarse_mesh
 @publish Geometry get_cell_ambient_maps

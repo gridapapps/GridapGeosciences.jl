@@ -63,9 +63,9 @@ let r = 1.5
   pts = [Point(0.0, 0.0), Point(π/3, 0.5), Point(π, 0.3), Point(5π/4, 0.9)]
   check_shape(
     "Cylinder (r=$r)",
-    CylinderChartMap(r),
-    CylinderMetricField(r),
-    CylinderInvMetricField(r),
+    CylinderMap(r),
+    CylinderMetric(r),
+    CylinderInvMetric(r),
     pts,
   )
 end
@@ -77,9 +77,9 @@ let R = 1.0, W = 0.3
   for (offset, chart) in ((1.0, "C1"), (3.0, "C2"))
     check_shape(
       "Möbius $chart (R=$R, W=$W, offset=$offset)",
-      MobiusChartMap(R, W, offset),
-      MobiusMetricField(R, W, offset),
-      MobiusInvMetricField(R, W, offset),
+      MobiusMap(R, W, offset),
+      MobiusMetric(R, W, offset),
+      MobiusInvMetric(R, W, offset),
       pts,
     )
   end
@@ -102,8 +102,8 @@ let r = 1.2, half = GridapGeosciences.Geometry.CUBE_HALF_EDGE
     check_shape(
       "CubedSphere panel $p (r=$r)",
       CubedSphereMap(p, r),
-      CubedSphereMetricField(r),
-      CubedSphereInvMetricField(r),
+      CubedSphereMetric(r),
+      CubedSphereInvMetric(r),
       pts,
     )
   end

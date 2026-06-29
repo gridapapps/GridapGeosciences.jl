@@ -12,6 +12,7 @@ using GridapGeosciences.Geometry
 using GridapGeosciences.Distributed
 
 import GridapGeosciences.Geometry: _chart_maps
+import GridapGeosciences.Fields: CubedSphereMap, CubedSphereWithThicknessMap
 
 include("Tools.jl")
 

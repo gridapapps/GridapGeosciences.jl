@@ -6,15 +6,13 @@ using Gridap.Algebra, Gridap.FESpaces
 using LinearAlgebra
 using FillArrays
 
-## AtlasDiscreteModels new machinery (will eventually replace enterily what we have above)
-## Some definitions in the below included julia source files must be moved to other
-## GridapGeosciences modules for consistency, e.g., to GridapGeosciences.Fields
 using Gridap
 using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
 using Gridap.Adaptivity, Gridap.Visualization
 import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
 import Gridap.Geometry: Grid, GridView
 import GridapGeosciences.Helpers: J
+import GridapGeosciences.Fields: CubedSphereMap, CubedSphereWithThicknessMap
 
 include("CoarseMeshes.jl")
 include("AtlasGrids.jl")
@@ -27,6 +25,8 @@ export MetricCellField
 export InvMetricCellField
 export MeasureCellField
 export AmbientMapCellField, LatLonMapCellField
+
+
 export Δs
 export vecΔs
 export curls
@@ -35,12 +35,12 @@ export divs
 export skew_∇s
 export skew_divs
 
-export CylinderMesh, CylinderChartMap, CylinderMetricField, CylinderInvMetricField
-export MobiusStripMesh, MobiusChartMap, MobiusMetricField, MobiusInvMetricField
-export CubedSphereMesh, CubedSphereMap, CubedSphereInvMap, CubedSphereMetricField, CubedSphereInvMetricField
-export CubedSphereWithThicknessMesh, CubedSphereWithThicknessMap, CubedSphereWithThicknessInvMap, CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
-export CubedSphereWithThicknessMetricField, CubedSphereWithThicknessInvMetricField
+export CylinderMesh
+export MobiusStripMesh
+export CubedSphereMesh
+export CubedSphereWithThicknessMesh
 export ExtrudedCubedSphereWithThicknessMesh
+
 export get_atlas_grid
 export get_cell_ambient_maps, get_cell_metric, get_cell_inv_metric
 export get_coarse_mesh
