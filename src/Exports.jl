@@ -14,8 +14,6 @@ end
 @publish Geometry pullback_area_form
 @publish Geometry BoundaryTriangulation
 @publish Geometry SkeletonTriangulation
-@publish Geometry generate_ptr
-@publish Geometry coarse_cube_model
 @publish Geometry get_radius
 @publish Geometry get_thickness
 @publish Geometry generate_refined_models

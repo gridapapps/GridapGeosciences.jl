@@ -88,6 +88,16 @@ function _dummy_grid_and_topology_function(pXest_type::GridapP4est.P6estType,
   grid,topology=_generate_topology_grid_and_topology(pXest_type,JaggedToTable(cell_vertices))
 end
 
+function generate_ptr(Dc,n)
+  nvertices = 2^Dc
+  ptr  = Vector{Int}(undef,n+1)
+  ptr[1]=1
+  for i=1:n
+    ptr[i+1]=ptr[i]+nvertices
+  end
+  ptr
+end
+
 function generate_cell_alpha_beta_gamma_coordinates_and_panels(parts,
                                    coarse_coarse_cell_wise_vertex_alpha_beta_coordinates,
                                    coarse_cell_panel,

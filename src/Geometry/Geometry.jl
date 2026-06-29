@@ -15,6 +15,12 @@ import GridapGeosciences.Helpers: J
 import GridapGeosciences.Fields: CubedSphereMap, CubedSphereWithThicknessMap
 
 include("CoarseMeshes.jl")
+include("CylinderMesh.jl")
+include("MobiusStripMesh.jl")
+include("CubedSphereMesh.jl")
+include("CubedSphereWithThicknessMesh.jl")
+include("ExtrudedCubedSphereWithThicknessMesh.jl")
+
 include("AtlasGrids.jl")
 include("AtlasDiscreteModels.jl")
 
@@ -47,7 +53,6 @@ export get_coarse_mesh
 export JtJ
 export generate_refined_models
 
-
 import Gridap.Geometry: TriangulationView
 import Gridap.Geometry: FaceToCellGlue, FaceCompressedVector, push_normal
 
@@ -57,22 +62,14 @@ using GridapGeosciences.Helpers
 import GridapGeosciences.Helpers: inv_metric, forward_jacobian, forward_pinv_jacobian
 import GridapGeosciences.Helpers: perp
 
-include("CubeSurface.jl")
-include("PanelMatrices.jl")
 include("BoundaryTriangulations.jl")
 include("SkeletonTriangulations.jl")
 include("AdaptedTriangulations.jl")
-include("TriangulationView.jl")
 
 export pullback_area_form
 export pushforward_normal, pushforward_reference_normal, pushforward_parametric_normal
-export BoundaryTriangulation, SkeletonTriangulation
-export generate_ptr, coarse_cube_model
 
-export R1p, A_cube2panel, A_panel2cube, b_panel2cube
 export NPANELS, CUBE_HALF_EDGE
-export get_nodes_from_coords
-
 export get_radius, get_thickness
 export normal_vec, tangent_vec
 export get_surface_normal
