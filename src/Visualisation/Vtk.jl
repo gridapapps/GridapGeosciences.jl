@@ -20,7 +20,7 @@ function createvtk_with_cell_geomap(geo_map::CellField,trian::Triangulation,args
   compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
   @check isa(DomainStyle(geo_map),PhysicalDomain)
   geo_map_to_trian = change_domain(geo_map,trian,DomainStyle(geo_map))
-  v = Gridap.Visualization.visualization_data(args...;kwargs...)
+  v = Gridap.Visualization.visualization_data(trian, args...;kwargs...)
   @notimplementedif length(v) != 1
   visdata = first(v)
   create_vtk_file_with_cell_geomap(geo_map_to_trian,
