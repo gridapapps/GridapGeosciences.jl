@@ -302,7 +302,8 @@ function MetricCellField(
     trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
   cf = MetricCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function MetricCellField(
@@ -310,7 +311,8 @@ function MetricCellField(
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
   cf = MetricCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function MeasureCellField(trian :: BFTATDM{Dc,Dp}) where {Dc,Dp}
@@ -427,7 +429,8 @@ function InvMetricCellField(
     trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
   cf = InvMetricCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function InvMetricCellField(
@@ -435,7 +438,8 @@ function InvMetricCellField(
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
   cf = InvMetricCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function AmbientMapCellField(
@@ -489,7 +493,8 @@ function AmbientMapCellField(
     trian :: Gridap.Geometry.TriangulationView{Dc,Dp,<:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
   cf = AmbientMapCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 function AmbientMapCellField(
@@ -497,7 +502,8 @@ function AmbientMapCellField(
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
   cf = AmbientMapCellField(trian.parent)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
+  data = lazy_map(Reindex(get_data(cf)), trian.cell_to_parent_cell)
+  Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
 # Only supported for the cubed sphere mesh
