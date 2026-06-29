@@ -13,7 +13,7 @@ using Gridap
 using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
 using Gridap.Adaptivity, Gridap.Visualization
 import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
-import Gridap.Geometry: Grid
+import Gridap.Geometry: Grid, GridView
 import GridapGeosciences.Helpers: J
 
 include("CoarseMeshes.jl")

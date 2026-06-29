@@ -342,6 +342,16 @@ Gridap.Geometry.get_cell_type(g::AtlasGrid) = Gridap.Geometry.get_cell_type(g.pa
 
 Gridap.Geometry.get_cell_coordinates(g::AtlasGrid) = g.cell_chart_coords
 
+# This overload is mostly required for DistributedTriangulation (GridapDistributed).
+# The local portions of a DistributedTriangulation are typically of type
+# ::TriangulationView. get_coordinates(::TriangulationView) calls
+# get_cell_coordinates(::GridView{<:AtlasGrid}). This latter method uses 
+# get_node_coordinates(::AtlasGrid). Thus, without this overload, we return junk
+# node coordinates.
+function Gridap.Geometry.get_cell_coordinates(g::GridView{Dc,Dp,<:AtlasGrid}) where {Dc,Dp}
+  lazy_map(Reindex(get_cell_coordinates(g.parent)), g.cell_to_parent_cell)
+end
+
 # Delegate to param_grid: gives the correct shared-node count for FESpace/num_nodes.
 # Coordinate values are junk (2D parametric), but FEM assembly uses get_cell_map (overridden
 # below) and never reads these values — only the length matters.
