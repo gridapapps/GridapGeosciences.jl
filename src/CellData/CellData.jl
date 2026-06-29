@@ -1,7 +1,7 @@
 module CellData
 
 using Gridap
-using Gridap.Geometry, Gridap.Adaptivity, Gridap.TensorValues, Gridap.Fields
+using Gridap.Geometry, Gridap.Adaptivity, Gridap.TensorValues, Gridap.Fields, Gridap.CellData
 using Gridap.Helpers
 
 using GridapGeosciences.Geometry
