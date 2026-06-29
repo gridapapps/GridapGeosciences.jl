@@ -7,6 +7,8 @@ using Gridap.Algebra, Gridap.FESpaces
 using LinearAlgebra
 using FillArrays
 
+import Gridap.CellData: change_domain
+
 using GridapGeosciences.Geometry
 
 include("Vtk.jl")

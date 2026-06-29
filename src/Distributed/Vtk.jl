@@ -1,4 +1,46 @@
-function write_vtk_file_with_cell_geomap(geo_map::AbstractArray,
+function _change_domain_geo_map(geo_map, trian)
+ geo_map_to_trian_cell_fields = 
+    map(local_views(geo_map), local_views(trian)) do gm, trian
+      change_domain(gm,trian,DomainStyle(gm))
+    end
+ DistributedCellField(geo_map_to_trian_cell_fields, trian) 
+end 
+
+
+function writevtk_with_cell_geomap(geo_map::DistributedCellField,
+  trian::GridapDistributed.DistributedTriangulation,args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...)
+
+  @check isa(DomainStyle(geo_map),PhysicalDomain)
+  geo_map_to_trian = _change_domain_geo_map(geo_map, trian)
+
+  parts=get_parts(trian)
+  map(GridapDistributed.visualization_data(trian,args...;kwargs...)) do visdata
+    write_vtk_file_with_cell_geomap(geo_map_to_trian,
+      parts,visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+      compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+    )
+  end
+end
+
+function createvtk_with_cell_geomap(geo_map::DistributedCellField,
+  trian::GridapDistributed.DistributedTriangulation,args...;
+  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
+)
+  @check isa(DomainStyle(geo_map),PhysicalDomain)
+  geo_map_to_trian = _change_domain_geo_map(geo_map, trian)
+  
+  v = Gridap.Visualization.visualization_data(trian, args...;kwargs...)
+  parts=get_parts(trian)
+  @Gridap.Helpers.notimplementedif length(v) != 1
+  visdata = first(v)
+  create_vtk_file_with_cell_geomap(geo_map_to_trian,
+    parts,visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
+    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
+  )
+end
+
+function write_vtk_file_with_cell_geomap(geo_map::DistributedCellField,
   parts::AbstractArray,
   grid::AbstractArray{<:Gridap.Geometry.Grid}, filebase; celldata, nodaldata,
   compress=false,append=true,ascii=false,vtkversion=:default
@@ -10,7 +52,7 @@ function write_vtk_file_with_cell_geomap(geo_map::AbstractArray,
   map(Gridap.Visualization.vtk_save,pvtk)
 end
 
-function create_vtk_file_with_cell_geomap(geo_map::AbstractArray,
+function create_vtk_file_with_cell_geomap(geo_map::DistributedCellField,
   parts::AbstractArray,
   grid::AbstractArray{<:Gridap.Geometry.Grid},
   filebase;
@@ -18,9 +60,10 @@ function create_vtk_file_with_cell_geomap(geo_map::AbstractArray,
   compress=false,append=true,ascii=false,vtkversion=:default
 )
   nparts = length(parts)
-  map(parts,grid,celldata,nodaldata,geo_map) do part,g,c,n,gm
+  map(parts,grid,celldata,nodaldata,local_views(geo_map)) do part,g,c,n,gm
     create_pvtk_file_with_cell_geomap(gm,
-      g,filebase;
+      g,
+      filebase;
       part=part,nparts=nparts,
       celldata=c,nodaldata=n,
       compress=compress,append=append,ascii=ascii,vtkversion=vtkversion
@@ -28,69 +71,21 @@ function create_vtk_file_with_cell_geomap(geo_map::AbstractArray,
   end
 end
 
-function writevtk_with_cell_geomap(geo_map::DistributedCellField,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
-  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
-)
-  local_geo_maps = map(get_data, local_views(geo_map))
-  writevtk_with_cell_geomap(local_geo_maps, arg, args...;
-    compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
-end
 
-function createvtk_with_cell_geomap(geo_map::DistributedCellField,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
-  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
-)
-  local_geo_maps = map(get_data, local_views(geo_map))
-  createvtk_with_cell_geomap(local_geo_maps, arg, args...;
-    compress=compress,append=append,ascii=ascii,vtkversion=vtkversion,kwargs...)
-end
-
-function writevtk_with_cell_geomap(geo_map::AbstractArray,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
-  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
-)
-  parts=get_parts(arg)
-  map(GridapDistributed.visualization_data(arg,args...;kwargs...)) do visdata
-    write_vtk_file_with_cell_geomap(geo_map,
-      parts,visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
-      compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
-    )
-  end
-end
-
-function createvtk_with_cell_geomap(geo_map::AbstractArray,
-  arg::GridapDistributed.DistributedModelOrTriangulation,args...;
-  compress=false,append=true,ascii=false,vtkversion=:default,kwargs...
-)
-  v = Gridap.Visualization.visualization_data(arg,args...;kwargs...)
-  parts=get_parts(arg)
-  @Gridap.Helpers.notimplementedif length(v) != 1
-  visdata = first(v)
-  create_vtk_file_with_cell_geomap(geo_map,
-    parts,visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata,
-    compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
-  )
-end
-
-function create_pvtk_file_with_cell_geomap(geo_map::AbstractArray,
-  trian::Gridap.Geometry.Grid, filebase; part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict(),
+function create_pvtk_file_with_cell_geomap(geo_map::CellField,
+  vis_data_grid::Gridap.Geometry.Grid, filebase; part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict(),
   compress=false, append=true, ascii=false, vtkversion=:default
 )
-  # println("my distributed vis")
-
-  # println(typeof(geo_map)<:AbstractArray)
   ## Map the points to ambient space
-  points = mapped_vtkpoints(trian,geo_map)
+  points = mapped_vtkpoints(vis_data_grid,geo_map)
 
-
-  cells = Gridap.Visualization._vtkcells(trian)
+  cells = Gridap.Visualization._vtkcells(vis_data_grid)
   vtkfile = Gridap.Visualization.pvtk_grid(
     filebase, points, cells;part=part, nparts=nparts, ismain=ismain,
     compress=compress, append=append, ascii=ascii, vtkversion=vtkversion
   )
 
-  if num_cells(trian) > 0
+  if num_cells(vis_data_grid) > 0
     for (k, v) in celldata
       # component_names are actually always nothing as there are no field in ptvk atm
       component_names = Gridap.Visualization._data_component_names(v)
