@@ -87,9 +87,7 @@ export get_radius, get_thickness
 export writevtk_with_cell_geomap, write_vtk_file_with_cell_geomap
 export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk_file_with_cell_geomap
 
-export DistributedAdaptivityGlue
 export get_distributed_refined_models
-# export BoundaryTriangulation
 export pullback_area_form
 export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
 

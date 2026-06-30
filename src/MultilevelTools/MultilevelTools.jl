@@ -17,7 +17,6 @@ import GridapGeosciences.Distributed: vertically_uniformly_refine, horizontally_
 
 include("ModelHierarchies.jl")
 
-export ModelHierarchy
 export adapt_model
 
 end
