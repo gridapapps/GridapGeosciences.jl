@@ -55,22 +55,27 @@ import GridapGeosciences.CellData: ∇s
 import GridapGeosciences.Geometry: BFTATDMIM, 
                                    IntrinsicAtlasDiscreteModel, 
                                    ExtrinsicAtlasDiscreteModel
+
 include("AtlasOctreeDistributedDiscreteModels.jl")
 export AtlasOctreeDistributedDiscreteModel, get_atlas_model
+
 include("ExtrudedAtlasOctreeDistributedDiscreteModels.jl")
 export ExtrudedAtlasOctreeDistributedDiscreteModel
+
 include("AtlasDistributedDiscreteModels.jl")
-export AtlasDiscreteModel
+include("DistributedCellFields.jl")
+include("SurfaceDiffOps.jl")
+
 export IntrinsicAtlasDistributedDiscreteModel
 export ExtrinsicAtlasDistributedDiscreteModel
 export AtlasDistributedDiscreteModel
 export AdaptedAtlasDistributedDiscreteModel
 export AdaptedIntrinsicAtlasDistributedDiscreteModel
 export AdaptedExtrinsicAtlasDistributedDiscreteModel
+
 export generate_distributed_refined_models
 export generate_octree_distributed_refined_models
 export generate_extruded_octree_distributed_refined_models
-export LatLonMapCellField
 
 import Gridap.FESpaces: FESpace, compute_cell_bases_changes
 import GridapDistributed: generate_gids, _find_vector_type, _add_distributed_constraint, DistributedSingleFieldFESpace
@@ -87,7 +92,5 @@ export get_distributed_refined_models
 # export BoundaryTriangulation
 export pullback_area_form
 export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
-export CellField
-
 
 end

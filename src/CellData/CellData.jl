@@ -12,7 +12,7 @@ using GridapGeosciences.Fields
 import GridapGeosciences.Geometry: BFTATDM, BFTATDMIM, BFTATDMEM
 import GridapGeosciences.Fields: CubedSphereMap
 import Gridap.TensorValues: SymTensorValue
-import GridapGeosciences.Helpers: sqrtg, J, metric, pinvJ
+import GridapGeosciences.Helpers: sqrtg, J, metric, pinvJ, perp
 import Gridap.Geometry: FaceCompressedVector, push_normal
 
 
