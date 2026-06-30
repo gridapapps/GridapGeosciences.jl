@@ -4,7 +4,6 @@ using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.CellData, Gridap.Ref
 using Gridap.Adaptivity, Gridap.Helpers, Gridap.Visualization
 using Gridap.Algebra, Gridap.FESpaces, Gridap.ODEs
 using LinearAlgebra
-using FillArrays
 using PartitionedArrays
 
 import PartitionedArrays: consistent!
@@ -41,8 +40,6 @@ import Gridap.FESpaces: assemble_vector!
 
 import Gridap.FESpaces: FEOperatorFromWeakForm
 import Gridap.FESpaces: FEOperator
-
-using LinearAlgebra
 
 
 include("DAE.jl")

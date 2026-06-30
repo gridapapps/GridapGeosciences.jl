@@ -3,10 +3,9 @@ module  Helpers
 using Gridap
 using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.CellData, Gridap.ReferenceFEs
 using Gridap.Adaptivity, Gridap.Helpers, Gridap.Visualization
-using Gridap.Algebra, Gridap.FESpaces, Gridap.Helpers, Gridap.Arrays
+using Gridap.Algebra, Gridap.FESpaces
 import Gridap.TensorValues: MultiValue
 using LinearAlgebra
-using FillArrays
 
 using GridapGeosciences.Fields
 

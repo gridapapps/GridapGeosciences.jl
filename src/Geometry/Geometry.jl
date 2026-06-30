@@ -5,10 +5,6 @@ using Gridap.Adaptivity, Gridap.Helpers, Gridap.Visualization
 using Gridap.Algebra, Gridap.FESpaces
 using LinearAlgebra
 using FillArrays
-
-using Gridap
-using Gridap.Geometry, Gridap.Fields, Gridap.Arrays, Gridap.ReferenceFEs, Gridap.Helpers
-using Gridap.Adaptivity, Gridap.Visualization
 import Gridap.TensorValues: symmetric_part, SymTensorValue, ThirdOrderTensorValue, contracted_product
 import Gridap.Geometry: Grid, GridView
 import GridapGeosciences.Helpers: J

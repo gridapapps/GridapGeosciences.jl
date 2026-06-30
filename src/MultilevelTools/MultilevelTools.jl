@@ -4,7 +4,6 @@ using Gridap
 using Gridap.Helpers, Gridap.Adaptivity
 using GridapDistributed
 using PartitionedArrays
-using MPI
 using GridapSolvers
 using GridapSolvers.MultilevelTools
 import GridapSolvers.MultilevelTools: ModelHierarchy
