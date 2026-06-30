@@ -89,29 +89,29 @@ end
 
 
 
-function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDiscreteModel{3,3},
+function linear_boussineseq(atlas_model::GridapDistributed.GenericDistributedDiscreteModel{3,3},
   p_fe::Int,dir::String,
   h::Function,vX::Function,f::Function,b::Function,
   ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   degree = 4*(p_fe+1)
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  Q = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
+  Q = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
   P = TrialFESpace(Q)
 
-  V = TestFESpace(Ω_panel, ReferenceFE(raviart_thomas,Float64,p_fe))
+  V = TestFESpace(Ω_atlas, ReferenceFE(raviart_thomas,Float64,p_fe))
   U = TrialFESpace(V)
 
-  W = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe))
+  W = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe))
   B = TrialFESpace(W)
 
   Y = MultiFieldFESpace([V, Q, W])
@@ -119,26 +119,26 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
 
 
   # metric information
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  covariant_basis_cf = ParametricCellField(covariant_basis,Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
-
-  h_cf = ParametricCellField(h,Ω_panel)
-  u_cf = ParametricCellField(piola(vX),Ω_panel)
+  h_cf = h∘ambient_map_cf
+  u_cf = meas_cf*((pinvJ∘covariant_basis_cf)⋅(vX∘ambient_map_cf))
   u_proj_cf = covariant_basis_cf ⋅(1.0/meas_cf * u_cf  )
-  b_cf = ParametricCellField(b,Ω_panel)
-  omega_cf = ParametricCellField(f,Ω_panel)
+  b_cf = b∘ambient_map_cf
+  omega_cf = f∘ambient_map_cf
 
   p_int = interpolate(h_cf,P)
   u_int = interpolate(u_cf,U)
   b_int = interpolate(b_cf,B)
 
   ## In 3D, we construct ̃k using the area measure
-  _area_meas(p) = x->  forward_jacobian(p,x) ⋅ (inv_metric(p,x) ⋅ VectorValue(1,0,0))
-  area_meas(p) = x-> norm(_area_meas(p)(x))
-  normal_3D(p) = x-> (1/area_meas(p)(x) )*VectorValue(1,0,0)
-  normal_3D_cf = ParametricCellField(normal_3D,Ω_panel)
+  n3D = CellField(VectorValue(1.0,0.0,0.0),Ω_atlas)
+  ff = Operation(sqrt)(n3D ⋅ (InvMetricCellField(Ω_atlas) ⋅ n3D))
+  normal_3D_cf = n3D/ff
+
 
   coriolis_term((u,p,b),(v,q,r)) = ∫( omega_cf*( normal_3D_cf ×( metric_cf⋅u*(1.0/meas_cf)  ) )⋅(metric_cf⋅v)*(1.0/meas_cf)  )dΩ
   bouyancy_term(b,v) = ∫( b*(normal_3D_cf⋅v)  )dΩ # v ∈ Hdiv, b ∈ L2
@@ -158,7 +158,7 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
   biformX((u,p,b),(v,q,r)) = biform_u((u,p,b),(v,q,r)) + biform_p((u,p,b),(v,q,r)) + biform_b((u,p,b),(v,q,r))
 
   # Account for the boundary term from IBP in the RHS forcing operator
-  Γ = BoundaryTriangulation(panel_model;tags=["bottom_boundary","top_boundary"])
+  Γ = BoundaryTriangulation(atlas_model;tags=["bottom_boundary","top_boundary"])
   dΓ = Measure(Γ,degree)
   nΓ = get_normal_vector(Γ)
 
@@ -199,7 +199,7 @@ function linear_boussineseq(panel_model::GridapDistributed.GenericDistributedDis
     panel_cfs = [h_cf, u_proj_cf, b_cf, ph, uh_proj, bh, h_cf-ph, u_proj_cf-uh_proj , b_cf-bh]
     labels = ["p","u_proj", "b", "ph", "uh_proj", "bh", "ep","eu", "eb"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(AmbientMapCellField(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
     cellfields=cellfields,append=false)
   end
 
@@ -211,10 +211,10 @@ end
 #### Auto convergence test
 ################################################################################
 function main(models::AbstractArray;ps=[1],_i_am_main=true)
-  h = panel_to_cartesian(p0)
-  vX = panel_to_cartesian(tangent_vec(u0))
-  f = panel_to_cartesian(omega)
-  b = panel_to_cartesian(b0)
+  h = p0
+  vX = tangent_vec(u0)
+  f = omega
+  b = b0
 
   ls = LUSolver()
   dir = @__DIR__

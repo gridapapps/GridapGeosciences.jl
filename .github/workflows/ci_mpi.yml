@@ -40,7 +40,7 @@ jobs:
           - mpi-atlas-discrete-models
           - mpi-l2-projection
           - mpi-laplacian
-          # - mpi-geophysical
+          - mpi-geophysical
           - mpi-transient
           - mpi-geometry
           - mpi-models
