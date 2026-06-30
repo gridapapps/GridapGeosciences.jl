@@ -21,7 +21,7 @@ pkg> add GridapGeosciences
 
 - **Cubed sphere discrete models**: We provide serial and distributed implementations of the two dimensional cubed sphere, and a distributed implementation of the three dimensional cubed sphere. Highly scalable, adaptive meshes are provided by `p4est` through `GridapP4est.jl`.
 - **Continuous vector-valued Lagrangian finite elements**: We provide a serial and distributed implementation of vector-valued Lagrangrian finite elements on manifold.
-- **Time integrator for differential algrabic equations**: We extend the explicit Runge Kutta framework in `Gridap` to differential algebraic equations that arise in atmospheric systems like the shallow water equations. 
+- **Time integrator for differential algebraic equations**: We extend the explicit Runge Kutta framework in `Gridap` to differential algebraic equations that arise in atmospheric systems like the shallow water equations. 
 - **Mapped vtk files**: We extend the visualisation framework in `Gridap` by applying a cell-wise geometrical map the parametric triangulation to visualise solutions in the ambient space.  
 
 

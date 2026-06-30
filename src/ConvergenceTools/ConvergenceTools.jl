@@ -17,7 +17,7 @@ import GridapGeosciences.Fields: CubedSphereMap, CubedSphereWithThicknessMap
 include("Tools.jl")
 
 export p_convergence_auto_test, h_convergence_auto_test
-export nref, nc, nc_horizontal, dx, dx_horizontal
+export nref, nc, nc_horizontal, nc_vertical, dx, dx_horizontal
 export convergence_rate
 
 

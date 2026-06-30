@@ -19,6 +19,8 @@ end
 @publish Fields CubedSphereInvMap
 @publish Fields CubedSphereMetric
 @publish Fields CubedSphereInvMetric
+@publish Fields CubedSphereWithThicknessMetric
+@publish Fields CubedSphereWithThicknessInvMetric
 @publish Fields CubedSphereWithThicknessMap
 @publish Fields CubedSphereWithThicknessInvMap
 

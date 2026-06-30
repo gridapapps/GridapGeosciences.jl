@@ -69,7 +69,7 @@ This is the first public release of GridapGeosciences. Non-exhaustive list of ne
 **Continuous vector-valued Lagrangian finite elements**
 - We provide a serial and distributed implementation of vector-valued Lagrangrian finite elements on manifold.
 
-**Time integrator for differential algrabic equations**
+**Time integrator for differential algebraic equations**
 - `DAEFEOperator` extends the ODE framework in `Gridap` to differential algebraic equations that arise in atmospheric systems like the shallow water equations. Currently implemented for explicit Runge Kutta methods
 
 **Mapped vtk files**

@@ -116,10 +116,10 @@ function pullback_area_form(trian::SkeletonTriangulation{Dc,Dp,
   SkeletonPair(plus,minus)
 end
 
-function pullback_area_form(atrian::AdaptedTriangulation)
-  cf = pullback_area_form(atrian.trian)
-  plus = GenericCellField(get_data(cf.plus),atrian,DomainStyle(cf.plus))
-  minus = GenericCellField(get_data(cf.minus),atrian,DomainStyle(cf.minus))
+function pullback_area_form(trian::AdaptedTriangulation)
+  cf = pullback_area_form(trian.trian)
+  plus = GenericCellField(get_data(cf.plus),trian,DomainStyle(cf.plus))
+  minus = GenericCellField(get_data(cf.minus),trian,DomainStyle(cf.minus))
   SkeletonPair(plus,minus)
 end
 
