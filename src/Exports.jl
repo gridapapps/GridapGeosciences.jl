@@ -83,8 +83,6 @@ end
 @publish Helpers surflap
 @publish Helpers surfdiv
 @publish Helpers sgrad
-@publish Helpers forward_jacobian
-@publish Helpers covariant_basis
 @publish Helpers pinvJ
 @publish Helpers perp
 

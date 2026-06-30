@@ -196,7 +196,7 @@ end
 # Contravariant components of 3D vector vecX
 # The contravariatn mapping is  ̃u = J u
 # so u = J^† ̃u
-contra_v(vecX::Function,m::Field) = αβ -> forward_pinv_jacobian(m)(αβ)⋅vecX(m)(αβ)
+contra_v(vecX::Function,m::Field) = αβ -> pinvJ(J(m,αβ))⋅vecX(m)(αβ)
 contra_v(vecX::Function) = p -> contra_v(vecX,p)
 
 function _divs_ad(f, Ω_atlas)

@@ -1,13 +1,10 @@
 
 J(m::Field,x) = transpose(∇(m)(x))
-Jt(m::Field,x) = transpose(J(m,x))
+Jt(m::Field,x) = ∇(m)(x)
 metric(m::Field,x) = Jt(m,x)⋅J(m,x)
 inv_metric(m::Field,x) = inv(metric(m,x))
 detg(m::Field,x)  = det(metric(m,x))
 sqrtg(m::Field,x)  = sqrt(detg(m,x))
-forward_jacobian(m::Field,x) = J(m,x)
-forward_pinv_jacobian(m::Field,x) = pinvJ(J(m,x))
-
 
 J(m::Field) = x -> J(m,x)
 Jt(m::Field) = x -> Jt(m,x)
@@ -15,9 +12,6 @@ metric(m::Field) = x -> metric(m,x)
 inv_metric(m::Field) = x -> inv_metric(m,x)
 detg(m::Field)  = x -> detg(m,x)
 sqrtg(m::Field)  = x -> sqrtg(m,x)
-covariant_basis(m::Field) = x -> J(m,x)
-forward_jacobian(m::Field) = x -> J(m,x)
-forward_pinv_jacobian(m::Field) = x -> pinvJ(J(m,x))
 
 function pinvJ(J::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   @check D2 < D1 ## J = 3x2

@@ -14,8 +14,6 @@ include("Overloads.jl")
 include("Operators.jl")
 include("CoordinateMappings.jl")
 
-export forward_jacobian, covariant_basis, forward_pinv_jacobian
-
 export pinvJ
 export sqrtg,  detg
 export metric, inv_metric

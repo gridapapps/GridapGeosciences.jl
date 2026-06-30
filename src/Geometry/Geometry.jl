@@ -46,7 +46,7 @@ import Gridap.Geometry: FaceToCellGlue, FaceCompressedVector, push_normal
 using GridapGeosciences.Fields
 
 using GridapGeosciences.Helpers
-import GridapGeosciences.Helpers: inv_metric, forward_jacobian, forward_pinv_jacobian
+import GridapGeosciences.Helpers: inv_metric
 import GridapGeosciences.Helpers: perp
 
 include("BoundaryTriangulations.jl")
