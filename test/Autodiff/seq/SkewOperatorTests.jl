@@ -82,10 +82,10 @@ max_dif = map(x->maximum(norm.(x)),dif)
 ################################################################################
 ########## Skew divergence
 ################################################################################
-# By now, automatic_differentiation=false does NOT work for the skew divergence, 
+# By now, automatic_differentiation=false does NOT work for the skew divergence,
 # so we only test the AD version here
 skew_div_parametric = skew_divs(ambient_vec, Ω_parametric; use_automatic_differentiation=true)
-vcrossk(x) = ambient_vec(x) × normal_vec(x)
+vcrossk(x) = ambient_vec(x) × sphere_surface_normal_vec(x)
 skew_div_ambient = divs(vcrossk, Ω_ambient)
 
 ### Test ∇ᵧ^† ⋅ u is equivalent for ambient and parametric

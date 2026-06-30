@@ -195,7 +195,7 @@ function main(model;_i_am_main=true)
   p = 1
   CFL = 0.1
   h = h₀(0.0)
-  vX = tangent_vec(u₀(0.0))
+  vX = sphere_tangent_vec_component(u₀(0.0))
   f = f₀(0.0)
   b = topography
 

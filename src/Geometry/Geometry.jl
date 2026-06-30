@@ -58,7 +58,7 @@ export pushforward_normal, pushforward_reference_normal, pushforward_parametric_
 
 export NPANELS, CUBE_HALF_EDGE
 export get_radius, get_thickness
-export normal_vec, tangent_vec
+export sphere_surface_normal_vec, sphere_tangent_vec_component
 export get_surface_normal
 
 end

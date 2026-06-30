@@ -17,8 +17,8 @@ end
 @publish Geometry get_radius
 @publish Geometry get_thickness
 @publish Geometry generate_refined_models
-@publish Geometry normal_vec
-@publish Geometry tangent_vec
+@publish Geometry sphere_surface_normal_vec
+@publish Geometry sphere_tangent_vec_component
 @publish Geometry get_surface_normal
 
 # BEGIN AtlasDiscreteModels-specific exports

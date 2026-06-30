@@ -80,7 +80,7 @@ function main(distribute,nprocs)
   ### check abs(v⋅n.plus) = abs(v⋅n.minus)
   ##############################################################################
   vecX(XYZ) = VectorValue(-XYZ[2],XYZ[3],0.0)
-  vX = tangent_vec(vecX)
+  vX = sphere_tangent_vec_component(vecX)
 
   V = TestFESpace(panel_model, ReferenceFE(raviart_thomas,Float64,1); conformity=:HDiv)
   U = TrialFESpace(V)
