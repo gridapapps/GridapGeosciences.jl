@@ -50,7 +50,6 @@ import GridapGeosciences.Helpers: inv_metric, forward_jacobian, forward_pinv_jac
 import GridapGeosciences.Helpers: perp
 
 include("BoundaryTriangulations.jl")
-include("SkeletonTriangulations.jl")
 include("AdaptedTriangulations.jl")
 
 export pullback_area_form

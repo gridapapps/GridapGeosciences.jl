@@ -8,10 +8,6 @@ end
 
 @publish Fields Cartesian2SphericalMap
 
-@publish Geometry pushforward_normal
-@publish Geometry pushforward_reference_normal
-@publish Geometry pushforward_parametric_normal
-@publish Geometry pullback_area_form
 @publish Geometry BoundaryTriangulation
 @publish Geometry SkeletonTriangulation
 @publish Geometry get_radius
@@ -45,6 +41,11 @@ end
 @publish CellData skew_∇s
 @publish CellData skew_divs
 @publish CellData dagger
+
+@publish CellData pushforward_normal
+@publish CellData pushforward_reference_normal
+@publish CellData pushforward_parametric_normal
+@publish CellData pullback_area_form
 
 
 @publish Geometry CylinderMesh

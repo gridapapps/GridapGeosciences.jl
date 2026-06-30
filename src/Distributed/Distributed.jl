@@ -22,7 +22,7 @@ import GridapDistributed: CellField
 
 using GridapGeosciences.Geometry
 import GridapGeosciences.Geometry: get_radius, get_thickness
-import GridapGeosciences.Geometry: pullback_area_form, pushforward_normal, 
+import GridapGeosciences.CellData: pullback_area_form, pushforward_normal, 
                                    pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
 import GridapGeosciences.Geometry: get_surface_normal

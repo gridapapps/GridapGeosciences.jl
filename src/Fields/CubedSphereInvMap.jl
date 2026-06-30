@@ -26,7 +26,7 @@ const _CSPHERE_INV_PERM = (
   Point(atan(h2, h1), atan(h3, h1))
 end
 
-# Jacobian of the inverse map: J[j,k] = ∂φ_k/∂xyz_j (TensorValue{3,2}).
+# Jacobian of the inverse map: J[i,k] = ∂φ_k/∂xyz_i (TensorValue{3,2}).
 # α = atan(h₂,h₁), β = atan(h₃,h₁); each hᵢ depends on exactly one xyz component,
 # so each column of J has exactly 2 non-zero entries.
 @inline function _csphere_inv_jac(panel::Int, xyz::Point{3})

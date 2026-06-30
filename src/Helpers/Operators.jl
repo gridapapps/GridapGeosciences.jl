@@ -72,7 +72,4 @@ end
 
 function perp(t::TensorValue{2,2})
   TensorValue(-t[2,1],t[1,1],-t[2,2],t[1,2])
-end  
-
-
-
+end
