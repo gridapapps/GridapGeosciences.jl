@@ -33,7 +33,7 @@ function test_normal_unit_vector(atlas_model,return_vtk=false)
 
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
 
-  norm_vec_cf = normal_vec ∘ ambient_map_cf
+  norm_vec_cf = sphere_surface_normal_vec ∘ ambient_map_cf
   norm_vec_from_basis_cf = normal_vector_from_basis∘transpose∘∇(ambient_map_cf)
   meas_cf = MeasureCellField(Ω_atlas)
 
@@ -162,7 +162,7 @@ end
 ### check abs(v⋅n.plus) = abs(v⋅n.minus)
 ################################################################################
 vecX(XYZ) = VectorValue(-XYZ[2],XYZ[3],0.0)
-vX = tangent_vec(vecX)
+vX = sphere_tangent_vec_component(vecX)
 
 V = TestFESpace(atlas_model, ReferenceFE(raviart_thomas,Float64,1); conformity=:HDiv)
 U = TrialFESpace(V)

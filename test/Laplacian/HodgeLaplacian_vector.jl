@@ -18,7 +18,7 @@ using Test
 function uX(xyz)
   r = sqrt(xyz[1]^2 + xyz[2]^2 + xyz[3]^2)
   f = 2.0*xyz[3]/r
-  n = normal_vec(xyz)
+  n = sphere_surface_normal_vec(xyz)
   f*n
 end
 
@@ -54,7 +54,7 @@ function hodge_laplacian_vector(
   inv_metric_cf = InvMetricCellField(Ω_atlas)
   metric_cf = MetricCellField(Ω_atlas)
   meas_cf = MeasureCellField(Ω_atlas)
-  
+
   ## ambient map and jacobian
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   Jt_cf = ∇(ambient_map_cf)
@@ -66,7 +66,7 @@ function hodge_laplacian_vector(
   rhs_cov_cf = -vecΔs(uX, Ω_atlas)
 
   u_cov_cf = Jt_cf⋅u_cf
-  
+
   ### Covariant vector of the surface curl of uX
   curls_u_cf = curls(uX, Ω_atlas)
 

@@ -131,7 +131,7 @@ end
 ################################################################################
 function main(models::AbstractArray;ps=[2],_i_am_main=true)
   h = h₀(0.0)
-  vX = tangent_vec(u₀(0.0))
+  vX = sphere_tangent_vec_component(u₀(0.0))
 
   ls = LUSolver()
   dir = @__DIR__

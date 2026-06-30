@@ -212,7 +212,7 @@ end
 ################################################################################
 function main(models::AbstractArray;ps=[1],_i_am_main=true)
   h = p0
-  vX = tangent_vec(u0)
+  vX = sphere_tangent_vec_component(u0)
   f = omega
   b = b0
 

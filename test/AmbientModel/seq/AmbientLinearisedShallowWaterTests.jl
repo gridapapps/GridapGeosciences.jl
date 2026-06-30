@@ -14,7 +14,7 @@ dir = @__DIR__
 p_fe = 1
 
 h = AmbientLinearisedShallowWaterTests.h₀(0.0)
-vX = tangent_vec(AmbientLinearisedShallowWaterTests.u₀(0.0))
+vX = sphere_tangent_vec_component(AmbientLinearisedShallowWaterTests.u₀(0.0))
 f = AmbientLinearisedShallowWaterTests.f₀(0.0)
 e_u_ambient, e_p_ambient, = AmbientLinearisedShallowWaterTests.linear_shallow_water_solver(
   extrinsic_model,p_fe,dir,

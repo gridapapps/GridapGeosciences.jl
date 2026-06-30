@@ -12,14 +12,14 @@ using Test
 
 function main(distribute,nprocs)
   ranks = distribute(LinearIndices((nprocs,)))
-  
+
   radius,thickness = 1.0, 0.19
   coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
-  
+
   num_refinements = 2
-  o3model = AtlasOctreeDistributedDiscreteModel(ranks, 
-                                                coarse_mesh, 
-                                                num_refinements; 
+  o3model = AtlasOctreeDistributedDiscreteModel(ranks,
+                                                coarse_mesh,
+                                                num_refinements;
                                                 manifold_style=IntrinsicManifold())
   atlas_model = get_atlas_model(o3model)
 
@@ -38,7 +38,7 @@ function main(distribute,nprocs)
   n_mapped = _n_mapped/ff
 
   ## the unit surface normal is given by the position vector
-  norm_vec_cf = normal_vec∘ambient_map_cf
+  norm_vec_cf = sphere_surface_normal_vec∘ambient_map_cf
 
   metric_cf = MetricCellField(Ω_panel)
   _e = norm_vec_cf-n_mapped
