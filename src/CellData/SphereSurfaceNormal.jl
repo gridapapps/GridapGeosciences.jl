@@ -1,5 +1,5 @@
 function get_sphere_surface_normal(
-    trian::Gridap.Geometry.BodyFittedTriangulation{Dc,3,<:ExtrinsicAtlasDiscreteModel{Dcm,3,G,A,<:AbstractVector{<:CubedSphereMap}}}
+    trian::Gridap.Geometry.BodyFittedTriangulation{Dc,3,<:ExtrinsicAtlasDiscreteModel{Dcm,3,G,A,<:AbstractVector{<:Union{<:CubedSphereMap,<:CubedSphereWithThicknessMap}}}}
 ) where {Dc,Dcm,G,A}
   CellField(sphere_surface_normal_vec, trian)
 end
