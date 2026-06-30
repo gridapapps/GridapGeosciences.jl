@@ -12,12 +12,13 @@ using GridapGeosciences.Fields
 include("Overloads.jl")
 include("Operators.jl")
 include("CoordinateMappings.jl")
+include("SphereSurfaceFunctions.jl")
 
 export pinvJ
 export sqrtg,  detg
 export metric, inv_metric
 export surflap, surfdiv, sgrad, skew_surfdiv, skew_surfgrad
-
+export sphere_surface_normal_vec, sphere_tangent_vec_component    
 export xyz2θϕr
 export J
 

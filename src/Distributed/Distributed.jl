@@ -25,7 +25,7 @@ import GridapGeosciences.Geometry: get_radius, get_thickness
 import GridapGeosciences.CellData: pullback_area_form, pushforward_normal, 
                                    pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
-import GridapGeosciences.Geometry: get_surface_normal
+import GridapGeosciences.CellData: get_sphere_surface_normal
 
 using GridapGeosciences.Fields
 using GridapGeosciences.Visualisation
@@ -33,10 +33,7 @@ import GridapGeosciences.Visualisation: writevtk_with_cell_geomap, write_vtk_fil
 import GridapGeosciences.Visualisation: createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap
 
 include("Vtk.jl")
-include("Triangulations.jl")
 
-
-## AtlasDiscreteModels-related stuff
 import GridapGeosciences.Geometry: ManifoldStyle
 import GridapGeosciences.Geometry: CoarseMeshInfo
 import GridapGeosciences.Geometry: CoarseMesh
@@ -89,6 +86,6 @@ export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk
 
 export get_distributed_refined_models
 export pullback_area_form
-export pushforward_reference_normal, pushforward_parametric_normal, get_surface_normal
+export pushforward_reference_normal, pushforward_parametric_normal, get_sphere_surface_normal
 
 end

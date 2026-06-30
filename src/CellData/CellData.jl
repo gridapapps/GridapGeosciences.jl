@@ -12,13 +12,14 @@ using GridapGeosciences.Fields
 import GridapGeosciences.Geometry: BFTATDM, BFTATDMIM, BFTATDMEM
 import GridapGeosciences.Fields: CubedSphereMap
 import Gridap.TensorValues: SymTensorValue
-import GridapGeosciences.Helpers: sqrtg, J, metric, pinvJ, perp, skew_surfdiv, surflap
+import GridapGeosciences.Helpers: sqrtg, J, metric, pinvJ, perp, skew_surfdiv, surflap, sphere_surface_normal_vec
 import Gridap.Geometry: FaceCompressedVector, push_normal
 
 
 include("CellFields.jl")
 include("SurfaceDiffOps.jl")
 include("NormalsAreaForms.jl")
+include("SphereSurfaceNormal.jl")
 
 export MetricCellField
 export InvMetricCellField
@@ -39,5 +40,6 @@ export pushforward_normal
 export pushforward_reference_normal
 export pushforward_parametric_normal
 export pullback_area_form
+export get_sphere_surface_normal
 
 end

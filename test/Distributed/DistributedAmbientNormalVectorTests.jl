@@ -41,7 +41,7 @@ function main(distribute,nprocs)
   ########## Ambient model
   ##############################################################################
   Ω_ambient = Triangulation(ambient_model)
-  n_surface_ambient = get_surface_normal(Ω_ambient)
+  n_surface_ambient = get_sphere_surface_normal(Ω_ambient)
 
   Λ_ambient = SkeletonTriangulation(with_ghost,ambient_model)
   n_Λ_ambient = get_normal_vector(Λ_ambient)

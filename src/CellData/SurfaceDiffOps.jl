@@ -349,26 +349,13 @@ end
 
 function dagger(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
                 use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  @notimplemented "dagger is only implemented for 2D surfaces"
+  @notimplemented "dagger is only implemented for intrinsic 2D surfaces"
 end
 
 function dagger(f::Function, Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
                 use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  @notimplemented "dagger is only implemented for 2D surfaces"
+  @notimplemented "dagger is only implemented for intrinsic 2D surfaces"
 end
-
-"""
-dagger
- 
-computes ̃u^† = ̃k × ̃u, where ̃k is only defined for ambient models.
-This function will fail if get_surface_normal fails (i.e for parametric models)
-"""
-function dagger(u::CellField)
-  trian = get_triangulation(u)
-  n = get_surface_normal(trian)
-  n×u
-end
-
 
 Jt(m) = x -> transpose(J(m,x))
 Jtu(u,m) = x -> Jt(m)(x)⋅u(m)(x)

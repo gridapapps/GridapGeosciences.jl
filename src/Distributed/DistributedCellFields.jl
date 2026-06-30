@@ -219,3 +219,48 @@ function MeasureCellField(
   end
   GridapDistributed.DistributedCellField(fields, trian)
 end
+
+
+function pullback_area_form(trian::DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pullback_area_form(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+function pushforward_normal(trian::GridapDistributed.DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pushforward_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+function pushforward_reference_normal(trian::GridapDistributed.DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pushforward_reference_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+function pushforward_parametric_normal(trian::GridapDistributed.DistributedTriangulation)
+  fields = map(trian.trians) do t
+    pushforward_parametric_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,trian)
+end
+
+"""
+get_sphere_surface_normal
+
+Is the distributed implementation of get_sphere_surface_normal.
+In such function, we call get_sphere_surface_normal on the local model and then
+recompute the triangulation to ensure proper handling of ghost cells in octree periodic meshes.
+"""
+function get_sphere_surface_normal(trian::GridapDistributed.DistributedTriangulation)
+  model = trian.model
+  _trian = GridapDistributed.add_ghost_cells(trian)
+  fields = map(_trian.trians) do t
+    get_sphere_surface_normal(t)
+  end
+  GridapDistributed.DistributedCellField(fields,_trian)
+end

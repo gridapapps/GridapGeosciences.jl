@@ -20,7 +20,7 @@ parametric_model = AtlasDiscreteModel(coarse_mesh,n_ref_lvls; manifold_style=Int
 ########## Ambient model
 ################################################################################
 Ω_ambient = Triangulation(ambient_model)
-n_surface_ambient = get_surface_normal(Ω_ambient)
+n_surface_ambient = get_sphere_surface_normal(Ω_ambient)
 
 Λ_ambient = SkeletonTriangulation(ambient_model)
 n_Λ_ambient = get_normal_vector(Λ_ambient)

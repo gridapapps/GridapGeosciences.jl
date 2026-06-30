@@ -16,7 +16,6 @@ include("MobiusStripMesh.jl")
 include("CubedSphereMesh.jl")
 include("CubedSphereWithThicknessMesh.jl")
 include("ExtrudedCubedSphereWithThicknessMesh.jl")
-
 include("AtlasGrids.jl")
 include("AtlasDiscreteModels.jl")
 
@@ -46,14 +45,11 @@ import GridapGeosciences.Helpers: inv_metric
 import GridapGeosciences.Helpers: perp
 
 include("BoundaryTriangulations.jl")
-include("AdaptedTriangulations.jl")
 
 export pullback_area_form
 export pushforward_normal, pushforward_reference_normal, pushforward_parametric_normal
 
 export NPANELS, CUBE_HALF_EDGE
 export get_radius, get_thickness
-export sphere_surface_normal_vec, sphere_tangent_vec_component
-export get_surface_normal
 
 end

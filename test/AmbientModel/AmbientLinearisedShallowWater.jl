@@ -55,7 +55,7 @@ function linear_shallow_water_solver(
   u_int = interpolate(vX,U)
 
   ## Here we construct the coriolis term on the surface: ∫( ̃f ( ̃k × ̃u  )  )dΩ
-  n_surf = get_surface_normal(Ω_ambient)
+  n_surf = get_sphere_surface_normal(Ω_ambient)
   coriolis_term((u,p),(v,q)) = ∫( f*( ( n_surf × u)⋅v)  )dΩ
 
   ## construct bilinear form using coriolis_term

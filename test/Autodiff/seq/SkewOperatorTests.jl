@@ -26,13 +26,13 @@ parametric_model = AtlasDiscreteModel(coarse_mesh,n_ref_lvls; manifold_style=Int
 ## Test we obtain the surface normal for the ambient model
 Ω_ambient = Triangulation(ambient_model)
 pts_ambient = get_cell_points(Ω_ambient)
-n_ambient = get_surface_normal(Ω_ambient)
+n_ambient = get_sphere_surface_normal(Ω_ambient)
 @test true
 
 ## Test the surface normal for the parametric model breaks
 Ω_parametric = Triangulation(parametric_model)
 pts_parametric = get_cell_points(Ω_parametric)
-@test_skip (@test_broken get_surface_normal(Ω_parametric) )
+@test_skip (@test_broken get_sphere_surface_normal(Ω_parametric) )
 
 ## Function
 function ambient_f(x)
@@ -56,7 +56,8 @@ inv_metric_cf  = InvMetricCellField(Ω_parametric)          # g^{-1}
 
 ### Compute u^† = k × u for the ambient model
 u_cf_ambient = CellField(ambient_vec,Ω_ambient)
-u_dagger_ambient = dagger(u_cf_ambient)
+k = get_sphere_surface_normal(Ω_ambient)
+u_dagger_ambient = k×u_cf_ambient
 
 ### Compute u^† = J g^{-1} u^⟂ √g  for the parametric model
 u_dagger_parametric = dagger(ambient_vec, Ω_parametric)

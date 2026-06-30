@@ -93,7 +93,7 @@ function transient_shallow_water_solver(
   b = CellField(b,Ω_ambient)
 
   ## Construct the coriolis term on the surface: ∫( ̃f ( ̃k × ̃u  )  )dΩ
-  n_surf = get_surface_normal(Ω_ambient)
+  n_surf = get_sphere_surface_normal(Ω_ambient)
 
   #### DIAGNOSTIC VARIABLES
   # vorticity

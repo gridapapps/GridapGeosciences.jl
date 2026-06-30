@@ -26,9 +26,6 @@ end
 @publish Geometry get_radius
 @publish Geometry get_thickness
 @publish Geometry generate_refined_models
-@publish Geometry sphere_surface_normal_vec
-@publish Geometry sphere_tangent_vec_component
-@publish Geometry get_surface_normal
 @publish Geometry AtlasDiscreteModel
 @publish Geometry IntrinsicAtlasDiscreteModel
 @publish Geometry ExtrinsicAtlasDiscreteModel
@@ -66,6 +63,7 @@ end
 @publish CellData pushforward_reference_normal
 @publish CellData pushforward_parametric_normal
 @publish CellData pullback_area_form
+@publish CellData get_sphere_surface_normal
 
 # ODEs
 @publish ODEs DAEFEOperator
@@ -76,15 +74,10 @@ end
 
 # Helpers
 @publish Helpers xyz2θϕr
-@publish Helpers sqrtg
-@publish Helpers detg
-@publish Helpers metric
-@publish Helpers inv_metric
-@publish Helpers surflap
-@publish Helpers surfdiv
-@publish Helpers sgrad
 @publish Helpers pinvJ
 @publish Helpers perp
+@publish Helpers sphere_surface_normal_vec
+@publish Helpers sphere_tangent_vec_component
 
 # Distributed
 @publish Distributed AtlasDistributedDiscreteModel
