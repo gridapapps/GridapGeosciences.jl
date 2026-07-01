@@ -21,9 +21,8 @@ function main(distribute,nprocs)
                                                 coarse_mesh,
                                                 num_refinements;
                                                 manifold_style=IntrinsicManifold())
-  atlas_model = get_atlas_model(o3model)
 
-  Ω_panel =  Triangulation(atlas_model)
+  Ω_panel =  Triangulation(o3model)
   dΩ = Measure(Ω_panel,4)
 
   ## the normal in parametric space (γ,α,β) is (1,0,0)

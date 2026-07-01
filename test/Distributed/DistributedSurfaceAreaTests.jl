@@ -8,6 +8,7 @@ i.e. surface area = ∫ᵧ 1 = ∫ 1 √g
 module DistributedSurfaceAreaTests
 
 using Gridap
+using Gridap.Adaptivity
 using GridapGeosciences
 using GridapP4est
 using Test
@@ -38,6 +39,36 @@ function compute_surface_area(model::ExtrinsicAtlasDistributedDiscreteModel{2,Dp
 end
 
 function compute_surface_area(model::AdaptedExtrinsicAtlasDistributedDiscreteModel{2,Dp}, degree::Int) where {Dp}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(model::AtlasOctreeDistributedDiscreteModel{Dc,Dp,A,B,<:IntrinsicManifold}, degree::Int) where {Dc,Dp,A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(model::AtlasOctreeDistributedDiscreteModel{Dc,Dp,A,B,<:ExtrinsicManifold}, degree::Int) where {Dc,Dp,A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(model::ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,<:IntrinsicManifold}, degree::Int) where {A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(model::ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,<:ExtrinsicManifold}, degree::Int) where {A,B}
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
   surface_area = sum( ∫( 1.0 )dΩ )
@@ -84,6 +115,37 @@ function main(distribute,nprocs)
     coarse_mesh = CubedSphereMesh(radius)
     p4est_models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, ExtrinsicManifold())
     test_surface_area(dist_models,p4est_models)
+  end
+
+  ## 3D extruded octree intrinsic models:
+  n_ext_ref_lvls = 2
+  for (radius, thickness) in [(1.0, 0.1), (2.0, 0.2)]
+    ext_mesh  = ExtrudedCubedSphereWithThicknessMesh(radius, thickness)
+    exact_vol = (4/3) * π * ((radius + thickness)^3 - radius^3)
+    model = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, ext_mesh, 0, 0; manifold_style=IntrinsicManifold())
+    for _ in 1:n_ext_ref_lvls
+      model, _ = Gridap.Adaptivity.refine(model)
+      for degree in [2, 4]
+        vol = compute_surface_area(model, degree)
+        e   = abs(vol - exact_vol) / exact_vol
+        @test e < 1e-2
+      end
+    end
+  end
+
+  ## 3D extruded octree extrinsic models:
+  for (radius, thickness) in [(1.0, 0.1), (2.0, 0.2)]
+    ext_mesh  = ExtrudedCubedSphereWithThicknessMesh(radius, thickness)
+    exact_vol = (4/3) * π * ((radius + thickness)^3 - radius^3)
+    model = ExtrudedAtlasOctreeDistributedDiscreteModel(ranks, ext_mesh, 0, 0; manifold_style=ExtrinsicManifold())
+    for _ in 1:n_ext_ref_lvls
+      model, _ = Gridap.Adaptivity.refine(model)
+      for degree in [2, 4]
+        vol = compute_surface_area(model, degree)
+        e   = abs(vol - exact_vol) / exact_vol
+        @test e < 1e-2
+      end
+    end
   end
 
   @test true

@@ -183,6 +183,10 @@ function get_sphere_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteMode
   get_sphere_radius(model.model)
 end
 
+function get_sphere_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].radius
+end
+
 function get_sphere_thickness(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
   model.atlas_grid.cell_ambient_maps.values[1].thickness
 end
@@ -215,7 +219,9 @@ function get_sphere_radius(model::Union{IntrinsicAtlasDistributedDiscreteModel,
   return radius
 end
 
-get_sphere_thickness(m::AtlasOctreeDistributedDiscreteModel) = get_sphere_thickness(get_atlas_model(m))
+get_sphere_radius(m::AtlasOctreeDistributedDiscreteModel)         = get_sphere_radius(get_atlas_model(m))
+get_sphere_thickness(m::AtlasOctreeDistributedDiscreteModel)      = get_sphere_thickness(get_atlas_model(m))
+get_sphere_radius(m::ExtrudedAtlasOctreeDistributedDiscreteModel)    = get_sphere_radius(get_atlas_model(m))
 get_sphere_thickness(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = get_sphere_thickness(get_atlas_model(m))
 
 ## element size

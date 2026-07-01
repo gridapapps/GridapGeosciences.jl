@@ -48,11 +48,10 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 radius = 1.0
 coarse_mesh = CubedSphereMesh(radius)
 omodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
-model = get_atlas_model(omodel)
 
 # ## Triangulation
 # Now we extract the triangulated and the panel ids associated to each cell:
-Ω = Triangulation(model)
+Ω = Triangulation(omodel)
 
 
 # ## FE Spaces

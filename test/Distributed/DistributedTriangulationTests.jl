@@ -65,8 +65,7 @@ function test_OctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
                                                coarse_mesh,
                                                n_ref_lvls; 
                                                manifold_style=manifold_style)
-  atlas_model = get_atlas_model(o3model)
-  _test_2D_trians(atlas_model)
+  _test_2D_trians(o3model)
   @test true
 end
 
@@ -119,8 +118,7 @@ function test_3DOctreeDistributedDiscreteModel(distribute,nprocs,manifold_style)
                                                 coarse_mesh,
                                                 n_ref_lvls;
                                                 manifold_style=manifold_style);
-  atlas_model = get_atlas_model(o3model)
-  _test_3D_trians(atlas_model)
+  _test_3D_trians(o3model)
   @test true
 end
 
@@ -135,8 +133,7 @@ function test_3DExtrudedOctreeDistributedDiscreteModel(distribute,nprocs,manifol
                                                           n_horiz_ref_lvls,
                                                           n_vert_ref_lvls;
                                                           manifold_style=manifold_style);
-    atlas_model = get_atlas_model(o3model)
-    _test_3D_trians(atlas_model)
+    _test_3D_trians(o3model)
     @test true
 end 
 

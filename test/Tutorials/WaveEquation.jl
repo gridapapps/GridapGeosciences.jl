@@ -56,19 +56,18 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 radius,thickness = 1.0, 0.19
 coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
 octree3_model = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
-model = get_atlas_model(octree3_model)
 
 # We can visualise the triangulation in the ambient space of the 3D cubed sphere
 # by passing a cellwise array of geometrical maps to writevtk_with_cell_geomap:
-Ω = Triangulation(model)
+Ω = Triangulation(octree3_model)
 writevtk_with_cell_geomap(AmbientMapCellField(Ω),Ω,"sphere_model",append=false)
 
 # The 3D cubed sphere model has tags associated to the bottom, top and intermediate
 # boundary cells. We can visualise each component of the model by passing the appropriate tag
 # to the BoundaryTriangulation constructor
-Γ_top = BoundaryTriangulation(model,tags=["top_boundary"])
-Γ_bottom = BoundaryTriangulation(model,tags=["bottom_boundary"])
-Γ_intermediate = BoundaryTriangulation(model,tags=["intermediate_boundary"])
+Γ_top = BoundaryTriangulation(octree3_model,tags=["top_boundary"])
+Γ_bottom = BoundaryTriangulation(octree3_model,tags=["bottom_boundary"])
+Γ_intermediate = BoundaryTriangulation(octree3_model,tags=["intermediate_boundary"])
 
 writevtk_with_cell_geomap(AmbientMapCellField(Γ_bottom),Γ_bottom,"boundary_bottom",append=false)
 writevtk_with_cell_geomap(AmbientMapCellField(Γ_top),Γ_top,"boundary_top",append=false)
@@ -77,7 +76,7 @@ writevtk_with_cell_geomap(AmbientMapCellField(Γ_intermediate),Γ_intermediate,"
 # In this test, we have non-homogeneous boundary conditions. So we need to create
 # a boundary trangulation, and include the appropriate boundary term that arises
 # from integration by parts.
-Γ = BoundaryTriangulation(model;tags=["bottom_boundary","top_boundary"])
+Γ = BoundaryTriangulation(octree3_model;tags=["bottom_boundary","top_boundary"])
 nΓ = get_normal_vector(Γ)
 
 

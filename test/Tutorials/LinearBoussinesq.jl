@@ -36,24 +36,23 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 radius,thickness = 1.0, 0.19
 coarse_mesh = CubedSphereWithThicknessMesh(radius,thickness)
 octree3_model = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
-model = get_atlas_model(octree3_model)
 
 
 # ## Triangulation
 order = 1
-Ω = Triangulation(model)
+Ω = Triangulation(octree3_model)
 dΩ = Measure(Ω,4*(order+1))
 
 # ## Finite element spaces
 # Define the finite element spaces, where the Hdiv space has no-flux boundary conditions:
-Q = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+Q = TestFESpace(octree3_model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 P = TrialFESpace(Q)
 
-V = TestFESpace(model, ReferenceFE(raviart_thomas,Float64,order);
+V = TestFESpace(octree3_model, ReferenceFE(raviart_thomas,Float64,order);
     conformity=:HDiv,dirichlet_tags=["bottom_boundary",  "top_boundary"])
 U = TrialFESpace(V,VectorValue(0.0,0.0,0.0))
 
-W = TestFESpace(model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+W = TestFESpace(octree3_model, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 B = TrialFESpace(W)
 
 Y = MultiFieldFESpace([V, Q, W])

@@ -14,6 +14,5 @@ AmbientTransientWaveEquationTests.main(models[1];_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D
 omodel = AtlasOctreeDistributedDiscreteModel(ranks, CubedSphereMesh(radius), 3; manifold_style=ExtrinsicManifold())
-ambient_model = get_atlas_model(omodel)
-AmbientTransientWaveEquationTests.main(ambient_model;_i_am_main=i_am_main(ranks))
+AmbientTransientWaveEquationTests.main(omodel;_i_am_main=i_am_main(ranks))
 

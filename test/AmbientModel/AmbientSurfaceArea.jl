@@ -63,6 +63,44 @@ function compute_surface_area(
   return surface_area
 end
 
+function compute_surface_area(
+  model::AtlasOctreeDistributedDiscreteModel{Dc,Dp,A,B,<:ExtrinsicManifold},
+  degree::Int) where {Dc,Dp,A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(
+  model::AtlasOctreeDistributedDiscreteModel{Dc,Dp,A,B,<:IntrinsicManifold},
+  degree::Int) where {Dc,Dp,A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(
+  model::ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,<:ExtrinsicManifold},
+  degree::Int) where {A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  surface_area = sum( ∫( 1.0 )dΩ )
+  return surface_area
+end
+
+function compute_surface_area(
+  model::ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,<:IntrinsicManifold},
+  degree::Int) where {A,B}
+  Ω = Triangulation(model)
+  dΩ = Measure(Ω,degree)
+  meas_cf = MeasureCellField(Ω)
+  surface_area = sum( ∫( 1.0*meas_cf )dΩ )
+  return surface_area
+end
+
 
 function main(parametric_models::AbstractArray,ambient_models::AbstractArray;_i_am_main=true)
   for degree in collect([2,4,6,8])
