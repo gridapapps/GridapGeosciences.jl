@@ -12,29 +12,6 @@ const AdaptedExtrinsicAtlasDistributedDiscreteModel{Dc,Dp} =
      GenericDistributedDiscreteModel{Dc,Dp,<:AbstractVector{<:Gridap.Adaptivity.AdaptedDiscreteModel{Dc,Dp,<:ExtrinsicAtlasDiscreteModel{Dc,Dp}}}}
 
 
-function get_thickness(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
-                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
-                                    ExtrinsicAtlasDistributedDiscreteModel{3,3},
-                                    AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
-  Ts = map(get_thickness, local_views(model))
-  thickness = zero(eltype(Ts))
-  map(Ts) do t
-    thickness = t
-  end
-  return thickness
-end
-
-function get_radius(model::Union{IntrinsicAtlasDistributedDiscreteModel,
-                                  AdaptedIntrinsicAtlasDistributedDiscreteModel,
-                                  ExtrinsicAtlasDistributedDiscreteModel,
-                                  AdaptedExtrinsicAtlasDistributedDiscreteModel})
-  Rs = map(get_radius, local_views(model))
-  radius = zero(eltype(Rs))
-  map(Rs) do r
-    radius = r
-  end
-  return radius
-end
 
 # Distribute a (small) serial AtlasDiscreteModel across MPI ranks.
 # Assigns cells with a linear partition, then gives each rank owned cells

@@ -25,7 +25,7 @@ end
 function main(serial_models::AbstractArray)
   for degree in collect([2,4,6,8])
     for (s_model) in serial_models
-      radius = get_radius(s_model)
+      radius = get_sphere_radius(s_model)
       extact_area = 4*π*radius^2
 
       ### s_model

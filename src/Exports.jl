@@ -25,8 +25,6 @@ end
 @publish Fields CubedSphereWithThicknessInvMap
 
 # Geometry
-@publish Geometry get_radius
-@publish Geometry get_thickness
 @publish Geometry generate_refined_models
 @publish Geometry AtlasDiscreteModel
 @publish Geometry IntrinsicAtlasDiscreteModel
@@ -104,3 +102,5 @@ end
 @publish ConvergenceTools nref
 @publish ConvergenceTools nc
 @publish ConvergenceTools dx
+@publish ConvergenceTools get_sphere_radius
+@publish ConvergenceTools get_sphere_thickness

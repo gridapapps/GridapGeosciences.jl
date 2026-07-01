@@ -238,21 +238,6 @@ const BFTATDMEM{Dct,Dcm,Da,G,A,P,C,O} =
     Gridap.Geometry.BodyFittedTriangulation{Dct,Da,<:ExtrinsicAtlasDiscreteModel{Dcm,Da,G,A,P,C,O}}
 
 
-function get_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
-   model.atlas_grid.cell_ambient_maps.values[1].radius
-end
-
-function get_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
-  get_radius(model.model)
-end
-
-function get_thickness(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
-   model.atlas_grid.cell_ambient_maps.values[1].thickness
-end
-
-function get_thickness(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
-  get_thickness(model.model)
-end
 
 
 ################################################################################

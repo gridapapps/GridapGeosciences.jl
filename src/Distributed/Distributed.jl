@@ -21,7 +21,6 @@ import GridapDistributed: BoundaryTriangulation
 import GridapDistributed: CellField
 
 using GridapGeosciences.Geometry
-import GridapGeosciences.Geometry: get_radius, get_thickness
 import GridapGeosciences.CellData: pullback_area_form, pushforward_normal, 
                                    pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
@@ -80,7 +79,6 @@ import GridapDistributed: add_ghost_cells
 import GridapGeosciences.FESpaces: _generate_face_to_master_cell_id, _generate_change_of_basis_matrices, _get_value_type
 include("GradConformingFESpaces.jl")
 
-export get_radius, get_thickness
 export writevtk_with_cell_geomap, write_vtk_file_with_cell_geomap
 export createvtk_with_cell_geomap, create_vtk_file_with_cell_geomap, create_pvtk_file_with_cell_geomap
 

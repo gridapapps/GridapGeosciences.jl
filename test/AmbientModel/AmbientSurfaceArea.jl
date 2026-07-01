@@ -67,7 +67,7 @@ end
 function main(parametric_models::AbstractArray,ambient_models::AbstractArray;_i_am_main=true)
   for degree in collect([2,4,6,8])
     for (parametric_model,ambient_model) in zip(parametric_models,ambient_models)
-      radius = get_radius(parametric_model)
+      radius = get_sphere_radius(parametric_model)
       extact_area = 4*π*radius^2
 
       ### parametric_model

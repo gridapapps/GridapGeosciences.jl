@@ -47,7 +47,7 @@ end
 function test_surface_area(dist_models::AbstractArray,p4est_models::AbstractArray)
   for degree in collect([2,4,6,8])
     for (d_model,p4_model) in zip(dist_models,p4est_models)
-      radius = get_radius(d_model)
+      radius = get_sphere_radius(d_model)
       extact_area = 4*π*radius^2
 
       ### d_model

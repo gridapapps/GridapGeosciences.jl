@@ -175,9 +175,52 @@ function Gridap.Arrays.evaluate!(cache,f::FindSurfaceCells,x::VectorValue{3} )
 end
 
 
+function get_sphere_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].radius
+end
+
+function get_sphere_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_sphere_radius(model.model)
+end
+
+function get_sphere_thickness(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].thickness
+end
+
+function get_sphere_thickness(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_sphere_thickness(model.model)
+end
+
+function get_sphere_thickness(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
+  Ts = map(get_sphere_thickness, local_views(model))
+  thickness = zero(eltype(Ts))
+  map(Ts) do t
+    thickness = t
+  end
+  return thickness
+end
+
+function get_sphere_radius(model::Union{IntrinsicAtlasDistributedDiscreteModel,
+                                 AdaptedIntrinsicAtlasDistributedDiscreteModel,
+                                 ExtrinsicAtlasDistributedDiscreteModel,
+                                 AdaptedExtrinsicAtlasDistributedDiscreteModel})
+  Rs = map(get_sphere_radius, local_views(model))
+  radius = zero(eltype(Rs))
+  map(Rs) do r
+    radius = r
+  end
+  return radius
+end
+
+get_sphere_thickness(m::AtlasOctreeDistributedDiscreteModel) = get_sphere_thickness(get_atlas_model(m))
+get_sphere_thickness(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = get_sphere_thickness(get_atlas_model(m))
+
 ## element size
 function dx(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
-  radius = get_radius(model)
+  radius = get_sphere_radius(model)
   tmp =  4*π*radius^2/num_cells(model)
   sqrt(tmp)
 end
@@ -189,13 +232,13 @@ function dx(model::Union{<:DiscreteModel{3,3},<:GridapDistributed.GenericDistrib
 end
 
 function dx_horizontal(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
-  radius = get_radius(model)
+  radius = get_sphere_radius(model)
   horizontal = 4*π*radius^2/(nc_horizontal(model)*6)
   sqrt(horizontal) ## quads so have to sqrt
 end
 
 function dx_vertical(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
-  thickness = get_thickness(model)
+  thickness = get_sphere_thickness(model)
   vertical = thickness/_nc_vertical(model)
   vertical ### single layer, so no sqrt
 end

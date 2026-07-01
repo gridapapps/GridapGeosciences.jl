@@ -28,8 +28,6 @@ get_atlas_model(m::ExtrudedAtlasOctreeDistributedDiscreteModel)  = m.atlas_dmode
 ManifoldStyle(::Type{<:ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,M}}) where {A,B,M} = M()
 ManifoldStyle(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = ManifoldStyle(typeof(m))
 
-get_thickness(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = get_thickness(get_atlas_model(m))
-
 get_cell_metric(m::ExtrudedAtlasOctreeDistributedDiscreteModel) =
   map(get_cell_metric, local_views(m.atlas_dmodel))
 
