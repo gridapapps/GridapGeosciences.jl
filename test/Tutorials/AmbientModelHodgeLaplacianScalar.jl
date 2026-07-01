@@ -1,4 +1,4 @@
-# # Scalar Hodge Laplacian on the cubed sphere manifold
+# # Scalar Hodge Laplacian on the cubed sphere manifold (extrinsic formulation)
 #
 # This example solves the scalar Hodge Laplacian (or mixed scalar Poisson).
 # Consider the scalar Poisson (or Laplace Beltrami) $-\Delta_{\gamma} \widetilde{\varphi} = \widetilde{f}$

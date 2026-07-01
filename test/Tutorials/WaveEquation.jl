@@ -1,4 +1,4 @@
-# # Linear wave equation on the cubed sphere manifold
+# # Linear wave equation on the cubed sphere manifold (intrinsic formulation)
 #
 # This example solves the linear wave equation, given by
 #

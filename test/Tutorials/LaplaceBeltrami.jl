@@ -1,4 +1,4 @@
-# # Laplace Beltrami equation on the cubed sphere manifold
+# # Laplace Beltrami equation on the cubed sphere manifold (intrinsic formulation)
 #
 # This example solves the Laplace Beltrami equation, given by
 #

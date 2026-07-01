@@ -1,4 +1,4 @@
-# # Advection with upwinding stabilisation on the cubed sphere manifold
+# # Advection with upwinding stabilisation on the cubed sphere manifold (extrinsic formulation)
 #
 # This example solves the scalar transport equation, given by
 #

@@ -1,4 +1,4 @@
-# # Thermal shallow water equations on the cubed sphere manifold
+# # Thermal shallow water equations on the cubed sphere manifold (intrinsic formulation)
 #
 # This example solves the thermal shallow water equations.
 # The evolution of the prognostic variables, $\widetilde{\boldsymbol{u}}$ and $\widetilde{\varphi}$ is:

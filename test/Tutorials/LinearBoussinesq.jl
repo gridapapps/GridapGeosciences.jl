@@ -1,4 +1,4 @@
-# # Linearised Boussinesq equations on the cubed sphere manifold
+# # Linearised Boussinesq equations on the cubed sphere manifold (intrinsic formulation)
 # The evolution of fluid velocity, density and buoyancy is:
 #
 # This example solves the linearised Boussinesq equations.

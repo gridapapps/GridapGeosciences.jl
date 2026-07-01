@@ -1,4 +1,4 @@
-# # Advection with SUPG stabilisation on the cubed sphere manifold
+# # Advection with SUPG stabilisation on the cubed sphere manifold (extrinsic formulation)
 #
 # This example solves the scalar transport equation, given by
 #

@@ -1,4 +1,4 @@
-# # Shallow water on the cubed sphere manifold
+# # Shallow water on the cubed sphere manifold (intrinsic formulation)
 #
 # This example solves the shallow water equations.
 # The evolution of the prognostic variables, $\widetilde{\boldsymbol{u}}$ and $\widetilde{\varphi}$ is:
