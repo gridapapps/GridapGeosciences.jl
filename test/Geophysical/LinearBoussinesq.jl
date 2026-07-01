@@ -89,7 +89,7 @@ end
 
 
 
-function linear_boussineseq(atlas_model::GridapDistributed.GenericDistributedDiscreteModel{3,3},
+function linear_boussineseq(atlas_model::GridapDistributed.DistributedDiscreteModel{3,3},
   p_fe::Int,dir::String,
   h::Function,vX::Function,f::Function,b::Function,
   ls=LUSolver(),return_vtk=false;

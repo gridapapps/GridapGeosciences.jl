@@ -31,6 +31,16 @@ get_atlas_model(m::ExtrudedAtlasOctreeDistributedDiscreteModel)  = m.atlas_dmode
 ManifoldStyle(::Type{<:ExtrudedAtlasOctreeDistributedDiscreteModel{A,B,M}}) where {A,B,M} = M()
 ManifoldStyle(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = ManifoldStyle(typeof(m))
 
+function Base.getproperty(m::ExtrudedAtlasOctreeDistributedDiscreteModel, sym::Symbol)
+  if sym === :face_gids
+    return getfield(getfield(m, :atlas_dmodel), :face_gids)
+  end
+  return getfield(m, sym)
+end
+
+Base.propertynames(m::ExtrudedAtlasOctreeDistributedDiscreteModel) =
+  (fieldnames(typeof(m))..., :face_gids)
+
 get_cell_metric(m::ExtrudedAtlasOctreeDistributedDiscreteModel) =
   map(get_cell_metric, local_views(m.atlas_dmodel))
 
