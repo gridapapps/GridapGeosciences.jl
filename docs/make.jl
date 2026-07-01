@@ -21,5 +21,5 @@ makedocs(;
 
 deploydocs(;
     repo = "github.com/gridapapps/GridapGeosciences.jl",
-    devbranch = "atlas_discrete_models",
+    devbranch = "master",
 )
