@@ -34,9 +34,10 @@ jobs:
         arch:
           - x64
         testcase:
+          - seq-atlas-discrete-models
           - seq-l2-projection
           - seq-laplacian
-          # - seq-geophysical
+          - seq-geophysical
           - seq-transient
           - seq-geometry
           - seq-multigrid
@@ -44,6 +45,7 @@ jobs:
           - seq-fields
           - seq-ambient-model
           - seq-autodiff
+          - seq-benchmark
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
@@ -61,23 +63,3 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
   #         flags: ${{ matrix.testcase }}
-  # docs:
-  #   name: Documentation
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: julia-actions/setup-julia@v2
-  #       with:
-  #         version: '1'
-  #     - uses: julia-actions/julia-buildpkg@v1
-  #     - uses: julia-actions/julia-docdeploy@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     - run: |
-  #         julia --project=docs -e '
-  #           using Documenter: DocMeta, doctest
-  #           using GridapGeosciences
-  #           DocMeta.setdocmeta!(GridapGeosciences, :DocTestSetup, :(using GridapGeosciences); recursive=true)
-  #           doctest(GridapGeosciences)'

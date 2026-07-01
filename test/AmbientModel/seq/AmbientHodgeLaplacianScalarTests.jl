@@ -3,7 +3,7 @@ include("../AmbientHodgeLaplacian_scalar.jl")
 ## Serial model: 2D
 n_ref_lvls = 4
 radius = 1.0
-models = get_ambient_refined_models(n_ref_lvls,radius)
+models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), ExtrinsicManifold())
 AmbientHodgeLaplacianScalarTests.main(models)
 
 
@@ -19,17 +19,12 @@ e_ambient, = AmbientHodgeLaplacianScalarTests.hodge_laplacian_scalar(
 
 
 include("../../Laplacian/HodgeLaplacian_scalar.jl")
-function fX_ambient(forward_map)
-  function _f(αβ)
-    x = forward_map(αβ)
-    AmbientHodgeLaplacianScalarTests.fX(x)
-  end
-end
 
-panel_model = get_parametric_model(ambient_model)
+intrinsic_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
+intrinsic_model = intrinsic_models[1]
 e_panel, = HodgeLaplacianScalarTests.hodge_laplacian_scalar(
-              panel_model,p_fe,dir,
-              fX_ambient)
+              intrinsic_model,p_fe,dir,
+              AmbientHodgeLaplacianScalarTests.fX)
 
 e_comparison = e_ambient - e_panel
 println(e_comparison)

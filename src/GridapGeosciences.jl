@@ -16,7 +16,7 @@ include("Helpers/Helpers.jl")
 
 include("Geometry/Geometry.jl")
 
-include("Adaptivity/Adaptivity.jl")
+include("CellData/CellData.jl")
 
 include("FESpaces/FESpaces.jl")
 

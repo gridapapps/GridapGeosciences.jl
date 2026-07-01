@@ -23,7 +23,7 @@ function p_convergence_auto_test(ps::Vector{Int},
   # 2^nref == number of cells per panel
   # 1/(2^nref) -> to get positive slopes
 
-  lvls = map(x->1/(2^nref(x)),models)
+  lvls = map(x->1.0/(2.0^nref(x)),models)
   # lvls = map(x->num_cells(x),models)
 
   for (i,p_fe) in enumerate(ps)
@@ -56,7 +56,14 @@ function nref(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.Distributed
   nref(nc(model))
 end
 
-function nref(model::GridapDistributed.DistributedDiscreteModel{3,3})
+const AtlasDiscreteModelCubedSphere3D = AtlasDiscreteModel{3,3,<:Any,<:Any,<:AbstractVector{<:CubedSphereWithThicknessMap}}
+
+const AdaptedAtlasDiscreteModelCubedSphere3D = AdaptedDiscreteModel{3,3,<:AtlasDiscreteModelCubedSphere3D}
+
+const ATDMCS3D = Union{AtlasDiscreteModelCubedSphere3D,AdaptedAtlasDiscreteModelCubedSphere3D}
+
+function nref(model::Union{<:ATDMCS3D,
+                           <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nref(nc_horizontal(model))
 end
 
@@ -64,21 +71,25 @@ end
 function nc(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
   num_cells(model)/6
 end
-function nc(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
+function nc(model::Union{<:ATDMCS3D,
+                         <:GridapDistributed.DistributedDiscreteModel{3,3}})
   nc_horizontal(model) + _nc_vertical(model)
 end
 
-function nc_horizontal(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) where T
-  nc_horizontal(get_parametric_model(model))
-end
+function nc_horizontal(model::Union{AtlasOctreeDistributedDiscreteModel{3,3},
+                                    ExtrudedAtlasOctreeDistributedDiscreteModel})
+    nc_horizontal(get_atlas_model(model))
+end 
 
-function nc_vertical(model::CubedSphereAmbientDistributedDiscreteModel{3,3,T}) where T
-  nc_vertical(get_parametric_model(model))
-end
+function nc_vertical(model::Union{AtlasOctreeDistributedDiscreteModel{3,3},
+                                   ExtrudedAtlasOctreeDistributedDiscreteModel})
+   nc_vertical(get_atlas_model(model))
+end 
 
-
-## nc = num cells per panel in horizontal
-function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
+function nc_horizontal(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},                                       
+                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
 
   grid = get_grid(model)
   gids = get_cell_gids(model)
@@ -87,28 +98,45 @@ function nc_horizontal(model::CubedSphere3DParametricDistributedDiscreteModel)
   ## i.e. with γ = 0.0
   ## make sure to extract only the owned
   f = map(local_views(grid),partition(gids)) do grid, cids
-    cmap = get_cell_map(grid)
+    cmap = _chart_maps(grid)
     pts = get_cell_ref_coordinates(grid)
     f = lazy_map(evaluate,cmap,pts)
     g = lazy_map(FindSurfaceCells(),f)
-
     owned_cells = own_to_local(cids)
     sum(g[owned_cells])
   end
-
   nsurface = sum(f)
   ncells_per_panel = Int(nsurface/6)
   return ncells_per_panel
 end
 
+## nc = num cells per panel in horizontal
+function nc_horizontal(model::ATDMCS3D)
+  ## find the number of cells that are on the surface.
+  grid = get_grid(model)
+  cmap = get_cell_map(grid)
+  pts = get_cell_ref_coordinates(grid)
+  f = lazy_map(evaluate,cmap,pts)
+  g = lazy_map(FindSurfaceCells(),f)
+  nsurface = sum(g)
+  ncells_per_panel = Int(nsurface/6)
+  return ncells_per_panel
+end
+
 # return square here so vertical is 'like' horitzontal
-function nc_vertical(model::CubedSphere3DParametricDistributedDiscreteModel)
+function nc_vertical(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                  AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                  IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                  AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   n = _nc_vertical(model)
   return Int(n^2)
 end
 
 # the actual number of cells in vertical per panel
-function _nc_vertical(model::CubedSphere3DParametricDistributedDiscreteModel)
+function _nc_vertical(model::Union{ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                   AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                   IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                   AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3}})
   ncells_per_panel = nc_horizontal(model)
   n = num_cells(model)/6
   _n =  n /ncells_per_panel
@@ -147,27 +175,76 @@ function Gridap.Arrays.evaluate!(cache,f::FindSurfaceCells,x::VectorValue{3} )
 end
 
 
+function get_sphere_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].radius
+end
+
+function get_sphere_radius(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_sphere_radius(model.model)
+end
+
+function get_sphere_radius(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].radius
+end
+
+function get_sphere_thickness(model::AtlasDiscreteModel{Dc,Dp, G, A, <:AbstractVector{<:CubedSphereWithThicknessMap}}) where {Dc,Dp,G,A}
+  model.atlas_grid.cell_ambient_maps.values[1].thickness
+end
+
+function get_sphere_thickness(model::AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel}) where {Dc,Dp}
+  get_sphere_thickness(model.model)
+end
+
+function get_sphere_thickness(model::Union{IntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
+                                    ExtrinsicAtlasDistributedDiscreteModel{3,3},
+                                    AdaptedExtrinsicAtlasDistributedDiscreteModel{3,3}})
+  Ts = map(get_sphere_thickness, local_views(model))
+  thickness = zero(eltype(Ts))
+  map(Ts) do t
+    thickness = t
+  end
+  return thickness
+end
+
+function get_sphere_radius(model::Union{IntrinsicAtlasDistributedDiscreteModel,
+                                 AdaptedIntrinsicAtlasDistributedDiscreteModel,
+                                 ExtrinsicAtlasDistributedDiscreteModel,
+                                 AdaptedExtrinsicAtlasDistributedDiscreteModel})
+  Rs = map(get_sphere_radius, local_views(model))
+  radius = zero(eltype(Rs))
+  map(Rs) do r
+    radius = r
+  end
+  return radius
+end
+
+get_sphere_radius(m::AtlasOctreeDistributedDiscreteModel)         = get_sphere_radius(get_atlas_model(m))
+get_sphere_thickness(m::AtlasOctreeDistributedDiscreteModel)      = get_sphere_thickness(get_atlas_model(m))
+get_sphere_radius(m::ExtrudedAtlasOctreeDistributedDiscreteModel)    = get_sphere_radius(get_atlas_model(m))
+get_sphere_thickness(m::ExtrudedAtlasOctreeDistributedDiscreteModel) = get_sphere_thickness(get_atlas_model(m))
+
 ## element size
 function dx(model::Union{<:DiscreteModel{2,Dp},<:GridapDistributed.DistributedDiscreteModel{2,Dp}}) where Dp
-  radius = get_radius(model)
+  radius = get_sphere_radius(model)
   tmp =  4*π*radius^2/num_cells(model)
   sqrt(tmp)
 end
 
-function dx(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
+function dx(model::Union{<:DiscreteModel{3,3},<:GridapDistributed.GenericDistributedDiscreteModel{3,3}})
   horizontal = dx_horizontal(model)
   vertical = dx_vertical(model)
   horizontal*vertical
 end
 
 function dx_horizontal(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
-  radius = get_radius(model)
+  radius = get_sphere_radius(model)
   horizontal = 4*π*radius^2/(nc_horizontal(model)*6)
   sqrt(horizontal) ## quads so have to sqrt
 end
 
 function dx_vertical(model::GridapDistributed.GenericDistributedDiscreteModel{3,3})
-  thickness = get_thickness(model)
+  thickness = get_sphere_thickness(model)
   vertical = thickness/_nc_vertical(model)
   vertical ### single layer, so no sqrt
 end

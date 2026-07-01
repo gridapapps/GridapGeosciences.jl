@@ -20,30 +20,31 @@ radius = 1.0
 ########## Parametric model
 ################################################################################
 ### Check the Dc, Dp of the coarse model
-panel_model = coarse_parametric_model(radius)
+coarse_mesh = CubedSphereMesh(radius)
+atlas_model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=IntrinsicManifold())
 
-@test num_point_dims(panel_model) == num_cell_dims(panel_model) == 2
+@test num_point_dims(atlas_model) == num_cell_dims(atlas_model) == 2
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-panel_models = get_refined_models(n_ref_lvls, radius)
+atlas_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 for lev in 1:n_ref_lvls-1
-  @test num_point_dims(panel_models[lev]) == num_cell_dims(panel_models[lev]) == 2
-  @test is_child(panel_models[lev],panel_models[lev+1])
+  @test num_point_dims(atlas_models[lev]) == num_cell_dims(atlas_models[lev]) == 2
+  @test is_child(atlas_models[lev],atlas_models[lev+1])
 end
 
 ################################################################################
 ########## Ambient model
 ################################################################################
 ### Check the Dc, Dp of the coarse model
-ambient_model = CubedSphereAmbientDiscreteModel(radius;num_initial_uniform_refinements=0)
+ambient_model = AtlasDiscreteModel(coarse_mesh,0,manifold_style=ExtrinsicManifold())
 
 @test num_point_dims(ambient_model) == 3
 @test num_cell_dims(ambient_model) == 2
 
 ### Apply refinement, check the list of refined models
 n_ref_lvls = 4
-ambient_models = get_ambient_refined_models(n_ref_lvls, radius)
+ambient_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), ExtrinsicManifold())
 for lev in 1:n_ref_lvls-1
   @test num_point_dims(ambient_models[lev]) == 3
   @test num_cell_dims(ambient_models[lev]) == 2

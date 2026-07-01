@@ -16,64 +16,59 @@ using Test
 
 
 ## initial conditions
-function vecX(forward_map)
-  function _u(α)
-    XYZ = forward_map(α)
-    zero(XYZ)
-  end
+function vecX(x)
+  zero(x)
 end
 
-function depth(forward_map)
-  function _f(α)
-    XYZ = forward_map(α)
-    1.0 + 0.01*exp(-5*((1-XYZ[1])^2+(0-XYZ[2])^2+(0-XYZ[3])^2))
-  end
+function depth(XYZ)
+  1.0 + 0.01*exp(-5*((1-XYZ[1])^2+(0-XYZ[2])^2+(0-XYZ[3])^2))
 end
 
-
-function transient_wave_solver(panel_model::Union{<:DiscreteModel{2,2},<:GridapDistributed.DistributedDiscreteModel{2,2}},
+function transient_wave_solver(atlas_model::Union{<:DiscreteModel{2,2},<:GridapDistributed.DistributedDiscreteModel{2,2}},
   p_fe::Int,dir::String,h::Function,vX::Function,CFL=0.1,ls=LUSolver(),tF=2*π;_i_am_main=true)
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   ## finite element solver
   degree = 5*(p_fe+1)
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  Q = TestFESpace(Ω_panel, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
+  Q = TestFESpace(Ω_atlas, ReferenceFE(lagrangian,Float64,p_fe); conformity=:L2)
   P = TransientTrialFESpace(Q)
 
-  V = TestFESpace(Ω_panel, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
+  V = TestFESpace(Ω_atlas, ReferenceFE(raviart_thomas,Float64,p_fe); conformity=:HDiv)
   U = TransientTrialFESpace(V)
 
   Y = MultiFieldFESpace([V, Q])
   X = MultiFieldFESpace([U, P])
 
   ## initial conditions
-  h_cf = ParametricCellField(h,Ω_panel)
-  u_cf = ParametricCellField(piola(vX),Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  metric_cf = MetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+
+  h_cf = h∘ambient_map_cf
+  u_cf = meas_cf*((pinvJ∘covariant_basis_cf)⋅(vX∘ambient_map_cf))
   xh0 = interpolate([u_cf,h_cf],X)
   t0 = 0.0
 
 
   ## transient weak form
-  metric_cf = ParametricCellField(metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-
-  mass(t, (dtu,dtp), (v,q)) = ∫( (v⋅ (metric_cf⋅dtu))*(1/meas_cf) )dΩ  + ∫( (q*dtp)*meas_cf )dΩ
+  mass(t, (dtu,dtp), (v,q)) = ∫( (v⋅ (metric_cf⋅dtu))*(1.0/meas_cf) )dΩ  + ∫( (q*dtp)*meas_cf )dΩ
   res(t,(u,p),(v,q)) =  ∫( q*(∇⋅u) )dΩ - ∫( p*(∇⋅v) )dΩ
   jac(t,(u,p),(du,dp),(v,q)) = res(t,(du,dp),(v,q))
-  jac_t(t,(u,p),(dut,dpt),(v,q)) =  ∫( (dut⋅ (metric_cf⋅v))*(1/meas_cf) )dΩ + ∫( (dpt*q)*meas_cf )dΩ
+  jac_t(t,(u,p),(dut,dpt),(v,q)) =  ∫( (dut⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ + ∫( (dpt*q)*meas_cf )dΩ
 
   opT = TransientSemilinearFEOperator(mass, res,(jac,jac_t), X, Y, constant_mass=true)
 
   # transient parameters
-  _dt = dx(panel_model)*CFL/p_fe
+  _dt = dx(atlas_model)*CFL/p_fe
   nsteps = tF/ _dt
   dt = tF/floor(nsteps)
 
@@ -101,14 +96,13 @@ function transient_wave_solver(panel_model::Union{<:DiscreteModel{2,2},<:GridapD
   uhF,phF = xhF
 
   _e = uh0 - uhF
-  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1/meas_cf) )dΩ_error))
+  e_u =  sqrt(sum(∫( _e⋅(metric_cf⋅_e)*(1.0/meas_cf) )dΩ_error))
 
   _e = ph0 - phF
   e_p = sqrt(sum(∫( (_e*_e)*meas_cf )dΩ_error))
 
   _i_am_main && println("eu = $e_u, ep = $e_p")
   return e_u,e_p,false
-
 end
 
 

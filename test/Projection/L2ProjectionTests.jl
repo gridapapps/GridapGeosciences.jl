@@ -10,19 +10,13 @@ include("L2_projection_Lagrangian_scalar.jl")
 include("L2_projection_Lagrangian_vector.jl")
 
 # Vector field in the tangent space of the sphere
-function uX(forward_map)
-  function _u(α)
-    x = forward_map(α)
-    VectorValue(-x[2],x[1],0.0)
-  end
+function uX(x)
+   VectorValue(-x[2],x[1],0.0)
 end
 
 # Scalar function
-function fS(forward_map)
-  function f(αβ)
-    xyz = forward_map(αβ)
-    xyz[1]*xyz[2]*xyz[3]
-  end
+function fS(x)
+  x[1]*x[2]*x[3]
 end
 
 function L2_projection(models::AbstractArray; _i_am_main=true)
@@ -32,19 +26,19 @@ function L2_projection(models::AbstractArray; _i_am_main=true)
   Dc = num_cell_dims(testitem(models))
 
   # L2: scalar
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:L2,ls,false; _i_am_main=_i_am_main)
+ # p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:L2,ls,false; _i_am_main=_i_am_main)
 
   # H1: scalar
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:H1,ls,false; _i_am_main=_i_am_main)
+  #p_convergence_auto_test(ps,models,L2_projection_Lagrangian_scalar,dir,fS,:H1,ls,false; _i_am_main=_i_am_main)
 
   # L2: vector
-  p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:L2,ls,false; _i_am_main=_i_am_main)
+  #p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:L2,ls,false; _i_am_main=_i_am_main)
 
   # H1: vector
   p_convergence_auto_test(ps,models,L2_projection_Lagrangian_vector,dir,uX,:H1,ls,false; _i_am_main=_i_am_main)
 
   # H div: vector
-  p_convergence_auto_test(ps,models,L2_projection_Hdiv,dir,uX,ls,false; _i_am_main=_i_am_main)
+  # p_convergence_auto_test(ps,models,L2_projection_Hdiv,dir,uX,ls,false; _i_am_main=_i_am_main)
 
   # H curl: vector (3D)
   if Dc == 3

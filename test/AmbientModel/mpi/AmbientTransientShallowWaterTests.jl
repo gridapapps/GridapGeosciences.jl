@@ -9,11 +9,9 @@ ranks = distribute_with_mpi(LinearIndices((prod(nprocs),)))
 
 radius = 1.0
 ## Distributed model: 2D
-models = get_distributed_ambient_refined_models(ranks,nprocs,3,radius)
+models = generate_distributed_refined_models(ranks, CubedSphereMesh(radius), 3, ExtrinsicManifold())
 AmbientTransientShallowWaterTests.main(models[1];_i_am_main=i_am_main(ranks))
 
 ### P4test model: 2D
-omodel = CubedSphere2DAmbientOctreeDistributedDiscreteModel(ranks, radius;
-  num_initial_uniform_refinements=3)
-ambient_model = omodel.ambient_dmodel
-AmbientTransientShallowWaterTests.main(ambient_model;_i_am_main=i_am_main(ranks))
+omodel = AtlasOctreeDistributedDiscreteModel(ranks, CubedSphereMesh(radius), 3; manifold_style=ExtrinsicManifold())
+AmbientTransientShallowWaterTests.main(omodel;_i_am_main=i_am_main(ranks))

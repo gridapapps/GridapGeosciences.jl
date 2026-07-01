@@ -15,35 +15,31 @@ using Test
 
 function fX(x)
   x[1]*x[2]*x[3]
-  # θϕr   = xyz2θϕr(x)
-  # θ,ϕ,r = θϕr
-  # sin(ϕ)
 end
 
 
 function laplace_beltrami_solver(
-  ambient_model::Union{AmbientModels,CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel},CubedSphereAmbientDistributedDiscreteModel{3,3,<:CubedSphereAmbientDiscreteModel}},
+  extrinsic_atlas_model,
   p_fe::Int,dir::String,f::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
 
-  Dc = num_cell_dims(ambient_model)
-  lvl = nref(ambient_model)
+  Dc = num_cell_dims(extrinsic_atlas_model)
+  lvl = nref(extrinsic_atlas_model)
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   degree = 6*(p_fe+1)
-  Ω_ambient = Triangulation(ambient_model)
+  Ω_ambient = Triangulation(extrinsic_atlas_model)
   dΩ = Measure(Ω_ambient,degree)
   dΩ_error = Measure(Ω_ambient,2*degree)
 
   V = TestFESpace(Ω_ambient, ReferenceFE(lagrangian,Float64,p_fe); conformity=:H1, constraint=:zeromean)
   U = TrialFESpace(V)
 
-  f_ambient_cf = CellField(f,Ω_ambient)
-  slap_cf = AmbientCellField(ambient_surflap(f),Ω_ambient)
+  slap_cf = Δs(f,Ω_ambient)
   rhs_cf = -slap_cf
 
-  @check sum(∫(f_ambient_cf)dΩ) < 1e-14 "Function must be zero mean to solve with zeromean FE space!"
+  @check sum(∫(f)dΩ) < 1e-14 "Function must be zero mean to solve with zeromean FE space!"
 
   poisson_biform(u,v) =  ∫( gradient(v)⋅gradient(u) )dΩ
 
@@ -60,7 +56,7 @@ function laplace_beltrami_solver(
       return v -> poisson_liform(v)
     elseif Dc == 3
       # in 3D, account for the boundary term from IBP
-      Γ = BoundaryTriangulation(ambient_model;tags=["bottom_boundary","top_boundary"])
+      Γ = BoundaryTriangulation(extrinsic_atlas_model;tags=["bottom_boundary","top_boundary"])
       dΓ = Measure(Γ,degree)
       nΓ = get_normal_vector(Γ)
       f_int = interpolate(f,U)
@@ -78,11 +74,11 @@ function laplace_beltrami_solver(
   solve!(x,ns,b)
   uh = FEFunction(U,x)
 
-  _e = f_ambient_cf - uh
+  _e = f - uh
   e = sqrt(sum(∫( (_e*_e) )dΩ_error))
 
   if return_vtk
-    panel_cfs = [f_ambient_cf,uh,f_ambient_cf-uh]
+    panel_cfs = [f,uh,f-uh]
     labels = ["u","uh","eu"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
     writevtk(Ω_ambient,dir*"/ambient_model_nref$(lvl)_p$p_fe",

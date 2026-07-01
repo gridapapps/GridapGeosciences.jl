@@ -12,36 +12,33 @@ using GridapGeosciences
 using GridapP4est
 using Test
 
-function fX(forward_map)
-  function _f(αβ)
-    x = forward_map(αβ)
-    x[1]*x[2]*x[3]
-  end
+function fX(xyz)
+  xyz[1]*xyz[2]*xyz[3]
 end
 
-
-function laplace_beltrami_solver(panel_model,
+function laplace_beltrami_solver(atlas_model,
   p_fe::Int,dir::String,f::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 
 
-  Dc = num_cell_dims(panel_model)
-  lvl = nref(panel_model)
+  Dc = num_cell_dims(atlas_model)
+  lvl = nref(atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
   degree = 6*(p_fe+1)
-  Ω_panel = Triangulation(panel_model)
-  dΩ = Measure(Ω_panel,degree)
-  dΩ_error = Measure(Ω_panel,2*degree)
+  Ω_atlas = Triangulation(atlas_model)
+  dΩ = Measure(Ω_atlas,degree)
+  dΩ_error = Measure(Ω_atlas,2*degree)
 
-  V = TestFESpace(panel_model, ReferenceFE(lagrangian,Float64,p_fe); conformity=:H1, constraint=:zeromean)
+  V = TestFESpace(atlas_model, ReferenceFE(lagrangian,Float64,p_fe); conformity=:H1, constraint=:zeromean)
   U = TrialFESpace(V)
 
-  f_panel_cf = ParametricCellField(f,Ω_panel)
-  inv_metric_cf = ParametricCellField(inv_metric,Ω_panel)
-  meas_cf = ParametricCellField(sqrtg,Ω_panel)
-  slap_panel_cf =  ParametricCellField(surflap(f),Ω_panel)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  f_panel_cf = f∘ambient_map_cf
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
+  meas_cf = MeasureCellField(Ω_atlas)
+  slap_panel_cf = Δs(f,Ω_atlas)
 
   @check sum(∫(f_panel_cf*meas_cf)dΩ) < 1e-14 "Function must be zero mean to solve with zeromean FE space!"
 
@@ -59,7 +56,7 @@ function laplace_beltrami_solver(panel_model,
       return v -> poisson_liform(v)
     elseif Dc == 3
       # in 3D, account for the boundary term from IBP
-      Γ = BoundaryTriangulation(panel_model;tags=["bottom_boundary","top_boundary"])
+      Γ = BoundaryTriangulation(atlas_model;tags=["bottom_boundary","top_boundary"])
       dΓ = Measure(Γ,degree)
       nΓ = get_normal_vector(Γ)
       f_int = interpolate(f_panel_cf,U)
@@ -89,7 +86,7 @@ function laplace_beltrami_solver(panel_model,
     panel_cfs = [f_panel_cf,uh,f_panel_cf-uh]
     labels = ["u","uh","eu"]
     cellfields = map((x,y) -> x=>y, labels,panel_cfs)
-    writevtk_with_cell_geomap(geo_map_func(Ω_panel),Ω_panel,dir*"/ambient_model_nref$(lvl)_p$p_fe",
+    writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",
         cellfields=cellfields,append=false)
   end
 
@@ -102,7 +99,6 @@ end
 #### Auto convergence test
 ################################################################################
 function main(models::AbstractArray;ps=[2],_i_am_main=true)
-
   ls = LUSolver()
   dir = @__DIR__
   p_convergence_auto_test(ps,models,laplace_beltrami_solver,dir,fX,ls;_i_am_main=_i_am_main)

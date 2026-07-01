@@ -47,12 +47,12 @@ _tF = TF/_τ
 
 
 function transient_shallow_water_solver(
-  ambient_model::Union{AmbientModels{2,3},CubedSphereAmbientDistributedDiscreteModel{2,3,<:CubedSphereAmbientDiscreteModel}},
+  extrinsic_atlas_model,
   p_fe::Int,dir::String,h::Function,vX::Function,f::Function,b::Function,
   CFL=0.1,lss=(LUSolver(),LUSolver());_i_am_main=true)
 
-  Dc = num_cell_dims(ambient_model)
-  lvl = nref(ambient_model)
+  Dc = num_cell_dims(extrinsic_atlas_model)
+  lvl = nref(extrinsic_atlas_model)
 
   _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
 
@@ -60,7 +60,7 @@ function transient_shallow_water_solver(
 
   ## finite element solver
   degree = 4*(p_fe+1)
-  Ω_ambient = Triangulation(ambient_model)
+  Ω_ambient = Triangulation(extrinsic_atlas_model)
   dΩ = Measure(Ω_ambient,degree)
   dΩ_error = Measure(Ω_ambient,2*degree)
 
@@ -80,12 +80,8 @@ function transient_shallow_water_solver(
   Y_diag = MultiFieldFESpace([R,V,Q]) # q, F, Φ
 
   ## initial conditions
-  u_cf = CellField(vX,Ω_ambient)
   u_int = interpolate(vX,U)
-
-  h_cf = CellField(h,Ω_ambient)
-  b_cf = CellField(b,Ω_ambient)
-  h_int = interpolate(h_cf-b_cf,P)
+  h_int = interpolate(x->h(x)-b(x),P)
 
   xh0 = interpolate_everywhere([u_int,h_int],X_prog(0.0))
   t0 = 0.0
@@ -94,10 +90,10 @@ function transient_shallow_water_solver(
   ## transient weak form
   cor_cf = CellField(f,Ω_ambient)
   gravity = _g
-  b_cf = CellField(b,Ω_ambient)
+  b = CellField(b,Ω_ambient)
 
   ## Construct the coriolis term on the surface: ∫( ̃f ( ̃k × ̃u  )  )dΩ
-  n_surf = get_surface_normal(Ω_ambient)
+  n_surf = get_sphere_surface_normal(Ω_ambient)
 
   #### DIAGNOSTIC VARIABLES
   # vorticity
@@ -108,7 +104,7 @@ function transient_shallow_water_solver(
   resF(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( F⋅v  )dΩ - ∫( p*(u⋅v)   )dΩ
 
   # Bernoulli potential
-  resΦ(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( Φ*ψ  )dΩ - ∫( gravity*(p+b_cf)*ψ  )dΩ - ∫( 0.5*( u⋅u )*ψ  )dΩ
+  resΦ(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( Φ*ψ  )dΩ - ∫( gravity*(p+b)*ψ  )dΩ - ∫( 0.5*( u⋅u )*ψ  )dΩ
 
   res_y(t,((u,p),(q,F,Φ)),(w,v,ψ)) = resq(((u,p),(q,F,Φ)),(w,v,ψ)) + resF(((u,p),(q,F,Φ)),(w,v,ψ)) + resΦ(((u,p),(q,F,Φ)),(w,v,ψ))
   jac_y(t,((u,p),(q,F,Φ)),(dq,dF,dΦ),(w,v,ψ)) = ∫( dq*p*w  )dΩ + ∫( dF⋅v )dΩ + ∫( dΦ*ψ  )dΩ
@@ -137,7 +133,7 @@ function transient_shallow_water_solver(
   opDAE = DAEFEOperator(opT,opFE,ls_diag)
 
   # transient parameters
-  _dt = dx(ambient_model)*CFL/(p_fe*sqrt(gravity*_H_0))
+  _dt = dx(extrinsic_atlas_model)*CFL/(p_fe*sqrt(gravity*_H_0))
   nsteps = tF/ _dt
   dt = tF/floor(nsteps)
   τ = dt/2
@@ -192,7 +188,7 @@ function main(model;_i_am_main=true)
   p = 1
   CFL = 0.1
   h = h₀(0.0)
-  vX = tangent_vec(u₀(0.0))
+  vX = sphere_tangent_vec_component(u₀(0.0))
   f = f₀(0.0)
   b = topography
 

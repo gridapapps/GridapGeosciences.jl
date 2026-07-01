@@ -34,7 +34,7 @@ function bm_intergrate_reference_panel(cache,intq,w)
   end
 end
 
-function benchmark_reference_panel(order,degree,dir)
+function benchmark_reference_panel(order,degree,dir=@__DIR__,return_output=false)
   model = CartesianDiscreteModel((-π/4,π/4,-π/4,π/4),(1,1))
   cmap = get_cell_map(model)[1]
 
@@ -57,11 +57,16 @@ function benchmark_reference_panel(order,degree,dir)
   intq = evaluate(integrand,quad_array)
 
   cache = return_cache(IntegrationMap(),view(intq,:,1),w)
-  t_ref = @belapsed bm_intergrate_reference_panel($cache,$intq,$w)
+  out_ref = bm_intergrate_reference_panel(cache,intq,w)
 
-  cache = return_cache(IntegrationMap(),view(intq,:,1),w)
-  out_ref = @gflops bm_intergrate_reference_panel($cache,$intq,$w)
+  # if return_output
+  #   cache = return_cache(IntegrationMap(),view(intq,:,1),w)
+  #   t_ref = @belapsed bm_intergrate_reference_panel($cache,$intq,$w)
 
-  !isdir(dir) && mkpath(dir)
-  save_ouput(dir,"panel",t_ref,out_ref,order)
+  #   cache = return_cache(IntegrationMap(),view(intq,:,1),w)
+  #   out_ref = @gflops bm_intergrate_reference_panel($cache,$intq,$w)
+
+  #   !isdir(dir) && mkpath(dir)
+  #   save_ouput(dir,"panel",t_ref,out_ref,order)
+  # end
 end

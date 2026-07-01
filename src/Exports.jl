@@ -4,118 +4,103 @@ macro publish(mod,name)
   end
 end
 
+# Adaptivity
 @publish Adaptivity refine
 
-
+# Fields
 @publish Fields Cartesian2SphericalMap
-@publish Fields CubedSphereForwardMap
-@publish Fields CubedSphereInverseMap
-@publish Fields normal_vec
+@publish Fields CylinderMap
+@publish Fields CylinderMetric
+@publish Fields CylinderInvMetric
+@publish Fields MobiusMap
+@publish Fields MobiusMetric
+@publish Fields MobiusInvMetric
+@publish Fields CubedSphereMap
+@publish Fields CubedSphereInvMap
+@publish Fields CubedSphereMetric
+@publish Fields CubedSphereInvMetric
+@publish Fields CubedSphereWithThicknessMetric
+@publish Fields CubedSphereWithThicknessInvMetric
+@publish Fields CubedSphereWithThicknessMap
+@publish Fields CubedSphereWithThicknessInvMap
 
-@publish Geometry get_panel_ids
-@publish Geometry geo_map_func
-@publish Geometry latlon_geo_map_func
-@publish Geometry pullback_area_form
-@publish Geometry pushforward_normal
-@publish Geometry get_facet_normal
-@publish Geometry get_mapped_facet_normal
-@publish Geometry BoundaryTriangulation
-@publish Geometry SkeletonTriangulation
-@publish Geometry generate_ptr
-@publish Geometry coarse_cube_model
-@publish Geometry coarse_parametric_model
-@publish Geometry _pushforward_normal
-@publish Geometry _pullback_area_form
-@publish Geometry get_forward_map_generator
-@publish Geometry get_radius
-@publish Geometry get_thickness
-@publish Geometry ParametricCellField
-@publish Geometry CubedSphereParametricDiscreteModel
-@publish Geometry CubedSphere2DParametricDiscreteModel
-@publish Geometry CubedSphere3DParametricDiscreteModel
-@publish Geometry CubedSphereAmbientDiscreteModel
-@publish Geometry get_refined_models
-@publish Geometry get_ambient_refined_models
-@publish Geometry get_inverse_map_generator
-@publish Geometry AmbientCellField
-@publish Geometry get_parametric_model
-@publish Geometry get_surface_normal
-@publish Geometry dagger
-@publish Geometry perp
-@publish Geometry AmbientModels
+# Geometry
+@publish Geometry generate_refined_models
+@publish Geometry AtlasDiscreteModel
+@publish Geometry IntrinsicAtlasDiscreteModel
+@publish Geometry ExtrinsicAtlasDiscreteModel
+@publish Geometry AtlasGrid
+@publish Geometry IntrinsicManifold
+@publish Geometry ExtrinsicManifold
+@publish Geometry CylinderMesh
+@publish Geometry MobiusStripMesh
+@publish Geometry CubedSphereMesh
+@publish Geometry CubedSphereWithThicknessMesh
+@publish Geometry ExtrudedCubedSphereWithThicknessMesh
+@publish Geometry get_coarse_mesh
+@publish Geometry get_cell_ambient_maps
+@publish Geometry get_cell_metric
+@publish Geometry get_cell_inv_metric
+@publish Geometry JtJ
+@publish Geometry get_atlas_grid
+@publish Geometry get_ambient_dim
 
+# CellData
+@publish CellData MetricCellField
+@publish CellData InvMetricCellField
+@publish CellData MeasureCellField
+@publish CellData AmbientMapCellField
+@publish CellData LatLonMapCellField
+@publish CellData Δs
+@publish CellData vecΔs
+@publish CellData ∇s
+@publish CellData divs
+@publish CellData curls
+@publish CellData skew_∇s
+@publish CellData skew_divs
+@publish CellData dagger
+@publish CellData pushforward_normal
+@publish CellData pushforward_reference_normal
+@publish CellData pushforward_parametric_normal
+@publish CellData pullback_area_form
+@publish CellData get_sphere_surface_normal
+
+# ODEs
 @publish ODEs DAEFEOperator
 
+# Visualisation
 @publish Visualisation writevtk_with_cell_geomap
 @publish Visualisation createvtk_with_cell_geomap
 
+# Helpers
 @publish Helpers xyz2θϕr
+@publish Helpers pinvJ
+@publish Helpers perp
+@publish Helpers sphere_surface_normal_vec
+@publish Helpers sphere_tangent_vec_component
 
-@publish Helpers sqrtg
-@publish Helpers detg
-@publish Helpers metric
-@publish Helpers inv_metric
-
-@publish Helpers surflap
-@publish Helpers surfdiv
-@publish Helpers sgrad
-
-@publish Helpers ambient_surflap
-@publish Helpers ambient_surfdiv
-@publish Helpers ambient_sgrad
-
-@publish Helpers panel_to_cartesian
-
-@publish Helpers tangent_vec
-@publish Helpers contra_v
-@publish Helpers piola
-
-@publish Helpers forward_jacobian
-@publish Helpers covariant_basis
-@publish Helpers forward_pinv_jacobian
-
-@publish Distributed CubedSphere2DParametricOctreeDistributedDiscreteModel
-@publish Distributed CubedSphere3DParametricOctreeDistributedDiscreteModel
-@publish Distributed CubedSphereParametricDistributedDiscreteModel
-@publish Distributed CubedSphere2DParametricDistributedDiscreteModel
-@publish Distributed CubedSphere3DParametricDistributedDiscreteModel
-@publish Distributed CubedSphereAmbientDistributedDiscreteModel
-@publish Distributed geo_map_func
-@publish Distributed latlon_geo_map_func
-@publish Distributed ParametricCellField
-@publish Distributed AmbientCellField
-
-@publish Distributed writevtk_with_cell_geomap
-@publish Distributed createvtk_with_cell_geomap
+# Distributed
+@publish Distributed AtlasDistributedDiscreteModel
+@publish Distributed IntrinsicAtlasDistributedDiscreteModel
+@publish Distributed ExtrinsicAtlasDistributedDiscreteModel
+@publish Distributed AdaptedIntrinsicAtlasDistributedDiscreteModel
+@publish Distributed AdaptedExtrinsicAtlasDistributedDiscreteModel
+@publish Distributed AtlasOctreeDistributedDiscreteModel
+@publish Distributed ExtrudedAtlasOctreeDistributedDiscreteModel
+@publish Distributed get_atlas_model
 @publish Distributed create_pvtk_file_with_cell_geomap
+@publish Distributed generate_distributed_refined_models
+@publish Distributed generate_octree_distributed_refined_models
+@publish Distributed generate_extruded_octree_distributed_refined_models
 
-@publish Distributed distributed_panel_ids
-@publish Distributed get_distributed_refined_models
-@publish Distributed get_distributed_ambient_refined_models
-@publish Distributed get_panel_ids
-@publish Distributed get_owned_panel_ids
-@publish Distributed get_skel_panel_ids
-# @publish Distributed BoundaryTriangulation
-@publish Distributed pullback_area_form
-@publish Distributed pushforward_normal
-@publish Distributed get_forward_map_generator
-@publish Distributed get_radius
-@publish Distributed get_thickness
-@publish Distributed get_parametric_model
-@publish Distributed get_surface_normal
-@publish Distributed get_octree_refined_models
-@publish Distributed get_3D_octree_refined_models
-@publish Distributed CubedSphere2DAmbientOctreeDistributedDiscreteModel
-@publish Distributed CubedSphere3DAmbientOctreeDistributedDiscreteModel
-@publish Distributed get_octree_ambient_refined_models
-@publish Distributed get_3D_octree_ambient_refined_models
-@publish Distributed CellField
-
-@publish MultilevelTools ModelHierarchy
+# MultilevelTools
 @publish MultilevelTools adapt_model
 
+# ConvergenceTools
 @publish ConvergenceTools p_convergence_auto_test
 @publish ConvergenceTools h_convergence_auto_test
 @publish ConvergenceTools nref
 @publish ConvergenceTools nc
 @publish ConvergenceTools dx
+@publish ConvergenceTools get_sphere_radius
+@publish ConvergenceTools get_sphere_thickness

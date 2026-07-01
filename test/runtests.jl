@@ -4,6 +4,10 @@ using Test
 TESTCASE = get(ENV, "TESTCASE", "seq")
 
 # Sequential tests
+if TESTCASE ∈ ("all", "seq", "seq-atlas-discrete-models")
+  include("AtlasDiscreteModels/seq/runtests.jl")
+end
+
 if TESTCASE ∈ ("all", "seq", "seq-l2-projection")
   include("Projection/seq/runtests.jl")
 end
@@ -29,7 +33,7 @@ if TESTCASE ∈ ("all", "seq", "seq-multigrid")
 end
 
 if TESTCASE ∈ ("all", "seq", "seq-tutorials")
-  include("Examples/seq/runtests.jl")
+  include("Tutorials/seq/runtests.jl")
 end
 
 if TESTCASE ∈ ("all", "seq", "seq-fields")
@@ -44,7 +48,15 @@ if TESTCASE ∈ ("all", "seq", "seq-autodiff")
   include("Autodiff/seq/runtests.jl")
 end
 
+if TESTCASE ∈ ("all", "seq", "seq-benchmark")
+  include("../benchmark/test/runtests.jl")
+end
+
 # MPI tests
+if TESTCASE ∈ ("all", "mpi", "mpi-atlas-discrete-models")
+   include("AtlasDiscreteModels/mpi/runtests.jl")
+end
+
 if TESTCASE ∈ ("all", "mpi", "mpi-l2-projection")
    include("Projection/mpi/runtests.jl")
 end
@@ -74,7 +86,7 @@ if TESTCASE ∈ ("all", "mpi", "mpi-multigrid")
 end
 
 if TESTCASE ∈ ("all", "mpi", "mpi-tutorials")
-  include("Examples/mpi/runtests.jl")
+  include("Tutorials/mpi/runtests.jl")
 end
 
 if TESTCASE ∈ ("all", "mpi", "mpi-ambient-model")

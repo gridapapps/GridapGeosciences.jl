@@ -17,17 +17,15 @@ using Test
 function compute_surface_area(model, degree::Int)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,degree)
-
-  meas_cf = ParametricCellField(sqrtg,Ω)
+  meas_cf = MeasureCellField(Ω)
   surface_area = sum( ∫( 1.0*meas_cf )dΩ )
   return surface_area
 end
 
 function main(serial_models::AbstractArray)
-
   for degree in collect([2,4,6,8])
     for (s_model) in serial_models
-      radius = get_radius(s_model)
+      radius = get_sphere_radius(s_model)
       extact_area = 4*π*radius^2
 
       ### s_model
@@ -37,18 +35,14 @@ function main(serial_models::AbstractArray)
       @test e < 1e-2
     end
   end
-
 end
-
 
 function main(distribute,nprocs;n_ref_lvls=3,radii=[1.0,2.0])
   ranks = distribute(LinearIndices((nprocs,)))
-
   for radius in radii
-
-    serial_models = get_refined_models(n_ref_lvls,radius)
-
-    p4test_models = get_octree_refined_models(ranks,n_ref_lvls,radius)
+    serial_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
+    coarse_mesh = CubedSphereMesh(radius)
+    p4test_models = generate_octree_distributed_refined_models(ranks, coarse_mesh, n_ref_lvls, IntrinsicManifold())
     for degree in collect([2,4,6,8])
       for (s_model,d_model) in zip(serial_models,p4test_models)
 

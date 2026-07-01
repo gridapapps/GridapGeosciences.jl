@@ -1,5 +1,6 @@
-function _generate_face_to_master_cell_id(model::CubedSphereParametricDiscreteModel{Dc};
-                                          cell_l2g::AbstractVector{Int}=IdentityVector(num_cells(model))) where Dc
+function _generate_face_to_master_cell_id(model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O};
+                                          cell_l2g::AbstractVector{Int}=IdentityVector(num_cells(model))) where {Dc, Da, G, A, P, C, O}
+  
   grid_topology = get_grid_topology(model)
   face_to_master_cell_id = Vector{Vector{Int}}(undef, Dc)
   for i=1:Dc
@@ -23,13 +24,15 @@ function _generate_face_to_master_cell_id(model::CubedSphereParametricDiscreteMo
 end
 
 
-struct GenerateChangeOfBasisMatrixMap{T<:CubedSphereParametricDiscreteModel,S} <: Map
+struct GenerateChangeOfBasisMatrixMap{T<:AtlasDiscreteModel,S} <: Map
     model::T
     face_to_master_cell_id::S
 end
 
 function return_cache(k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
   model = k.model
+  trian = Triangulation(model)
+
   D = num_cell_dims(model)
   gtopo = get_grid_topology(model)
   T = typeof(get_faces(gtopo, D, D - 1))
@@ -42,20 +45,26 @@ function return_cache(k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
   for i=0:D-1
     cache_cell_faces[i+1] = array_cache(cell_faces[i+1])
   end
-  panel_ids = get_panel_ids(model)
-  cache_panel_ids = array_cache(panel_ids)
   cell_map = get_cell_map(model)
   cache_cell_map = array_cache(cell_map)
-  cell_faces,cache_cell_faces,panel_ids,cache_panel_ids,cell_map, cache_cell_map,CachedMatrix(Float64)
+
+  grad_cell_ambient_maps_cf = transpose∘∇(AmbientMapCellField(trian))
+  grad_cell_ambient_maps = get_data(grad_cell_ambient_maps_cf)
+  pinv_grad_cell_ambient_maps = get_data(pinvJ∘grad_cell_ambient_maps_cf)
+
+  cell_faces, cache_cell_faces, 
+      cell_map, cache_cell_map,
+         grad_cell_ambient_maps, pinv_grad_cell_ambient_maps, CachedMatrix(Float64)
 end
 
 function evaluate!(cache,k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
   model = k.model
-  fwd_map_generator = get_forward_map_generator(model)
+  panel_ids = get_cell_ambient_maps(model).ptrs
   D = num_cell_dims(model)
   face_to_master_cell_id = k.face_to_master_cell_id
-  cell_faces, cache_cell_faces, panel_ids,  cache_panel_ids, cell_map, cache_cell_map,
-             change_of_basis_matrix_cache = cache
+  cell_faces, cache_cell_faces, 
+     cell_map, cache_cell_map, 
+       grad_cell_ambient_maps, pinv_grad_cell_ambient_maps, change_of_basis_matrix_cache = cache
   p = get_polytope(reffe)
   ndofs = num_dofs(reffe)
   setsize!(change_of_basis_matrix_cache, (ndofs, ndofs))
@@ -64,7 +73,8 @@ function evaluate!(cache,k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
   reffe_node_coordinates = get_node_coordinates(reffe)
   reffe_node_coordinates = evaluate(current_cell_map, reffe_node_coordinates)
   copyto!(change_matrix, I)
-  current_cell_panel = getindex!(cache_panel_ids, panel_ids, cell_id)
+
+  current_cell_panel = panel_ids[cell_id]
 
   face_own_dofs  = get_face_own_dofs(reffe)
   face_own_nodes = get_face_own_nodes(reffe)
@@ -74,10 +84,14 @@ function evaluate!(cache,k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
     for j=1:num_faces_dim_i
        current_cell_faces=getindex!(cache_cell_faces[i+1],cell_faces[i+1],cell_id)
        face_gid = current_cell_faces[j]
+       
        master_cell_id = face_to_master_cell_id[i+1][face_gid]
-       master_cell_panel = getindex!(cache_panel_ids, panel_ids, master_cell_id)
+       
+       master_cell_panel = panel_ids[master_cell_id]
+       
        dof_lids_slave = face_own_dofs[offset+j]
        node_lids_slave = face_own_nodes[offset+j]
+       
        if (master_cell_panel != current_cell_panel && length(dof_lids_slave)>0)
          master_reffe_node_coordinates = get_node_coordinates(reffe)
          master_cell_map = getindex!(cache_cell_map, cell_map, master_cell_id)
@@ -86,8 +100,8 @@ function evaluate!(cache,k::GenerateChangeOfBasisMatrixMap,reffe,cell_id)
          node_lids_master = face_own_nodes[offset+pos_master]
          for (inode, node_slave) in enumerate(node_lids_slave)
            node_master = node_lids_master[inode]
-           JM = J(fwd_map_generator(master_cell_panel),master_reffe_node_coordinates[node_master])
-           JSinv = forward_pinv_jacobian(fwd_map_generator(current_cell_panel),reffe_node_coordinates[node_slave])
+           JM = evaluate(grad_cell_ambient_maps[master_cell_id], master_reffe_node_coordinates[node_master])
+           JSinv = evaluate(pinv_grad_cell_ambient_maps[cell_id], reffe_node_coordinates[node_slave])           
            coeffs = JSinv⋅JM
            dof_lids_slave_current_node = findall(x->x==node_slave,reffe.reffe.dofs.dof_to_node)
            change_matrix[dof_lids_slave_current_node,dof_lids_slave_current_node] .= Array(coeffs)
@@ -123,9 +137,9 @@ function _compute_cell_bases_changes(
   ::Type{Float64},  
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::CubedSphereParametricDiscreteModel, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   return nothing
 end
 
@@ -134,9 +148,9 @@ function _compute_cell_bases_changes(
   ::Type{<:VectorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::CubedSphereParametricDiscreteModel, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   change_of_basis_matrices = _generate_change_of_basis_matrices(model, cell_reffe)
   inv_change_of_basis_matrices = lazy_map(transpose, lazy_map(inv, change_of_basis_matrices))
   (change_of_basis_matrices, inv_change_of_basis_matrices)
@@ -146,9 +160,9 @@ function _compute_cell_bases_changes(
   ::Type{<:TensorValue},
   ::ReferenceFEName, 
   ::IdentityPiolaMap, 
-  model::CubedSphereParametricDiscreteModel, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   @notimplemented "GridapGeosciences.jl does not support grad-conforming tensor-valued finite elements"
 end
 
@@ -156,9 +170,9 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::CubedSphereParametricDiscreteModel, 
+  model::IntrinsicAtlasDiscreteModel{Dc, Da, G, A, P, C, O}, 
   cell_reffe, 
-  cell_Jt)
+  cell_Jt) where {Dc, Da, G, A, P, C, O}
   T = _get_value_type(cell_reffe)
   _compute_cell_bases_changes(T, ref_name, map, model, cell_reffe, cell_Jt)
 end
@@ -166,21 +180,18 @@ end
 function compute_cell_bases_changes(
   ref_name::ReferenceFEName, 
   map::IdentityPiolaMap, 
-  model::AdaptedDiscreteModel{Dc,Dp,<:CubedSphereParametricDiscreteModel{Dc,Dp}}, 
+  model::AdaptedDiscreteModel{Dc,Dp,<:IntrinsicAtlasDiscreteModel{Dc,Dp,G,A,P,C,O}}, 
   cell_reffe, 
-  cell_Jt) where {Dc,Dp}
+  cell_Jt) where {Dc,Dp,G,A,P,C,O}
   T = _get_value_type(cell_reffe)
   _compute_cell_bases_changes(T, ref_name, map, model.model, cell_reffe, cell_Jt)
 end
 
-# We do not want to use CLagrangianFESpace for parametric models, because otherwise
+# We do not want to use CLagrangianFESpace for intrinsic/parametric models, because otherwise
 # we cannot implement the change of basis for the vector-valued case
-const ParamTrianType{Dc,Dp} = BodyFittedTriangulation{Dc,Dp,<:CubedSphereParametricDiscreteModel{Dc,Dp}}
-const UnionParamTrianType{Dc,Dp} = Union{ParamTrianType{Dc,Dp},
-                                         AdaptedTriangulation{Dc,Dp,<:ParamTrianType{Dc,Dp}}}
-
-function _use_clagrangian(trian::UnionParamTrianType{Dc,Dp},
+function _use_clagrangian(trian::Union{<:BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O}, 
+                                       <:AdaptedTriangulation{Dct,Dcm,<:BFTATDMIM{Dct,Dcm,Da,G,A,P,C,O}}}, 
                           cell_reffe::AbstractArray{<:GenericLagrangianRefFE},
-                          conf::H1Conformity) where {Dc,Dp}
+                          conf::H1Conformity) where {Dct,Dcm,Da,G,A,P,C,O}
     return false
 end

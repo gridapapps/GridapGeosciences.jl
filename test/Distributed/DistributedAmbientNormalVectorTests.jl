@@ -12,7 +12,7 @@ using GridapGeosciences
 using Test
 
 function test_debug_equiv(p,q)
-  map(p,q  )do p,q
+  map(p,q) do p,q
     dif = p - q
     max_dif = map(x->maximum(norm.(x)),dif)
     @test all(max_dif .< 1e-12)
@@ -21,21 +21,27 @@ end
 
 
 function main(distribute,nprocs)
-
   ranks = distribute(LinearIndices((nprocs,)))
 
   n_ref_lvls = 2
   radius = 1.0
-  ambient_model = CubedSphereAmbientDistributedDiscreteModel(
-    ranks, radius; num_initial_uniform_refinements=n_ref_lvls)
-  panel_model = get_parametric_model(ambient_model)
-
+  coarse_mesh = CubedSphereMesh(radius)
+ 
+  ambient_model = AtlasDiscreteModel(ranks, 
+                                     coarse_mesh, 
+                                     n_ref_lvls, 
+                                     manifold_style=ExtrinsicManifold())
+ 
+  parametric_model = AtlasDiscreteModel(ranks, 
+                                        coarse_mesh, 
+                                        n_ref_lvls, 
+                                        manifold_style=IntrinsicManifold())
 
   ##############################################################################
   ########## Ambient model
   ##############################################################################
   Ω_ambient = Triangulation(ambient_model)
-  n_surface_ambient = get_surface_normal(Ω_ambient)
+  n_surface_ambient = get_sphere_surface_normal(Ω_ambient)
 
   Λ_ambient = SkeletonTriangulation(with_ghost,ambient_model)
   n_Λ_ambient = get_normal_vector(Λ_ambient)
@@ -59,7 +65,7 @@ function main(distribute,nprocs)
   ########## Parametric model
   ##############################################################################
 
-  Λ_panel = SkeletonTriangulation(with_ghost,panel_model)
+  Λ_panel = SkeletonTriangulation(with_ghost,parametric_model)
   n_Λ_mapped = pushforward_normal(Λ_panel)
   pts_panel = get_cell_points(Λ_panel)
 
@@ -71,8 +77,6 @@ function main(distribute,nprocs)
   p = n_Λ_mapped.minus(pts_panel)
   q = n_Λ_ambient.minus(pts_ambient)
   test_debug_equiv(p,q)
-
-
 
   @test true
 

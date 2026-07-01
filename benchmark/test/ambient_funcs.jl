@@ -12,7 +12,7 @@ function bm_intergrate_ambient(cache,intq,w,J)
   end
 end
 
-function benchmark_ambient(order,degree,dir)
+function benchmark_ambient(order,degree,dir=@__DIR__,return_output=false)
 
   panel_model = CartesianDiscreteModel((-π/4,π/4,-π/4,π/4),(1,1))
   model = SingleAmbientDiscreteModel(panel_model, 1.0)
@@ -38,13 +38,18 @@ function benchmark_ambient(order,degree,dir)
   intq = evaluate(integrand,quad_array)
 
   cache = return_cache(IntegrationMap(),intq[:,1],w,J)
-  t_ambient = @belapsed bm_intergrate_ambient($cache,$intq,$w,$Jq)
+  out_ambient = bm_intergrate_ambient(cache,intq,w,Jq)
 
-  cache = return_cache(IntegrationMap(),intq[:,1],w,J)
-  out_ambient = @gflops bm_intergrate_ambient($cache,$intq,$w,$Jq)
+  # if return_output
+  #   cache = return_cache(IntegrationMap(),intq[:,1],w,J)
+  #   t_ambient = @belapsed bm_intergrate_ambient($cache,$intq,$w,$Jq)
 
-  !isdir(dir) && mkpath(dir)
-  save_ouput(dir,"ambient",t_ambient,out_ambient,order)
+  #   cache = return_cache(IntegrationMap(),intq[:,1],w,J)
+  #   out_ambient = @gflops bm_intergrate_ambient($cache,$intq,$w,$Jq)
+
+  #   !isdir(dir) && mkpath(dir)
+  #   save_ouput(dir,"ambient",t_ambient,out_ambient,order)
+  # end
 end
 
 
@@ -64,7 +69,7 @@ function SingleAmbientDiscreteModel(panel_model::UnstructuredDiscreteModel,radiu
   cmap = get_cell_map(panel_grid)
 
   ## map: alpha,beta -> manifold
-  fwd_map =  lazy_map(p -> CubedSphereForwardMap(1,radius), collect(1:num_cells(panel_model)))
+  fwd_map =  lazy_map(p -> CubedSphereMap(1,radius), collect(1:num_cells(panel_model)))
 
   ## map: reffe -> manifold
   geo_cmap = lazy_map(∘,fwd_map,cmap)

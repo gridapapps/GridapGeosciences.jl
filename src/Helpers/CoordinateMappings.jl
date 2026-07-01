@@ -1,6 +1,3 @@
-panel_to_cartesian(fX::Function,m::Field) = x -> fX(m(x))
-panel_to_cartesian(fX::Function) = m -> panel_to_cartesian(fX,m)
-
 ################################################################################
 ### Coordinate_mappings
 ################################################################################

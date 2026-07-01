@@ -1,5 +1,5 @@
 """
-Test the evaluation of the CubedSphereForwardMap and CubedSphereInverseMap in 2D and 3D
+Test the evaluation of the CubedSphereMap and CubedSphereInvMap in 2D and 3D
 """
 
 module ForwardInverseMapTests
@@ -20,13 +20,10 @@ thickness = 0.25
 pts_αβ = CUBE_HALF_EDGE.*[Point(-1.0,-1.0),Point(1.0,-1.0),Point(-1.0,1.0),Point(1.0,1.0)]
 
 for panel in collect(1:NPANELS)
-  fwd_maps = fill(CubedSphereForwardMap(panel,radius),length(pts_αβ))
-  inv_maps = fill(CubedSphereInverseMap(panel,radius),length(pts_αβ))
-
+  fwd_maps = fill(CubedSphereMap(panel,radius),length(pts_αβ))
+  inv_maps = fill(CubedSphereInvMap(panel,radius),length(pts_αβ))
   pts_x = lazy_map(evaluate,fwd_maps,pts_αβ)
-
   pts_αβ_inv = lazy_map(evaluate,inv_maps,pts_x)
-
   @test pts_αβ ≈ pts_αβ_inv
 end
 
@@ -34,13 +31,10 @@ end
 for γ in [0.0, 0.5, 1.0]
   pts_γαβ = map(x->Point(1.0,x[1],x[2]) ,pts_αβ)
   for panel in collect(1:NPANELS)
-    fwd_maps = fill(CubedSphereForwardMap(panel,radius,thickness),length(pts_γαβ))
-    inv_maps = fill(CubedSphereInverseMap(panel,radius,thickness),length(pts_γαβ))
-
+    fwd_maps = fill(CubedSphereWithThicknessMap(panel,radius,thickness),length(pts_γαβ))
+    inv_maps = fill(CubedSphereWithThicknessInvMap(panel,radius,thickness),length(pts_γαβ))
     pts_x = lazy_map(evaluate,fwd_maps,pts_γαβ)
-
     pts_γαβ_inv = lazy_map(evaluate,inv_maps,pts_x)
-
     @test pts_γαβ ≈ pts_γαβ_inv
   end
 end
@@ -54,11 +48,11 @@ end
 #### 2D test: test the auto-diff of the inverse_map for panel 1 aganist analytic expression
 panel = 1
 αβ = Point(CUBE_HALF_EDGE,CUBE_HALF_EDGE)
-m = CubedSphereForwardMap(panel,radius)
-minv = CubedSphereInverseMap(m)
+m = CubedSphereMap(panel,radius)
+minv = CubedSphereInvMap(panel,radius)
 xyz = m(αβ)
 
-Jt_minv = ∇(minv)(xyz) # computed via auto-diff
+Jt_minv = ∇(minv)(xyz)
 
 X,Y,Z = xyz
 dadX = - Y/(X^2 + Y^2)
@@ -70,9 +64,6 @@ dbdZ = X/(X^2 + Z^2)
 J_minv = TensorValue{2,3}(dadX,dbdX, dadY,dbdY, dadZ,dbdZ)
 Jt_minv_analytic = transpose(J_minv)
 @test Jt_minv_analytic ≈ Jt_minv
-
-
-
 
 
 end # module

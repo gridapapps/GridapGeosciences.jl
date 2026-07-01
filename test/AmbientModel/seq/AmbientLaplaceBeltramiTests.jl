@@ -3,33 +3,27 @@ include("../AmbientLaplaceBeltrami.jl")
 ## Serial model: 2D
 n_ref_lvls = 4
 radius = 1.0
-models = get_ambient_refined_models(n_ref_lvls,radius)
-AmbientLaplaceBeltrami.main(models)
-
-
+extrinsic_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), ExtrinsicManifold())
+AmbientLaplaceBeltrami.main(extrinsic_models)
 
 # ### I do not like having this here, but need to think of a better way
 # to compare one error result to the intrinsic approach
-ambient_model = models[1]
+
+extrinsic_model = extrinsic_models[1]
 dir = @__DIR__
 p_fe = 2
 e_ambient, = AmbientLaplaceBeltrami.laplace_beltrami_solver(
-              ambient_model,p_fe,dir,
+              extrinsic_model,p_fe,dir,
               AmbientLaplaceBeltrami.fX)
 
 
 include("../../Laplacian/LaplaceBeltrami.jl")
-function fX_ambient(forward_map)
-  function _f(αβ)
-    x = forward_map(αβ)
-    AmbientLaplaceBeltrami.fX(x)
-  end
-end
 
-panel_model = get_parametric_model(ambient_model)
+intrinsic_models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
+intrinsic_model = intrinsic_models[1]
 e_panel, = LaplaceBeltramiTests.laplace_beltrami_solver(
-              panel_model,p_fe,dir,
-              fX_ambient)
+              intrinsic_model,p_fe,dir,
+              AmbientLaplaceBeltrami.fX)
 
 e_comparison = e_ambient - e_panel
 println(e_comparison)
