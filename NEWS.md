@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Major rewrite introducing the **Atlas** discrete model abstraction, a general multi-chart representation of curved manifolds that replaces the previous ad-hoc family of `CubedSphere*Parametric*`/`CubedSphere*Ambient*` models.
+
+### Added
+- `AtlasGrid{Dc,Da}` and `AtlasDiscreteModel{Dc,Da}`: a `Grid`/`DiscreteModel` pair for `Dc`-dimensional manifolds embedded in `Da`-dimensional ambient space, storing per-cell chart coordinates, ambient maps, and analytic metric fields. Distinguishes `IntrinsicManifold` (`Da=Dc`) and `ExtrinsicManifold` (`Da>Dc`) styles via the `ManifoldStyle` trait, with convenience type aliases `IntrinsicAtlasDiscreteModel`/`ExtrinsicAtlasDiscreteModel`.
+- Canonical coarse meshes: `CylinderMesh`, `MobiusStripMesh`, `CubedSphereMesh`, the new 3D spherical-shell geometry `CubedSphereWithThicknessMesh`, and its adaptively-extruded counterpart `ExtrudedCubedSphereWithThicknessMesh` — each bundling coarse topology, chart coordinates, ambient maps, and analytic metric/inverse-metric fields (`CylinderMap`/`Metric`, `MobiusMap`/`Metric`, `CubedSphereMap`/`Metric`, `CubedSphereWithThicknessMap`/`Metric`, with their `Inv` counterparts and analytic first/second-order derivatives for automatic differentiation).
+- Distributed Atlas models: `AtlasDistributedDiscreteModel` (linear cell partitioning with one-layer ghost cells, no `p4est` dependency), `AtlasOctreeDistributedDiscreteModel` (`p4est`-backed, 2D and 3D), and `ExtrudedAtlasOctreeDistributedDiscreteModel` (`p6est`-backed, extruded 3D shell), together with `IntrinsicAtlasDistributedDiscreteModel`/`ExtrinsicAtlasDistributedDiscreteModel` and their `Adapted*` counterparts.
+- `Gridap.Adaptivity.refine`/`adapt` support for every Atlas model flavour (serial, distributed, octree, extruded), preserving the refinement parent chain and updating global ids across ranks; `generate_refined_models`, `generate_distributed_refined_models`, `generate_octree_distributed_refined_models`, and `generate_extruded_octree_distributed_refined_models` build full refinement hierarchies via successive `refine` calls. `vertically_uniformly_refine`/`horizontally_uniformly_refine` support anisotropic refinement of the extruded model.
+- New `CellData` submodule consolidating the cell-field/differential-geometry API: `AmbientMapCellField`, `InvAmbientMapCellField`, `MetricCellField`, `InvMetricCellField`, `MeasureCellField`, `LatLonMapCellField`, and the surface differential operators `Δs`, `vecΔs`, `∇s`, `divs`, `curls`, `skew_∇s`, `skew_divs`, `dagger` — all working on `BodyFittedTriangulation`, `BoundaryTriangulation`, `SkeletonTriangulation`, `TriangulationView`, and `AdaptedTriangulation` over Atlas models, both serially and in distributed form. `Δs`/`∇s` support an automatic-differentiation path as well as an analytic one (`use_automatic_differentiation=false`).
+- `pushforward_reference_normal`, `pushforward_parametric_normal`, `pullback_area_form`, and `get_sphere_surface_normal` for boundary/skeleton/adapted triangulations over Atlas models.
+- Extensive new serial/MPI test suite under `test/AtlasDiscreteModels/` (cylinder, Möbius strip, cubed sphere and cubed-sphere-with-thickness geometry, Darcy on cylinder/cubed sphere, H(div) and Poisson on the cylinder, quadrature convergence, refinement ordering, metric-field validation, compressed-array optimisation), plus extended MPI coverage of the new octree/extruded models across the Laplacian, Geophysical, Projection, and AmbientModel test suites.
+- Automated documentation deployment to GitHub Pages via `Documenter.jl`/`Literate.jl`.
+
+### Changed
+- Renamed `CubedSphereForwardMap`→`CubedSphereMap`, `CubedSphereInverseMap`→`CubedSphereInvMap`; `get_refined_models`→`generate_refined_models`, `get_distributed_refined_models`→`generate_distributed_refined_models`; `get_radius`/`get_thickness`→`get_sphere_radius`/`get_sphere_thickness` (and moved their implementation to `ConvergenceTools`); `get_surface_normal`→`get_sphere_surface_normal`; `normal_vec`→`sphere_surface_normal_vec`, `tangent_vec`→`sphere_tangent_vec_component`; `get_atlas_dmodel`→`get_atlas_model`.
+- All tutorials/examples and solver test drivers (`AdvectionUpwinding`, `LaplaceBeltrami`, `ShallowWater`, `ThermalShallowWater`, `WaveEquation`, `LinearBoussinesq`, the Hodge-Laplacian and L2-projection tests, ...) ported from the old `ParametricCellField`/`AmbientCellField`/`piola`-based API to the new Atlas + `CellData` API; initial-condition and forcing functions now take ambient coordinates directly instead of closures over a forward map.
+- `writevtk_with_cell_geomap`/`createvtk_with_cell_geomap` (serial and distributed) now take the geometry map as a `CellField`/`DistributedCellField` and call `change_domain` internally, replacing the previous raw-array (`AbstractArray`) based API.
+- `test/Examples/` renamed to `test/Tutorials/`.
+- Bumped `GridapP4est` compat bound from 0.3.14 to 0.3.15; package version bumped 0.6.2 → 0.7.0.
+
+### Removed
+- The entire pre-Atlas cubed-sphere model hierarchy: `CubedSphere2DParametricDiscreteModel`, `CubedSphere3DParametricDiscreteModel`, `CubedSphereAmbientDiscreteModel`, and their distributed/octree counterparts, together with `ParametricCellField`, `AmbientCellField`, and the panel-ids infrastructure (`PanelIds`, `TriangulationPanelIds`, `distributed_panel_ids`, `get_panel_ids`, ...) — all superseded by the Atlas + `CellData` API.
+- `Helpers` functions tied to the removed API: `ambient_surflap`/`ambient_surfdiv`/`ambient_sgrad`, `panel_to_cartesian`, `piola` and the rest of `VectorPullback`, `forward_jacobian`, `covariant_basis`, `forward_pinv_jacobian`.
+- The old custom `Adaptivity` module (`src/Adaptivity/`); uniform refinement is now provided by Gridap's `EdgeBasedRefinement` via `Gridap.Adaptivity.refine`.
+
+### Fixed
+- `get_cell_coordinates` for `GridView{<:AtlasGrid}`: local portions of a `DistributedTriangulation` (as `TriangulationView`) were returning junk node coordinates due to missing reindexing against the parent's cell coordinates.
+- `MetricCellField`, `MeasureCellField`, `InvMetricCellField`, and `AmbientMapCellField` on skeleton triangulations now correctly rebase the plus/minus results onto the skeleton triangulation instead of the individual boundary triangulations.
+- `Δs`, `∇s`, `divs`, and `LatLonMapCellField` on `AdaptedTriangulation` now return fields living on the adapted triangulation rather than on the underlying (pre-adaptation) one.
+- `pullback_area_form` for `AdaptedTriangulation` now returns a proper `SkeletonPair`.
+- `_adapt_atlas_octree_dmodel` now preserves the refinement parent chain correctly across successive adaptations.
+- Fixed a swapped argument order (`num_vertical_refinements`/`num_horizontal_refinements`) in the `ExtrudedAtlasOctreeDistributedDiscreteModel` constructors.
+- Fixed a segfault caused by garbage-collecting the shared `p4est_connectivity_t` object underlying refined octree/extruded models.
+- Fixed the `OrientationStyle` type-parameter count in `AtlasGrid`, and the ambient-dimension type parameter of `AtlasOctreeDistributedDiscreteModel` (was hard-coded to 2, should be 3).
+- `skew_∇s`, `skew_divs`, and `dagger` are now restricted to 2D manifolds; previously they could be (silently incorrectly) called on 3D shell models.
+
 ## [0.6.2] - 2024-06-25 
 
 ### Added
