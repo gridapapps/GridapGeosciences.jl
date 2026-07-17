@@ -1,6 +1,8 @@
 using GridapGeosciences
 using Gridap
+using Gridap.TensorValues
 
+import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
 
 ℓ = 1
 radius = 1.0
@@ -15,6 +17,7 @@ degree = 6*(p_fe+1)
 dΩ = Measure(Ω_atlas,degree)
 
 meas_cf = MeasureCellField(Ω_atlas)
+metric_cf = MetricCellField(Ω_atlas)
 
 ## FE spaces: Taylor hood pair
 reffe_u  = ReferenceFE(lagrangian,VectorValue{2, Float64},p_fe)
@@ -39,14 +42,12 @@ dp = get_trial_fe_basis(P)
 dv = get_fe_basis(V)
 dq = get_fe_basis(Q)
 
-
+grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
 
 a1((u,p),(v,q)) = ∫( ( p*( ∇⋅(v*meas_cf)  ) )*meas_cf  )dΩ
 a1((du,dp),(dv,dq)) ## FAIL!
 a1(dx,dy) ## FAIL!!
 
-a2(p,v) =∫( ( p*( (∇⋅v)*meas_cf  ) )*meas_cf  )dΩ
-a2(dp,dv) ### Okay
-
-a3(p,v) =∫( ( p*( v⋅(∇(meas_cf))  ) )*meas_cf  )dΩ
-a3(dp,dv) ### FAIL!
+# expand product rule
+a((u,p),(v,q)) =∫( ( p*( (∇⋅v)*meas_cf  ) )*meas_cf  )dΩ + ∫( ( p*( v⋅(grad_meas_cf)  ) )*meas_cf  )dΩ
+a(dx,dy) ### WORKS
