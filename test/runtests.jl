@@ -16,6 +16,10 @@ if TESTCASE ∈ ("all", "seq", "seq-laplacian")
   include("Laplacian/seq/runtests.jl")
 end
 
+if TESTCASE ∈ ("all", "seq", "seq-vector-laplacian-surface")
+  include("VectorLaplacianSurface/seq/runtests.jl")
+end
+
 if TESTCASE ∈ ("all", "seq", "seq-geophysical")
   include("Geophysical/seq/runtests.jl")
 end

@@ -182,6 +182,13 @@ function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{2,2,Da,G,A,P,C,O};
    use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas) : _skew_∇s_no_ad(f, Ω_atlas)
 end
 
+function skew_∇s(f::Function,
+                  Ω_atlas::AdaptedTriangulation{2,2,<:BFTATDMIM{2,2,Da,G,A,P,C,O}};
+                  use_automatic_differentiation=false) where {Da, G, A, P, C, O}
+  skew_∇s_trian = use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas.trian) : _skew_∇s_no_ad(f, Ω_atlas.trian)
+  Gridap.CellData.GenericCellField(get_data(skew_∇s_trian), Ω_atlas, Gridap.CellData.DomainStyle(skew_∇s_trian))
+end
+
 function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
                    use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   @notimplemented "skew_∇s is only implemented for 2D surfaces"
