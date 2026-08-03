@@ -10,6 +10,7 @@ Using the Taylor--Hood pair
 using GridapGeosciences
 using Gridap
 using Gridap.Helpers
+using DrWatson
 
 import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
 
@@ -22,10 +23,17 @@ include("operator.jl")
 uX(x) = VectorValue(x[1]*x[3], x[2]*x[3], x[3]^2 - 1)
 pX(x) = x[3]
 
+n_ref_lvls = 2
+radius = 1.0
+models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
+atlas_model = models[end]
+p_fe = 2
+ls = LUSolver()
+_i_am_main = true
 
-function surface_stokes(atlas_model,
-  p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
-  _i_am_main=true)
+# function surface_stokes(atlas_model,
+#   p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
+#   _i_am_main=true)
 
   α = 1.0
   ν = 1.0
@@ -37,12 +45,14 @@ function surface_stokes(atlas_model,
   @check p_fe >= 2 "/n # Taylor hood pair requires p≥2 "
 
   degree = 6*(p_fe+1)
+  println("degree = ", degree)
   Ω_atlas = Triangulation(atlas_model)
   dΩ = Measure(Ω_atlas,degree)
-  dΩ_error = Measure(Ω_atlas,2*degree)
+  dΩ_error = Measure(Ω_atlas,3*degree)
 
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   metric_cf = MetricCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
   meas_cf = MeasureCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
@@ -92,6 +102,16 @@ function surface_stokes(atlas_model,
   biform_p((u,p),(v,q)) = ∫( q*divg_product_rule(u)  )dΩ
 
   biform((u,p),(v,q)) = biform_curl((u,p),(v,q)) + biform_u((u,p),(v,q)) + biform_p((u,p),(v,q))
+
+
+  # the manufactured solution is exactly the LHS operator
+  #  liform((v,q)) = (
+  #    ∫( (-1.0*ν*rhs_curl_cf⋅(metric_cf⋅v))*meas_cf  )dΩ
+  #   +  ∫( (u_int⋅ (metric_cf⋅v))*(meas_cf) )dΩ
+  #   + ∫( (gradient(p_int)⋅v)*meas_cf )dΩ # assume regularity to IBP
+  #   + ∫( q*divg_product_rule(u_int) )dΩ
+  #   )
+
   liform((v,q)) = ∫( (rhs⋅(metric_cf⋅v))*meas_cf  )dΩ + ∫( (sigma_cf*q)*meas_cf )dΩ
 
   # ## FE problem
@@ -103,6 +123,8 @@ function surface_stokes(atlas_model,
   solve!(x,ns,b)
   xh = FEFunction(X,x)
   uh,ph = xh
+  # uh = FEFunction(U,rand(num_free_dofs(U)))
+
 
   # For the depth, the $L^2$ norm of the error between the exact and numerical solutions is computed as
   ep = p_int - ph
@@ -112,8 +134,151 @@ function surface_stokes(atlas_model,
   # the exact and numerical solutions is computed as
   eu = u_int - uh
   eu_l2 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) )dΩ_error))
+  eu_h1 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) + (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
- _i_am_main && println("eu = $(eu_l2), ep = $(ep_l2)")
+  ######### START JUMP CALCS
+  ### The jump of u on the surface is:
+  ## [̃u] = ( J u ⋅ J g^{-1} n/|| J g^{-1} n ||  ).plus  + ( J u ⋅ J g^{-1} n/|| J g^{-1} n ||  ).minus
+  ##     =  (u⋅n/|| J g^{-1} n || ).plus  + (u⋅n/|| J g^{-1} n || ).mins
+
+  using Gridap.Geometry
+  import GridapGeosciences.Geometry: get_cell_ambient_maps
+
+  # get a mask that is the interface of charts
+  topo = get_grid_topology(atlas_model)
+  Dc = num_cell_dims(topo)
+  c2e = Gridap.Geometry.get_faces(topo,Dc,1)
+  e2c = Gridap.Geometry.get_faces(topo,1,Dc)
+  panel_ids = get_cell_ambient_maps(atlas_model.model).ptrs
+
+  mask = zeros(num_facets(atlas_model))
+  for (i,edge) in enumerate(e2c)
+    pid_1 = panel_ids[edge[1]]
+    pid_2 = panel_ids[edge[2]]
+    if pid_1 != pid_2
+      mask[i] = 1
+    end
+  end
+
+  # Skeleton triangulation
+  skel = SkeletonTriangulation(atlas_model,Bool.(mask))
+  num_cells(skel)
+
+
+  # For simplicity, extract the trian out of the adapted trian
+  Λ = skel.trian
+  dΛ = Measure(Λ,6)#3*degree)
+  nΛ = get_normal_vector(Λ)
+  pts_skel = get_cell_points(dΛ)
+  area = pullback_area_form(Λ)
+
+  # Compute the jump on quad points, it is zero
+  (  (uh.plus ⋅ nΛ.plus)/area.plus + (uh.minus ⋅ nΛ.minus)/area.minus )(pts_skel)
+
+
+  ## Compute the full jump with all the terms, see it is also zero
+  ambient_map_cf = AmbientMapCellField(Λ)
+  J_plus = transpose∘∇(ambient_map_cf.plus)
+  J_minus = transpose∘∇(ambient_map_cf.minus)
+  ginv = InvMetricCellField(Λ)
+
+  ( ( (J_plus⋅ uh.plus) ⋅ (J_plus ⋅(ginv.plus⋅ nΛ.plus)) )/area.plus
+      + ( (J_minus⋅ uh.minus) ⋅ (J_minus ⋅(ginv.minus⋅ nΛ.minus)) )/area.minus)(pts_skel)
+
+
+  ### Another approach: move the FE function to the plus side of the trian, and minus
+  ### sides using the f2c reference map. Then evaluate at cell_points
+  trian = Λ.plus
+  pts_plus = get_cell_points(trian)
+  glue = trian.glue
+  bgmodel = get_background_model(trian)
+  cell_grid = get_grid(bgmodel)
+  face_grid = get_grid(trian)
+  f2c_ref_map = Gridap.Geometry.compute_face_to_cell_reference_map(cell_grid,face_grid,glue)
+  plus_cf = lazy_map(∘,get_data(uh),f2c_ref_map)
+  plus = Gridap.CellData.GenericCellField(plus_cf, trian, ReferenceDomain())
+
+  trian = Λ.minus
+  pts_minus = get_cell_points(trian)
+  glue = trian.glue
+  bgmodel = get_background_model(trian)
+  cell_grid = get_grid(bgmodel)
+  face_grid = get_grid(trian)
+  f2c_ref_map = Gridap.Geometry.compute_face_to_cell_reference_map(cell_grid,face_grid,glue)
+  minus_cf = lazy_map(∘,get_data(uh),f2c_ref_map)
+  minus = Gridap.CellData.GenericCellField(minus_cf, trian, ReferenceDomain())
+
+  # compute the jump, this one is not zero!
+  (minus⋅nΛ.minus/area.minus)(pts_minus) + (plus⋅nΛ.plus/area.plus)(pts_plus)
+
+
+
+
+
+
+
+  #### OLD!!
+
+
+  function change_fe_func_to_skel(fe_func, Λ)
+    cdata_plus = change_domain(fe_func, Λ.trian.plus,DomainStyle(fe_func))
+    plus =  Gridap.CellData.GenericCellField(get_data(cdata_plus), Λ, Gridap.CellData.DomainStyle(fe_func))
+
+    cdata_minus = change_domain(fe_func, Λ.trian.minus,DomainStyle(fe_func))
+    minus =  Gridap.CellData.GenericCellField(get_data(cdata_minus), Λ, Gridap.CellData.DomainStyle(fe_func))
+
+    fe_func_skel = Gridap.CellData.SkeletonCellFieldPair(plus,minus)
+    fe_func_skel
+  end
+
+  eu_skel = change_fe_func_to_skel(eu,Λ)
+  uh_skel = change_fe_func_to_skel(uh,Λ)
+
+
+
+  inv_metric_cf_skel = InvMetricCellField(Λ).plus
+  metric_cf_skel = MetricCellField(Λ).plus
+  meas_cf_skel = MeasureCellField(Λ).plus
+  area_form_cf_skel = pullback_area_form(Λ).plus
+  ambient_map_cf = AmbientMapCellField(Λ).plus
+  covariant_basis_cf_skel = transpose∘∇(ambient_map_cf)
+
+  # dir = @__DIR__
+  #  writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/jumps",
+  #         cellfields=["jump"=>jump( covariant_basis_cf_skel ⋅ uh_skel)],append=false)
+
+  γ = 1.0
+  dxx = dx(atlas_model)
+
+  bulk_term = sum(∫( (gradient(eu_skel)⊙(inv_metric_cf_skel⋅gradient(eu_skel)))*( area_form_cf_skel*meas_cf_skel  )  )dΛ)
+  # jump_term =  (sum(∫( (jump(uh_skel)⋅(metric_cf_skel ⋅ jump(uh_skel)))*( area_form_cf_skel*meas_cf_skel ) )dΛ))
+
+
+  function jump_u(uh,nΛ,area)
+    (uh.plus⋅nΛ.plus)/area.plus + (uh.minus⋅nΛ.minus)/area.minus
+  end
+
+  jump_term = (sum(∫( ( jump_u(uh_skel,nΛ,area_skel)*jump_u(uh_skel,nΛ,area_skel)  )*(  meas_cf_skel*area_form_cf_skel ) )dΛ))
+dir = @__DIR__
+   writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/jumps",
+          cellfields=["plus"=>plus, "minus"=>minus,
+          "dif"=> plus - minus, "jump"=>plus+minus],append=false)
+
+
+
+
+
+  sum( ∫( ( (plus+minus)*(plus+minus)   ) )dΛ )
+
+
+
+
+  # jump_term =  (sum(∫( (jump(covariant_basis_cf_skel⋅uh_skel)⋅jump(covariant_basis_cf_skel⋅uh_skel))*( area_form_cf_skel*meas_cf_skel ) )dΛ))
+#
+
+ _i_am_main && println("eu = $(eu_l2), ep = $(ep_l2), euh1 = $eu_h1")
+  _i_am_main && println("bulk= $(bulk_term), jump = $(jump_term)")
+
 
   if return_vtk
       panel_cfs = [p_int,ph,ep, covariant_basis_cf⋅ u_int, covariant_basis_cf⋅ uh,eu]
@@ -122,6 +287,14 @@ function surface_stokes(atlas_model,
       writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/stokes_nref$(lvl)_p$p_fe",
           cellfields=cellfields,append=false)
   end
+
+
+  n = num_cells(atlas_model)/6
+  n_ref = lvl
+  output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc bulk_term jump_term
+  safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
+
+
 
   return eu_l2, ep_l2, false
 
@@ -135,54 +308,32 @@ function main(models::AbstractArray;ps=[2,3,4],_i_am_main=true)
   p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls;_i_am_main=_i_am_main)
 end
 
-# n_ref_lvls = 4
-# radius = 1.0
-# models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
-# main(models)
+n_ref_lvls = 4
+radius = 1.0
+models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 
 
+using GridapPETSc
+options = """
+          -ksp_type preonly -ksp_error_if_not_converged true
+          -pc_type lu -pc_factor_mat_solver_type mumps
+          -mat_mumps_icntl_1 4
+          -mat_mumps_icntl_4 0
+          -mat_mumps_icntl_7 0
+          -mat_mumps_icntl_14 100
+          -mat_mumps_icntl_28 1
+          -mat_mumps_icntl_29 2
+          -mat_mumps_cntl_3 1.0e-6
+          """
+GridapPETSc.Init(args=split(options))
+ls = GridapPETSc.PETScLinearSolver()
 
-# using Plots
-# eu_p2 = [ 0.03164362085970014,0.003991140793862124,0.0002901060711779985,3.970002349520792e-5 ]
-# ep_p2 = [0.16461510525371303,  0.044523953987363946, 0.011474435127885615,  0.0028947604104046128]
-
-# eu_p3 = [0.0025600600613447477,0.0002053004908208434, 1.498851700549086e-5,1.7593630367403369e-6]
-# ep_p3 = [ 0.0065320141924923025, 0.0007983345802019229,  6.837372482786403e-5,  6.174521768640946e-6]
-
-# eu_p4 = [0.0004348104561119693,2.5925309783872616e-5,1.062248276532864e-6,3.9506215758074916e-8]
-# ep_p4 = [0.0011135355236547846, 6.705782594548784e-5, 2.9727560214463023e-6, 2.142191533797376e-7]
-
-
-
-# xplot = [2,4,8,16]
-# zz = 2e-1xplot.^(-2)
-# ww = 3e-2xplot.^(-3)
-# qq = 1e-3xplot.^(-4)
-
-# plot()
-
-# plot!(xplot, eu_p2, color=:blue, lw=2,marker=:circle,label="velocity: p=2")
-# plot!(xplot, ep_p2,color=:blue,ls=:dash, lw=2,marker=:square, label="pressure: p=1")
-# plot!(xplot,zz,lw=2,color=:blue,label="lvl^2")
-
-# plot!(xplot, eu_p3, color=:orange, lw=2,marker=:circle,label="velocity: p=3")
-# plot!(xplot, ep_p3, color=:orange, ls=:dash, lw=2,marker=:square, label="pressure: p=2")
-# plot!(xplot,ww,lw=2,color=:orange,label="lvl^3")
-
-# plot!(xplot, eu_p4, color=:green, lw=2,marker=:circle,label="velocity: p=4")
-# plot!(xplot, ep_p4, color=:green, ls=:dash, lw=2,marker=:square, label="pressure: p=3")
-# plot!(xplot,qq,lw=2,color=:green,label="lvl^4")
-
-
-# plot!(shape=:auto,
-#     xaxis=:log2,yaxis=:log10,
-#     xlabel="lvl",
-#     ylabel="L^2 error",
-#     framestyle = :box,
-#     legend_columns=3,
-#     legend=:bottomleft
-#     )
-# xs = xplot#2.0.^(log2.(ns))
-# xl = map(x->string(Int(log2((x)))),xs)
-# plot!(xticks = (xs, xl))
-# savefig(joinpath(@__DIR__,"convergence_stokes.png"))
+# p_fe = 2
+# ls = LUSolver()
+# ls = BackslashSolver()
+for p_fe in [2]
+  for model in models
+    surface_stokes(model,
+      p_fe,@__DIR__,uX,pX,ls,true;_i_am_main=true)
+  end
+end
