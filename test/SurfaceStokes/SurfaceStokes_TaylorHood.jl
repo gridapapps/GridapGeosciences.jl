@@ -11,7 +11,8 @@ using GridapGeosciences
 using Gridap
 using Gridap.Helpers
 using DrWatson
-
+ using Gridap.Geometry
+import GridapGeosciences.Geometry: get_cell_ambient_maps
 import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
 
 include("operator.jl")
@@ -26,14 +27,14 @@ pX(x) = x[3]
 n_ref_lvls = 2
 radius = 1.0
 models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
-atlas_model = models[end]
+atlas_model = models[end-1]
 p_fe = 2
 ls = LUSolver()
 _i_am_main = true
 
-# function surface_stokes(atlas_model,
-#   p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
-#   _i_am_main=true)
+function surface_stokes(atlas_model,
+  p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
+  _i_am_main=true)
 
   α = 1.0
   ν = 1.0
@@ -124,6 +125,7 @@ _i_am_main = true
   xh = FEFunction(X,x)
   uh,ph = xh
   # uh = FEFunction(U,rand(num_free_dofs(U)))
+  u_ambient = covariant_basis_cf⋅uh
 
 
   # For the depth, the $L^2$ norm of the error between the exact and numerical solutions is computed as
@@ -136,18 +138,22 @@ _i_am_main = true
   eu_l2 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) )dΩ_error))
   eu_h1 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) + (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
+  ## To help with plotting, split the terms of the H1 norm
+  mass_term = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf)   )dΩ_error))
+  grad_term = sqrt(sum(∫( (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
+
   ######### START JUMP CALCS
-  ### The jump of u on the surface is:
-  ## [̃u] = ( J u ⋅ J g^{-1} n/|| J g^{-1} n ||  ).plus  + ( J u ⋅ J g^{-1} n/|| J g^{-1} n ||  ).minus
-  ##     =  (u⋅n/|| J g^{-1} n || ).plus  + (u⋅n/|| J g^{-1} n || ).mins
+  eu_ambient = covariant_basis_cf⋅eu
 
-  using Gridap.Geometry
-  import GridapGeosciences.Geometry: get_cell_ambient_maps
+  ## 1. restrict the ambient solution to plus and minus side
+  u_tilde_plus = (eu_ambient).plus
+  u_tilde_minus = (eu_ambient).minus
 
-  # get a mask that is the interface of charts
+  ## 2. Make a skeleton triangulation of the interface of charts
+
+  # 2a. get a mask that is the interface of charts
   topo = get_grid_topology(atlas_model)
   Dc = num_cell_dims(topo)
-  c2e = Gridap.Geometry.get_faces(topo,Dc,1)
   e2c = Gridap.Geometry.get_faces(topo,1,Dc)
   panel_ids = get_cell_ambient_maps(atlas_model.model).ptrs
 
@@ -160,124 +166,61 @@ _i_am_main = true
     end
   end
 
-  # Skeleton triangulation
+  # 2b. Skeleton triangulation:  for simplicity, extract the trian out of the adapted trian
   skel = SkeletonTriangulation(atlas_model,Bool.(mask))
-  num_cells(skel)
-
-
-  # For simplicity, extract the trian out of the adapted trian
   Λ = skel.trian
-  dΛ = Measure(Λ,6)#3*degree)
-  nΛ = get_normal_vector(Λ)
-  pts_skel = get_cell_points(dΛ)
-  area = pullback_area_form(Λ)
 
-  # Compute the jump on quad points, it is zero
-  (  (uh.plus ⋅ nΛ.plus)/area.plus + (uh.minus ⋅ nΛ.minus)/area.minus )(pts_skel)
+  ## 3. Compute the pushforward of the skeleton normal vector. Then restrict to plus and minus sides
+  n_tilde = pushforward_reference_normal(Λ)
+  n_tilde_plus = n_tilde.plus
+  n_tilde_minus = n_tilde.minus
 
+  ## 4. Compute the jump term [u ⊗ n] as per https://doi.org/10.1007/s10915-008-9261-1
+  ## This is the outer product of two vectors. So returns a A_ij = v_i*w_j
+  jump = u_tilde_plus ⊗ n_tilde_plus + u_tilde_minus ⊗ n_tilde_minus
 
-  ## Compute the full jump with all the terms, see it is also zero
-  ambient_map_cf = AmbientMapCellField(Λ)
-  J_plus = transpose∘∇(ambient_map_cf.plus)
-  J_minus = transpose∘∇(ambient_map_cf.minus)
-  ginv = InvMetricCellField(Λ)
-
-  ( ( (J_plus⋅ uh.plus) ⋅ (J_plus ⋅(ginv.plus⋅ nΛ.plus)) )/area.plus
-      + ( (J_minus⋅ uh.minus) ⋅ (J_minus ⋅(ginv.minus⋅ nΛ.minus)) )/area.minus)(pts_skel)
+  ## 5. Evaluate jump norm at quadrature points. Use ⊙ to take the double contraction
+  dΛ = Measure(Λ,3*degree)
+  meas_skel = MeasureCellField(Λ)
+  area_skel =  pullback_area_form(Λ)
+  jump_norm = sqrt(sum(∫( (jump⊙jump)*(meas_cf.plus * area_skel.plus) )dΛ))
 
 
-  ### Another approach: move the FE function to the plus side of the trian, and minus
-  ### sides using the f2c reference map. Then evaluate at cell_points
-  trian = Λ.plus
-  pts_plus = get_cell_points(trian)
-  glue = trian.glue
-  bgmodel = get_background_model(trian)
-  cell_grid = get_grid(bgmodel)
-  face_grid = get_grid(trian)
-  f2c_ref_map = Gridap.Geometry.compute_face_to_cell_reference_map(cell_grid,face_grid,glue)
-  plus_cf = lazy_map(∘,get_data(uh),f2c_ref_map)
-  plus = Gridap.CellData.GenericCellField(plus_cf, trian, ReferenceDomain())
+  γ = 1.0
+  dxx = dx(atlas_model)
+  jump_times = jump_norm*dxx
 
-  trian = Λ.minus
-  pts_minus = get_cell_points(trian)
-  glue = trian.glue
-  bgmodel = get_background_model(trian)
-  cell_grid = get_grid(bgmodel)
-  face_grid = get_grid(trian)
-  f2c_ref_map = Gridap.Geometry.compute_face_to_cell_reference_map(cell_grid,face_grid,glue)
-  minus_cf = lazy_map(∘,get_data(uh),f2c_ref_map)
-  minus = Gridap.CellData.GenericCellField(minus_cf, trian, ReferenceDomain())
-
-  # compute the jump, this one is not zero!
-  (minus⋅nΛ.minus/area.minus)(pts_minus) + (plus⋅nΛ.plus/area.plus)(pts_plus)
-
-
-
-
+   _i_am_main && println("jump_norm = $(jump_norm), jump_times = $(jump_times)")
 
 
 
   #### OLD!!
 
 
-  function change_fe_func_to_skel(fe_func, Λ)
-    cdata_plus = change_domain(fe_func, Λ.trian.plus,DomainStyle(fe_func))
-    plus =  Gridap.CellData.GenericCellField(get_data(cdata_plus), Λ, Gridap.CellData.DomainStyle(fe_func))
+  # function change_fe_func_to_skel(fe_func, Λ)
+  #   cdata_plus = change_domain(fe_func, Λ.trian.plus,DomainStyle(fe_func))
+  #   plus =  Gridap.CellData.GenericCellField(get_data(cdata_plus), Λ, Gridap.CellData.DomainStyle(fe_func))
 
-    cdata_minus = change_domain(fe_func, Λ.trian.minus,DomainStyle(fe_func))
-    minus =  Gridap.CellData.GenericCellField(get_data(cdata_minus), Λ, Gridap.CellData.DomainStyle(fe_func))
+  #   cdata_minus = change_domain(fe_func, Λ.trian.minus,DomainStyle(fe_func))
+  #   minus =  Gridap.CellData.GenericCellField(get_data(cdata_minus), Λ, Gridap.CellData.DomainStyle(fe_func))
 
-    fe_func_skel = Gridap.CellData.SkeletonCellFieldPair(plus,minus)
-    fe_func_skel
-  end
+  #   fe_func_skel = Gridap.CellData.SkeletonCellFieldPair(plus,minus)
+  #   fe_func_skel
+  # end
 
-  eu_skel = change_fe_func_to_skel(eu,Λ)
-  uh_skel = change_fe_func_to_skel(uh,Λ)
+  # eu_skel = change_fe_func_to_skel(eu,Λ)
+  # uh_skel = change_fe_func_to_skel(uh,Λ)
 
+  # inv_metric_cf_skel = InvMetricCellField(Λ).plus
+  # metric_cf_skel = MetricCellField(Λ).plus
+  # meas_cf_skel = MeasureCellField(Λ).plus
+  # area_form_cf_skel = pullback_area_form(Λ).plus
+  # ambient_map_cf = AmbientMapCellField(Λ).plus
+  # covariant_basis_cf_skel = transpose∘∇(ambient_map_cf)
 
-
-  inv_metric_cf_skel = InvMetricCellField(Λ).plus
-  metric_cf_skel = MetricCellField(Λ).plus
-  meas_cf_skel = MeasureCellField(Λ).plus
-  area_form_cf_skel = pullback_area_form(Λ).plus
-  ambient_map_cf = AmbientMapCellField(Λ).plus
-  covariant_basis_cf_skel = transpose∘∇(ambient_map_cf)
-
-  # dir = @__DIR__
-  #  writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/jumps",
-  #         cellfields=["jump"=>jump( covariant_basis_cf_skel ⋅ uh_skel)],append=false)
-
-  γ = 1.0
-  dxx = dx(atlas_model)
-
-  bulk_term = sum(∫( (gradient(eu_skel)⊙(inv_metric_cf_skel⋅gradient(eu_skel)))*( area_form_cf_skel*meas_cf_skel  )  )dΛ)
-  # jump_term =  (sum(∫( (jump(uh_skel)⋅(metric_cf_skel ⋅ jump(uh_skel)))*( area_form_cf_skel*meas_cf_skel ) )dΛ))
-
-
-  function jump_u(uh,nΛ,area)
-    (uh.plus⋅nΛ.plus)/area.plus + (uh.minus⋅nΛ.minus)/area.minus
-  end
-
-  jump_term = (sum(∫( ( jump_u(uh_skel,nΛ,area_skel)*jump_u(uh_skel,nΛ,area_skel)  )*(  meas_cf_skel*area_form_cf_skel ) )dΛ))
-dir = @__DIR__
-   writevtk_with_cell_geomap(AmbientMapCellField(Λ),Λ,dir*"/jumps",
-          cellfields=["plus"=>plus, "minus"=>minus,
-          "dif"=> plus - minus, "jump"=>plus+minus],append=false)
-
-
-
-
-
-  sum( ∫( ( (plus+minus)*(plus+minus)   ) )dΛ )
-
-
-
-
-  # jump_term =  (sum(∫( (jump(covariant_basis_cf_skel⋅uh_skel)⋅jump(covariant_basis_cf_skel⋅uh_skel))*( area_form_cf_skel*meas_cf_skel ) )dΛ))
-#
+  # bulk_term = sum(∫( (gradient(eu_skel)⊙(inv_metric_cf_skel⋅gradient(eu_skel)))*( area_form_cf_skel*meas_cf_skel  )  )dΛ)
 
  _i_am_main && println("eu = $(eu_l2), ep = $(ep_l2), euh1 = $eu_h1")
-  _i_am_main && println("bulk= $(bulk_term), jump = $(jump_term)")
 
 
   if return_vtk
@@ -291,7 +234,7 @@ dir = @__DIR__
 
   n = num_cells(atlas_model)/6
   n_ref = lvl
-  output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc bulk_term jump_term
+  output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term
   safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
 
 
@@ -308,7 +251,7 @@ function main(models::AbstractArray;ps=[2,3,4],_i_am_main=true)
   p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls;_i_am_main=_i_am_main)
 end
 
-n_ref_lvls = 4
+n_ref_lvls = 5
 radius = 1.0
 models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 
@@ -328,12 +271,12 @@ options = """
 GridapPETSc.Init(args=split(options))
 ls = GridapPETSc.PETScLinearSolver()
 
-# p_fe = 2
+p_fe = 4
 # ls = LUSolver()
 # ls = BackslashSolver()
-for p_fe in [2]
+# for p_fe in [2]
   for model in models
     surface_stokes(model,
       p_fe,@__DIR__,uX,pX,ls,true;_i_am_main=true)
   end
-end
+# end
