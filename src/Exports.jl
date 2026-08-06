@@ -51,6 +51,7 @@ end
 @publish CellData MeasureCellField
 @publish CellData AmbientMapCellField
 @publish CellData LatLonMapCellField
+@publish CellData PerpMetricCellField
 @publish CellData Δs
 @publish CellData vecΔs
 @publish CellData ∇s
@@ -59,6 +60,8 @@ end
 @publish CellData skew_∇s
 @publish CellData skew_divs
 @publish CellData dagger
+@publish CellData vecΔs_2D
+@publish CellData ∇s_contra
 @publish CellData pushforward_normal
 @publish CellData pushforward_reference_normal
 @publish CellData pushforward_parametric_normal

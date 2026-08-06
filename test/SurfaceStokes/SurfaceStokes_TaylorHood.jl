@@ -7,15 +7,18 @@ The pressure is in H1 continuous lagrangian, order_p = order_u - 1
 Using the Taylor--Hood pair
 """
 
-using GridapGeosciences
+module SurfaceStokes_TaylorHood
+
 using Gridap
 using Gridap.Helpers
-using DrWatson
- using Gridap.Geometry
+using Gridap.Algebra
+using Gridap.Geometry
+using GridapGeosciences
 import GridapGeosciences.Geometry: get_cell_ambient_maps
 import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
+using GridapP4est
+using Test
 
-include("operator.jl")
 
 ## Need to use velocity field that is tangent, but not divergence free. Thus, the
 ## incompressibility condition div u = 0 does not hold, and the Stokes system
@@ -24,13 +27,6 @@ include("operator.jl")
 uX(x) = VectorValue(x[1]*x[3], x[2]*x[3], x[3]^2 - 1)
 pX(x) = x[3]
 
-n_ref_lvls = 2
-radius = 1.0
-models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
-atlas_model = models[end-1]
-p_fe = 2
-ls = LUSolver()
-_i_am_main = true
 
 function surface_stokes(atlas_model,
   p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
@@ -59,7 +55,7 @@ function surface_stokes(atlas_model,
 
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
 
-  perp_metric_cf = PerpMetric(Ω_atlas)
+  perp_metric_cf = PerpMetricCellField(Ω_atlas)
 
   ## Expanded product rule to help with weak form
   # div ( √g u) = div(u)*√g + u⋅gradient(√g)
@@ -105,14 +101,6 @@ function surface_stokes(atlas_model,
   biform((u,p),(v,q)) = biform_curl((u,p),(v,q)) + biform_u((u,p),(v,q)) + biform_p((u,p),(v,q))
 
 
-  # the manufactured solution is exactly the LHS operator
-  #  liform((v,q)) = (
-  #    ∫( (-1.0*ν*rhs_curl_cf⋅(metric_cf⋅v))*meas_cf  )dΩ
-  #   +  ∫( (u_int⋅ (metric_cf⋅v))*(meas_cf) )dΩ
-  #   + ∫( (gradient(p_int)⋅v)*meas_cf )dΩ # assume regularity to IBP
-  #   + ∫( q*divg_product_rule(u_int) )dΩ
-  #   )
-
   liform((v,q)) = ∫( (rhs⋅(metric_cf⋅v))*meas_cf  )dΩ + ∫( (sigma_cf*q)*meas_cf )dΩ
 
   # ## FE problem
@@ -124,9 +112,6 @@ function surface_stokes(atlas_model,
   solve!(x,ns,b)
   xh = FEFunction(X,x)
   uh,ph = xh
-  # uh = FEFunction(U,rand(num_free_dofs(U)))
-  u_ambient = covariant_basis_cf⋅uh
-
 
   # For the depth, the $L^2$ norm of the error between the exact and numerical solutions is computed as
   ep = p_int - ph
@@ -138,12 +123,14 @@ function surface_stokes(atlas_model,
   eu_l2 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) )dΩ_error))
   eu_h1 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) + (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
+  ######### START JUMP CALCS -- for publication
+  u_ambient = covariant_basis_cf⋅uh
+  eu = u_contra_cf - uh
+  eu_ambient = covariant_basis_cf⋅eu
+
   ## To help with plotting, split the terms of the H1 norm
   mass_term = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf)   )dΩ_error))
   grad_term = sqrt(sum(∫( (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
-
-  ######### START JUMP CALCS
-  eu_ambient = covariant_basis_cf⋅eu
 
   ## 1. restrict the ambient solution to plus and minus side
   u_tilde_plus = (eu_ambient).plus
@@ -181,44 +168,17 @@ function surface_stokes(atlas_model,
 
   ## 5. Evaluate jump norm at quadrature points. Use ⊙ to take the double contraction
   dΛ = Measure(Λ,3*degree)
-  meas_skel = MeasureCellField(Λ)
-  area_skel =  pullback_area_form(Λ)
-  jump_norm = sqrt(sum(∫( (jump⊙jump)*(meas_cf.plus * area_skel.plus) )dΛ))
-
-
+  area_skel = pullback_area_form(Λ)
   γ = 1.0
   dxx = dx(atlas_model)
-  jump_times = jump_norm*dxx
+  jump_norm_scaled = 1.0/sqrt(dxx) * sqrt(sum(  1/dxx*∫( (jump⊙jump)*(meas_cf.plus * area_skel.plus) )dΛ))
 
-   _i_am_main && println("jump_norm = $(jump_norm), jump_times = $(jump_times)")
-
-
-
-  #### OLD!!
-
-
-  # function change_fe_func_to_skel(fe_func, Λ)
-  #   cdata_plus = change_domain(fe_func, Λ.trian.plus,DomainStyle(fe_func))
-  #   plus =  Gridap.CellData.GenericCellField(get_data(cdata_plus), Λ, Gridap.CellData.DomainStyle(fe_func))
-
-  #   cdata_minus = change_domain(fe_func, Λ.trian.minus,DomainStyle(fe_func))
-  #   minus =  Gridap.CellData.GenericCellField(get_data(cdata_minus), Λ, Gridap.CellData.DomainStyle(fe_func))
-
-  #   fe_func_skel = Gridap.CellData.SkeletonCellFieldPair(plus,minus)
-  #   fe_func_skel
-  # end
-
-  # eu_skel = change_fe_func_to_skel(eu,Λ)
-  # uh_skel = change_fe_func_to_skel(uh,Λ)
-
-  # inv_metric_cf_skel = InvMetricCellField(Λ).plus
-  # metric_cf_skel = MetricCellField(Λ).plus
-  # meas_cf_skel = MeasureCellField(Λ).plus
-  # area_form_cf_skel = pullback_area_form(Λ).plus
-  # ambient_map_cf = AmbientMapCellField(Λ).plus
-  # covariant_basis_cf_skel = transpose∘∇(ambient_map_cf)
-
-  # bulk_term = sum(∫( (gradient(eu_skel)⊙(inv_metric_cf_skel⋅gradient(eu_skel)))*( area_form_cf_skel*meas_cf_skel  )  )dΛ)
+  ## 6. Save the solution using DrWatson (needs to be installed locally)
+  # n = num_cells(atlas_model)/6
+  # n_ref = lvl
+  # output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term jump_norm_scaled
+  # safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
+  ######### END JUMP CALCS -- for publication
 
  _i_am_main && println("eu = $(eu_l2), ep = $(ep_l2), euh1 = $eu_h1")
 
@@ -231,52 +191,20 @@ function surface_stokes(atlas_model,
           cellfields=cellfields,append=false)
   end
 
-
-  n = num_cells(atlas_model)/6
-  n_ref = lvl
-  output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term
-  safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
-
-
-
-  return eu_l2, ep_l2, false
+  return eu_h1, ep_l2, false
 
 end
 
-
-function main(models::AbstractArray;ps=[2,3,4],_i_am_main=true)
+################################################################################
+#### Auto convergence test
+################################################################################
+function main(models::AbstractArray;ps=[2],_i_am_main=true)
   # Taylor hood pair requires p≥2
   ls = LUSolver()
   dir = @__DIR__
   p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls;_i_am_main=_i_am_main)
 end
 
-n_ref_lvls = 5
-radius = 1.0
-models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 
 
-using GridapPETSc
-options = """
-          -ksp_type preonly -ksp_error_if_not_converged true
-          -pc_type lu -pc_factor_mat_solver_type mumps
-          -mat_mumps_icntl_1 4
-          -mat_mumps_icntl_4 0
-          -mat_mumps_icntl_7 0
-          -mat_mumps_icntl_14 100
-          -mat_mumps_icntl_28 1
-          -mat_mumps_icntl_29 2
-          -mat_mumps_cntl_3 1.0e-6
-          """
-GridapPETSc.Init(args=split(options))
-ls = GridapPETSc.PETScLinearSolver()
-
-p_fe = 4
-# ls = LUSolver()
-# ls = BackslashSolver()
-# for p_fe in [2]
-  for model in models
-    surface_stokes(model,
-      p_fe,@__DIR__,uX,pX,ls,true;_i_am_main=true)
-  end
-# end
+end

@@ -4,5 +4,4 @@ include("../SurfaceStokes_TaylorHood.jl")
 n_ref_lvls = 4
 radius = 1.0
 models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
-main(models;ps=[2])
-# SurfaceStokes_TaylorHood.main(models)
+SurfaceStokes_TaylorHood.main(models)

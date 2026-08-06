@@ -3,13 +3,16 @@
 where Δᵧ(̃u) = ∇ᵧ(∇ᵧ⋅̃u) - ∇ᵧ^⟂(∇ᵧ^⟂ ⋅ ̃u)
 """
 
-using GridapGeosciences
+
+module VectorLaplacian2D
+
 using Gridap
 using Gridap.Helpers
-
+using Gridap.Algebra
+using GridapGeosciences
 import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
-
-include("operator.jl")
+using GridapP4est
+using Test
 
 uX(x) = VectorValue(x[1]*x[3], x[2]*x[3], x[3]^2 - 1)
 
@@ -34,7 +37,7 @@ function vector_laplacian2d(atlas_model,
 
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
 
-  perp_metric_cf = PerpMetric(Ω_atlas) # R*g
+  perp_metric_cf = PerpMetricCellField(Ω_atlas) # R*g
 
   ## Expanded product rule to help with weak form
   # div ( √g u) = div(u)*√g + u⋅gradient(√g)
@@ -87,48 +90,15 @@ function vector_laplacian2d(atlas_model,
 
 end
 
-
-function main(models::AbstractArray;ps=[1,2,3],_i_am_main=true)
+################################################################################
+#### Auto convergence test
+################################################################################
+function main(models::AbstractArray;ps=[2],_i_am_main=true)
   ls = LUSolver()
   dir = @__DIR__
   p_convergence_auto_test(ps,models,vector_laplacian2d,dir,uX,ls;_i_am_main=_i_am_main)
 end
 
-# n_ref_lvls = 4
-# radius = 1.0
-# models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
-# main(models)
 
 
-
-
-# using Plots
-# e_p1 = [0.0838810603261452, 0.021195507901009464, 0.005517045873698801, 0.0016305133693349221]
-# e_p2 = [0.02808268995395562, 0.0036914369043910982, 0.000275514518401057, 2.6693363759415473e-5]
-# e_p3 = [0.002301214919325417, 0.00019751766551319804, 1.4756926516761667e-5, 9.86219929353771e-7]
-
-# xplot = [2,4,8,16]
-# zz = 2e-1xplot.^(-2)
-# ww = 0.75e-1xplot.^(-3)
-# qq = 9e-2xplot.^(-4)
-
-# plot()
-
-# plot!(xplot, e_p1,  lw=2,marker=:circle,label="p=1")
-# plot!(xplot, e_p2,  lw=2,marker=:square, label="p=2")
-# plot!(xplot, e_p3,  lw=2,marker=:diamond,label="p=3")
-
-# plot!(xplot,zz,lw=2,color=:blue,label="lvl^2")
-# plot!(xplot,ww,lw=2,color=:orange,label="lvl^3")
-# plot!(xplot,qq,lw=2,color=:green,label="lvl^4")
-# plot!(shape=:auto,
-#     xaxis=:log2,yaxis=:log10,
-#     xlabel="lvl",
-#     ylabel="L^2 error",
-#     framestyle = :box,
-#     legend_columns=3,
-#     )
-# xs = xplot#2.0.^(log2.(ns))
-# xl = map(x->string(Int(log2((x)))),xs)
-# plot!(xticks = (xs, xl))
-# savefig(joinpath(@__DIR__,"convergence_vec_lap_H1.png"))
+end # module
