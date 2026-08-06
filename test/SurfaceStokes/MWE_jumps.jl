@@ -33,10 +33,28 @@ u_ambient = covariant_basis_cf⋅uh
 u_tilde_plus = (u_ambient).plus
 u_tilde_minus = (u_ambient).minus
 
+
+###### get a mask that is the interface of charts
+topo = get_grid_topology(model)
+Dc = num_cell_dims(topo)
+e2c = Gridap.Geometry.get_faces(topo,1,Dc)
+panel_ids = get_cell_ambient_maps(model).ptrs
+
+mask = zeros(num_facets(model))
+for (i,edge) in enumerate(e2c)
+  pid_1 = panel_ids[edge[1]]
+  pid_2 = panel_ids[edge[2]]
+  if pid_1 != pid_2
+    mask[i] = 1
+  end
+end
+
+
 ##### START SKELETON
-Λ = SkeletonTriangulation(model)
+Λ = SkeletonTriangulation(model,Bool.(mask))
 pts_plus = get_cell_points(Λ.plus)
 pts_minus = get_cell_points(Λ.minus)
+pts = get_cell_points(Λ)
 
 ambient_map_cf = AmbientMapCellField(Λ)
 J_plus = transpose∘∇(ambient_map_cf.plus)
@@ -60,3 +78,19 @@ sum(map(x->norm.(x),_plus_out))
 
 ### See that the jump of the skeleton solution is not zero
 u_skel_plus(pts_plus) - u_skel_minus(pts_minus)
+
+
+n_tilde = pushforward_reference_normal(Λ)
+n_tilde_plus = n_tilde.plus
+n_tilde_minus = n_tilde.minus
+
+(n_tilde_plus)(pts) + (n_tilde_minus)(pts)
+u_tilde_plus(pts) - u_tilde_minus(pts)
+
+jump = u_tilde_plus ⊗ n_tilde_plus + u_tilde_minus ⊗ n_tilde_minus
+out_nodes = (jump⊙jump)(pts)
+
+dΛ = Measure(Λ,6)
+pts_quad = get_cell_points(dΛ)
+out_quad = (jump⊙jump)(pts_quad)
+sum(∫( jump⊙jump )dΛ)
