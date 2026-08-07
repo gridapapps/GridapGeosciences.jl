@@ -233,9 +233,9 @@ function AmbientMapCellField(
               <:BFTATDM{Dc,Dp}}},
 ) where {Dc,Dp}
   m_cf_plus_bt = AmbientMapCellField(trian.plus)
-  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian.plus, Gridap.CellData.DomainStyle(m_cf_plus_bt))
   m_cf_minus_bt = AmbientMapCellField(trian.minus)
-  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian.minus, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
@@ -245,9 +245,9 @@ function AmbientMapCellField(
               <:BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}},
 ) where {Dc,Dp}
   m_cf_plus_bt = AmbientMapCellField(trian.trian.plus)
-  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian, Gridap.CellData.DomainStyle(m_cf_plus_bt))
+  plus = GenericCellField(Gridap.CellData.get_data(m_cf_plus_bt), trian.trian.plus, Gridap.CellData.DomainStyle(m_cf_plus_bt))
   m_cf_minus_bt = AmbientMapCellField(trian.trian.minus)
-  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian, Gridap.CellData.DomainStyle(m_cf_minus_bt))
+  minus = GenericCellField(Gridap.CellData.get_data(m_cf_minus_bt), trian.trian.minus, Gridap.CellData.DomainStyle(m_cf_minus_bt))
   SkeletonPair(plus,minus)
 end
 
