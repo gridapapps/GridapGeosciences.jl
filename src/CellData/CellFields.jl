@@ -364,6 +364,7 @@ end
 perp_metric(m::Field) = x -> perp(metric(m,x))
 
 function PerpMetricCellField(Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}) where {Dc, Da, G, A, P, C, O}
+  # perp ∘ MetricCellField(Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
   cell_field = lazy_map(m->GenericField(perp_metric(m)),ambient_maps)
@@ -373,6 +374,6 @@ end
 function PerpMetricCellField(
     trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
 ) where {Dc,Dp}
-  cf = PerpMetric(trian.trian)
+  cf = PerpMetricCellField(trian.trian)
   Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
 end

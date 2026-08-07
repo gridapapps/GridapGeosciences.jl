@@ -62,8 +62,14 @@ or 2/3D ambient model
 
 function perp(vec::VectorValue{2})
   VectorValue(-vec[2],vec[1])
-end  
+end
 
 function perp(t::TensorValue{2,2})
   TensorValue(-t[2,1],t[1,1],-t[2,2],t[1,2])
+end
+
+function perp(symA::SymTensorValue{2,Float64,3})
+  d = symA.data
+  A = TensorValue{2,2}(d[1],d[2],d[2],d[3])
+  perp(A)
 end
