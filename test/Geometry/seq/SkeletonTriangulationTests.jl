@@ -1,14 +1,28 @@
+"""
+This test is related to https://github.com/gridapapps/GridapGeosciences.jl/issues/59
+
+In this test, want to ensure the following two approaches are equivalent:
+1. compute the ambient solution and then restrict to the plus and minus sides in the ambient space.
+2. restrict to the plus and minus side in the chart, and push with a Jacobian that is restricted,
+
+For H1 vector fields, want to ensure we have continuity at the nodes from either
+side of the skeleton mesh that corresponds to the interface of charts
+(i.e. where panel_ids differ on either side)
+
+"""
+
+module SkeletonTriangulationTests
 
 using GridapGeosciences
 using Gridap
 using Gridap.Helpers
- using Gridap.Geometry
+using Gridap.Geometry
 import GridapGeosciences.Geometry: get_cell_ambient_maps
 
-## The pressure field is zeromean
+## Velocity field in tangent space of sphere
 uX(x) = VectorValue(x[1]*x[3], x[2]*x[3], x[3]^2 - 1)
 
-n_ref_lvls = 2
+n_ref_lvls = 1
 radius = 1.0
 models = generate_refined_models(n_ref_lvls, CubedSphereMesh(radius), IntrinsicManifold())
 atlas_model = models[end]
@@ -50,47 +64,33 @@ for (i,edge) in enumerate(e2c)
 end
 
 
-##### START SKELETON
+##### Skeleton mesh using the mask
 Λ = SkeletonTriangulation(model,Bool.(mask))
 pts_plus = get_cell_points(Λ.plus)
 pts_minus = get_cell_points(Λ.minus)
 pts = get_cell_points(Λ)
 
+### restrict to the plus and minus side in the chart, and push with a Jacobian that is restricted,
 ambient_map_cf = AmbientMapCellField(Λ)
 J_plus = transpose∘∇(ambient_map_cf.plus)
 J_minus = transpose∘∇(ambient_map_cf.minus)
-
-## Compute the plus solution with the plus jacobian (same for minus sol)
 u_skel_plus = J_plus⋅(uh.plus)
 u_skel_minus = J_minus⋅(uh.minus)
 
 ### Check that the restriction of the ambient solution to the plus side (u_tilde_plus)
-### is equivanelt to J.plus ⋅ u.plus
-plus_out = (u_tilde_plus - u_skel_plus)(pts_plus)
-sum(map(x->norm(x),plus_out))
+### is equivanelt to J.plus ⋅ u.plus. And same for minus side
+@check all(u_tilde_plus(pts_plus) .≈ u_skel_plus(pts_plus))
+@check all(u_tilde_minus(pts_minus) .≈ u_skel_minus(pts_minus))
 
-### However, not the same for minus
-minus_out = (u_tilde_minus - u_skel_minus)(pts_minus) ## some of these values are not zero
+### Check the jump of the ambient solution and the skeleton solution is zero
+@check all( u_tilde_plus(pts_plus) .≈ u_tilde_minus(pts_minus))
+@check all( u_skel_plus(pts_plus) .≈ u_skel_minus(pts_minus))
 
-### Check the jump of the ambient solution is zero
-_plus_out = u_tilde_plus(pts_plus) - u_tilde_minus(pts_minus)
-sum(map(x->norm.(x),_plus_out))
-
-### See that the jump of the skeleton solution is not zero
-u_skel_plus(pts_plus) - u_skel_minus(pts_minus)
-
-
+### Check the continuity of the normal vector
 n_tilde = pushforward_reference_normal(Λ)
 n_tilde_plus = n_tilde.plus
 n_tilde_minus = n_tilde.minus
+@check all((n_tilde_plus)(pts) .≈ -(n_tilde_minus)(pts))
 
-(n_tilde_plus)(pts) + (n_tilde_minus)(pts)
-u_tilde_plus(pts) - u_tilde_minus(pts)
 
-jump = u_tilde_plus ⊗ n_tilde_plus + u_tilde_minus ⊗ n_tilde_minus
-out_nodes = (jump⊙jump)(pts)
-
-dΛ = Measure(Λ,6)
-pts_quad = get_cell_points(dΛ)
-out_quad = (jump⊙jump)(pts_quad)
-sum(∫( jump⊙jump )dΛ)
+end  # module

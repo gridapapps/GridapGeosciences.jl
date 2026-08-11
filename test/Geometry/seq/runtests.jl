@@ -8,4 +8,6 @@ using Test
 
 @testset "Refinement" begin include("RefinementTests.jl") end
 
+@testset "SkeletonTriangulation" begin include("SkeletonTriangulationTests.jl") end
+
 @testset "SurfaceArea" begin include("SurfaceAreaTests.jl") end
