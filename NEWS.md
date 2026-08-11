@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - tests for the surface Stokes problem (2D) using the Taylor--Hood inf-sup pair, and the associated vector Laplacian problem
 in 2D.  
+- added `test/Geometry/seq/SkeletonTriangulationTests.jl` to test the fix for [Issue#59](https://github.com/gridapapps/GridapGeosciences.jl/issues/59) 
 
 ### Changed
 - ` ∇s` and `skew_∇s` now return contravariant components. This aligns with the theory paper
+- For `SkeletonPair{<:CellField}`, each side lives on the corresponding `BoundaryTriangulation`. i.e. `SkeletonTriangulation.plus`
+and `SkeletonTriangulation.minus` respectively. This is different to what Gridap current does where both sides live on the 
+`SkeletonTriangulation`, which is problematic for `AtlasGrid` without a global coordinate system. See [Issue#59](https://github.com/gridapapps/GridapGeosciences.jl/issues/59) 
 
 ### Removed
 
