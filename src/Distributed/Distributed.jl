@@ -21,7 +21,7 @@ import GridapDistributed: BoundaryTriangulation
 import GridapDistributed: CellField
 
 using GridapGeosciences.Geometry
-import GridapGeosciences.CellData: pullback_area_form, pushforward_normal, 
+import GridapGeosciences.CellData: pullback_area_form, pushforward_normal,
                                    pushforward_reference_normal, pushforward_parametric_normal
 import GridapGeosciences.Geometry: NPANELS, CUBE_HALF_EDGE
 import GridapGeosciences.CellData: get_sphere_surface_normal
@@ -47,9 +47,12 @@ import GridapGeosciences.CellData: InvMetricCellField
 import GridapGeosciences.CellData: MeasureCellField
 import GridapGeosciences.CellData: Δs
 import GridapGeosciences.CellData: ∇s
+import GridapGeosciences.CellData: ∇s_contra
+import GridapGeosciences.CellData: vecΔs_2D
+import GridapGeosciences.CellData: divs
 
-import GridapGeosciences.Geometry: BFTATDMIM, 
-                                   IntrinsicAtlasDiscreteModel, 
+import GridapGeosciences.Geometry: BFTATDMIM,
+                                   IntrinsicAtlasDiscreteModel,
                                    ExtrinsicAtlasDiscreteModel
 
 include("AtlasOctreeDistributedDiscreteModels.jl")

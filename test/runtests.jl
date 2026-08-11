@@ -100,3 +100,7 @@ end
 if TESTCASE ∈ ("all", "mpi", "mpi-ambient-model")
   include("AmbientModel/mpi/runtests.jl")
 end
+
+if TESTCASE ∈ ("all", "mpi", "mpi-stokes")
+  include("SurfaceStokes/mpi/runtests.jl")
+end

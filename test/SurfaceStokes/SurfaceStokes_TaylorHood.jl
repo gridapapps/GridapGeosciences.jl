@@ -30,7 +30,7 @@ pX(x) = x[3]
 
 
 function surface_stokes(atlas_model,
-  p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false;
+  p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false,jumpCalcs=false;
   _i_am_main=true)
 
   α = 1.0
@@ -43,7 +43,6 @@ function surface_stokes(atlas_model,
   @check p_fe >= 2 "/n # Taylor hood pair requires p≥2 "
 
   degree = 6*(p_fe+1)
-  println("degree = ", degree)
   Ω_atlas = Triangulation(atlas_model)
   dΩ = Measure(Ω_atlas,degree)
   dΩ_error = Measure(Ω_atlas,3*degree)
@@ -137,57 +136,61 @@ function surface_stokes(atlas_model,
   grad_term = sqrt(sum(∫( (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
   ######### START JUMP CALCS -- for publication
-  u_ambient = covariant_basis_cf⋅uh
-  eu = u_contra_cf - uh
-  eu_ambient = covariant_basis_cf⋅eu
+  if jumpCalcs ## only if serial model
+    _i_am_main && println("computing jump calcs")
+    u_ambient = covariant_basis_cf⋅uh
+    eu = u_contra_cf - uh
+    eu_ambient = covariant_basis_cf⋅eu
 
-  ## 1. restrict the ambient solution to plus and minus side
-  u_tilde_plus = (eu_ambient).plus
-  u_tilde_minus = (eu_ambient).minus
+    ## 1. restrict the ambient solution to plus and minus side
+    u_tilde_plus = (eu_ambient).plus
+    u_tilde_minus = (eu_ambient).minus
 
-  ## 2. Make a skeleton triangulation of the interface of charts
+    ## 2. Make a skeleton triangulation of the interface of charts
 
-  # 2a. get a mask that is the interface of charts
-  topo = get_grid_topology(atlas_model)
-  Dc = num_cell_dims(topo)
-  e2c = Gridap.Geometry.get_faces(topo,1,Dc)
-  panel_ids = get_cell_ambient_maps(atlas_model.model).ptrs
+    # 2a. get a mask that is the interface of charts
+    topo = get_grid_topology(atlas_model)
+    Dc = num_cell_dims(topo)
+    e2c = Gridap.Geometry.get_faces(topo,1,Dc)
+    panel_ids = get_cell_ambient_maps(atlas_model.model).ptrs
 
-  mask = zeros(num_facets(atlas_model))
-  for (i,edge) in enumerate(e2c)
-    pid_1 = panel_ids[edge[1]]
-    pid_2 = panel_ids[edge[2]]
-    if pid_1 != pid_2
-      mask[i] = 1
+    mask = zeros(num_facets(atlas_model))
+    for (i,edge) in enumerate(e2c)
+      pid_1 = panel_ids[edge[1]]
+      pid_2 = panel_ids[edge[2]]
+      if pid_1 != pid_2
+        mask[i] = 1
+      end
     end
+
+    # 2b. Skeleton triangulation:  for simplicity, extract the trian out of the adapted trian
+    skel = SkeletonTriangulation(atlas_model,Bool.(mask))
+    Λ = skel.trian
+
+    ## 3. Compute the pushforward of the skeleton normal vector. Then restrict to plus and minus sides
+    n_tilde = pushforward_reference_normal(Λ)
+    n_tilde_plus = n_tilde.plus
+    n_tilde_minus = n_tilde.minus
+
+    ## 4. Compute the jump term [u ⊗ n] as per https://doi.org/10.1007/s10915-008-9261-1
+    ## This is the outer product of two vectors. So returns a A_ij = v_i*w_j
+    jump = u_tilde_plus ⊗ n_tilde_plus + u_tilde_minus ⊗ n_tilde_minus
+
+    ## 5. Evaluate jump norm at quadrature points. Use ⊙ to take the double contraction
+    dΛ = Measure(Λ,3*degree)
+    area_skel = pullback_area_form(Λ)
+    γ = 1.0
+    dxx = dx(atlas_model)
+    jump_norm_scaled = 1.0/sqrt(dxx) * sqrt(sum(  1/dxx*∫( (jump⊙jump)*(meas_cf.plus * area_skel.plus) )dΛ))
+
+    ## 6. Save the solution using DrWatson (needs to be installed locally)
+    # n = num_cells(atlas_model)/6
+    # n_ref = lvl
+    # output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term jump_norm_scaled
+    # safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
+    ######### END JUMP CALCS -- for publication
+
   end
-
-  # 2b. Skeleton triangulation:  for simplicity, extract the trian out of the adapted trian
-  skel = SkeletonTriangulation(atlas_model,Bool.(mask))
-  Λ = skel.trian
-
-  ## 3. Compute the pushforward of the skeleton normal vector. Then restrict to plus and minus sides
-  n_tilde = pushforward_reference_normal(Λ)
-  n_tilde_plus = n_tilde.plus
-  n_tilde_minus = n_tilde.minus
-
-  ## 4. Compute the jump term [u ⊗ n] as per https://doi.org/10.1007/s10915-008-9261-1
-  ## This is the outer product of two vectors. So returns a A_ij = v_i*w_j
-  jump = u_tilde_plus ⊗ n_tilde_plus + u_tilde_minus ⊗ n_tilde_minus
-
-  ## 5. Evaluate jump norm at quadrature points. Use ⊙ to take the double contraction
-  dΛ = Measure(Λ,3*degree)
-  area_skel = pullback_area_form(Λ)
-  γ = 1.0
-  dxx = dx(atlas_model)
-  jump_norm_scaled = 1.0/sqrt(dxx) * sqrt(sum(  1/dxx*∫( (jump⊙jump)*(meas_cf.plus * area_skel.plus) )dΛ))
-
-  ## 6. Save the solution using DrWatson (needs to be installed locally)
-  # n = num_cells(atlas_model)/6
-  # n_ref = lvl
-  # output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term jump_norm_scaled
-  # safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
-  ######### END JUMP CALCS -- for publication
 
  _i_am_main && println("eu = $(eu_l2), ep = $(ep_l2), euh1 = $eu_h1")
 
@@ -207,11 +210,11 @@ end
 ################################################################################
 #### Auto convergence test
 ################################################################################
-function main(models::AbstractArray;ps=[2],_i_am_main=true)
+function main(models::AbstractArray;ps=[2],_i_am_main=true,jumpCalcs=false)
   # Taylor hood pair requires p≥2
   ls = LUSolver()
   dir = @__DIR__
-  p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls;_i_am_main=_i_am_main)
+  p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls,jumpCalcs;_i_am_main=_i_am_main)
 end
 
 
