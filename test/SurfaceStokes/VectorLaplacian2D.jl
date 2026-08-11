@@ -1,4 +1,4 @@
-""" Solve the vector Laplacian in 2D in primial form using H1 vector-valued elements
+""" Solve the vector Laplacian in 2D in primal form using H1 vector-valued elements
 -Δᵧ(̃u) = ̃f
 where Δᵧ(̃u) = ∇ᵧ(∇ᵧ⋅̃u) - ∇ᵧ^⟂(∇ᵧ^⟂ ⋅ ̃u)
 """

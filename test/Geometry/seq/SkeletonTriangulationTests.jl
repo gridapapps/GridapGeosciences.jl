@@ -78,7 +78,7 @@ u_skel_plus = J_plus⋅(uh.plus)
 u_skel_minus = J_minus⋅(uh.minus)
 
 ### Check that the restriction of the ambient solution to the plus side (u_tilde_plus)
-### is equivanelt to J.plus ⋅ u.plus. And same for minus side
+### is equivalent to J.plus ⋅ u.plus. And same for minus side
 @check all(u_tilde_plus(pts_plus) .≈ u_skel_plus(pts_plus))
 @check all(u_tilde_minus(pts_minus) .≈ u_skel_minus(pts_minus))
 

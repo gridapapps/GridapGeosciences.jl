@@ -485,6 +485,6 @@ end
 function vecΔs_2D(f::Function,
               Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
               use_automatic_differentiation=true) where {Dc, Da, G, A, P, C, O}
-  vecΔs_2D_trian = use_automatic_differentiation ? _vecΔs_ad_2D(f, Ω_atlas) : _vecΔs_no_ad_2D(f, Ω_atlas)
+  vecΔs_2D_trian = use_automatic_differentiation ? _vecΔs_ad_2D(f, Ω_atlas.trian) : _vecΔs_no_ad_2D(f, Ω_atlas.trian)
   Gridap.CellData.GenericCellField(get_data(vecΔs_2D_trian), Ω_atlas, Gridap.CellData.DomainStyle(vecΔs_2D_trian))
 end

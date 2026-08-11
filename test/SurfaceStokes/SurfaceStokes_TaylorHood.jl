@@ -73,7 +73,7 @@ function surface_stokes(atlas_model,
   p_cf = pX∘ambient_map_cf
   u_contra_cf = (pinvJ∘covariant_basis_cf)⋅(uX∘ambient_map_cf)
 
-  sum(∫( p_cf  )dΩ) # check zeromean
+  @check sum(∫(p_cf*meas_cf)dΩ) < 1e-14 "Function must be zero mean to solve with zeromean FE space!" # check zeromean
 
   sigma_cf = divs(uX,Ω_atlas) # div u to add to pressure equation
   rhs_curl_cf = vecΔs_2D(uX, Ω_atlas)
