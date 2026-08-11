@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- tests for the surface Stokes problem (2D) using the Taylor--Hood inf-sup pair, and the associated vector Laplacian problem
+in 2D. These tests required adding `∇s_contra` to the SurfaceDiffOps
+
+### Changed
+
+### Removed
+
+## [0.7.0] - 2026-07-21
+
 Major rewrite introducing the **Atlas** discrete model abstraction, a general multi-chart representation of curved manifolds that replaces the previous ad-hoc family of `CubedSphere*Parametric*`/`CubedSphere*Ambient*` models.
 
 ### Added
@@ -42,7 +52,7 @@ Major rewrite introducing the **Atlas** discrete model abstraction, a general mu
 - Fixed the `OrientationStyle` type-parameter count in `AtlasGrid`, and the ambient-dimension type parameter of `AtlasOctreeDistributedDiscreteModel` (was hard-coded to 2, should be 3).
 - `skew_∇s`, `skew_divs`, and `dagger` are now restricted to 2D manifolds; previously they could be (silently incorrectly) called on 3D shell models.
 
-## [0.6.2] - 2024-06-25 
+## [0.6.2] - 2026-06-25 
 
 ### Added
 - `benchmark/` to compare the grad-grad term in the intrinsic vs. extrinsic approach. Follow the instructions in `benchmark/README.md` to run locally.
