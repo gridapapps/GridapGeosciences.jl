@@ -47,7 +47,6 @@ import GridapGeosciences.CellData: InvMetricCellField
 import GridapGeosciences.CellData: MeasureCellField
 import GridapGeosciences.CellData: Δs
 import GridapGeosciences.CellData: ∇s
-import GridapGeosciences.CellData: ∇s_contra
 import GridapGeosciences.CellData: vecΔs_2D
 import GridapGeosciences.CellData: divs
 

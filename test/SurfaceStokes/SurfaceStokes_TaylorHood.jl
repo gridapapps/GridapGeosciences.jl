@@ -77,7 +77,7 @@ function surface_stokes(atlas_model,
 
   sigma_cf = divs(uX,Ω_atlas) # div u to add to pressure equation
   rhs_curl_cf = vecΔs_2D(uX, Ω_atlas)
-  rhs = -1.0*ν*rhs_curl_cf + α*u_contra_cf + ∇s_contra(pX,Ω_atlas)
+  rhs = -1.0*ν*rhs_curl_cf + α*u_contra_cf + ∇s(pX,Ω_atlas) # returns contravariant components
   # rhs = -1.0*ν*rhs_curl_cf + α*u_int + inv_metric_cf⋅(gradient(p_int))
 
   ## FE spaces: Taylor hood pair --> Q2/Q1 continuous

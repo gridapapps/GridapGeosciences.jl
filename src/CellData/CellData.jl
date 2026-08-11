@@ -36,7 +36,6 @@ export skew_∇s
 export skew_divs
 export dagger
 export vecΔs_2D
-export ∇s_contra
 
 export pushforward_normal
 export pushforward_reference_normal

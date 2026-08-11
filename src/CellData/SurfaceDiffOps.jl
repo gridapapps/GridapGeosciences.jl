@@ -523,17 +523,3 @@ function _contra_∇s_ad(f, Ω_atlas)
   cell_field = lazy_map(m->GenericField(sgrad_contra(_fm(f,m),m)),ambient_maps)
   CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
 end
-
-
-function ∇s_contra(f::Function,
-            Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
-            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  use_automatic_differentiation ? _contra_∇s_ad(f, Ω_atlas) : _contra_∇s_no_ad(f, Ω_atlas)
-end
-
-function ∇s_contra(f::Function,
-            Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
-            use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  ∇s_trian = use_automatic_differentiation ? _contra_∇s_ad(f, Ω_atlas.trian) : _contra_∇s_no_ad(f, Ω_atlas.trian)
-  Gridap.CellData.GenericCellField(get_data(∇s_trian), Ω_atlas, Gridap.CellData.DomainStyle(∇s_trian))
-end
