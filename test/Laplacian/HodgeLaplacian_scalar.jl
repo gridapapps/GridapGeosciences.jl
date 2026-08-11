@@ -59,7 +59,7 @@ function hodge_laplacian_scalar(atlas_model,
 
   # manufactured RHS
   f_panel_cf = f∘ambient_map_cf
-  sigma_cf = ∇s(f,Ω_atlas;use_automatic_differentiation=false)
+  sigma_cf = ∇s(f,Ω_atlas;use_automatic_differentiation=false) # contra component of sgrad
   slap_panel_cf = Δs(f,Ω_atlas;use_automatic_differentiation=false)
   rhs = -slap_panel_cf
   f_int = interpolate(f_panel_cf,P)
@@ -100,15 +100,15 @@ function hodge_laplacian_scalar(atlas_model,
   _e = f_panel_cf - ph
   el2_p = sqrt(sum(∫( (_e*_e)*meas_cf  )dΩ_error))
 
-  _e = (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (- sigma_cf ) ### u = -∇p
+  _e = (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (- covariant_basis_cf⋅ sigma_cf ) ### u = -∇p
   el2_u = sqrt(sum(∫( (_e⋅_e)*meas_cf  )dΩ_error))
 
  _i_am_main && println("eu = $(el2_u), es = $(el2_p)")
 
   if return_vtk
-    cellfields =  ["u"=> -sigma_cf ,
+    cellfields =  ["u"=> -(covariant_basis_cf⋅sigma_cf) ,
     "uh"=>covariant_basis_cf⋅(1.0/meas_cf*uh),
-    "eu"=> (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (-sigma_cf),
+    "eu"=> (covariant_basis_cf⋅(1.0/meas_cf*uh)) - (-covariant_basis_cf⋅sigma_cf),
     "ph"=>ph, "p"=>f_panel_cf, "e"=>ph-f_panel_cf
                   ]
     writevtk_with_cell_geomap(AmbientMapCellField(Ω_atlas),Ω_atlas,dir*"/ambient_model_nref$(lvl)_p$p_fe",

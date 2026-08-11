@@ -72,7 +72,7 @@ u_dagger_parametric(pts_parametric)
 ################################################################################
 sgrad_cf_ambient = ∇s(ambient_f, Ω_ambient)
 skew_grad_ambient = n_ambient × sgrad_cf_ambient
-skew_grad_parametric = skew_∇s(ambient_f, Ω_parametric)
+skew_grad_parametric = J_cf ⋅ skew_∇s(ambient_f, Ω_parametric)
 
 ### Test the maximum cellwise difference of ∇ᵧ^† f is machine eps
 dif = skew_grad_ambient(pts_ambient) .- skew_grad_parametric(pts_parametric)

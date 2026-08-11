@@ -28,9 +28,9 @@ surflap(f::Function) = m -> surflap(f,m)
 surflap(f::Function,m::Field) = αβ -> 1/sqrtg(m,αβ) * ( divergence(W(f,m))(αβ) )
 W(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
 
-####### sgrad
+####### sgrad: contravariant component
 sgrad(f::Function) = m -> sgrad(f,m)
-sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅ (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
+sgrad(f::Function,m::Field) = αβ -> (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
 
 ####### surf div
 _sdiv(f::Function,m::Field) = αβ ->  sqrtg(m,αβ)*( f(m)(αβ))
@@ -45,10 +45,9 @@ _skew_sdiv(f::Function,m::Field) = αβ -> detg(m,αβ)*inv_metric(m,αβ)⋅(pe
 skew_surfdiv(vec::Function) = m -> skew_surfdiv(vec,m)
 skew_surfdiv(f::Function,m::Field) = αβ ->  -1.0/sqrtg(m,αβ)*(divergence(_skew_sdiv(f,m))(αβ))
 
-####### skew surf grad
-
+####### skew surf grad: contravariant component
 skew_surfgrad(vec::Function) = m -> skew_surfgrad(vec,m)
-skew_surfgrad(f::Function,m::Field) = αβ ->  1.0/sqrtg(m,αβ)*J(m)(αβ)⋅perp(gradient(f(m))(αβ))
+skew_surfgrad(f::Function,m::Field) = αβ ->  1.0/sqrtg(m,αβ)*perp(gradient(f(m))(αβ))
 
 
 

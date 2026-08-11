@@ -113,34 +113,35 @@ function Δs(f::Function,
     _compose(Δs_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
+# returns the contravariant component of surface gradient
 function _∇s_no_ad(f, Ω_atlas)
   # sgrad(f::Function) = m -> sgrad(f,m)
-  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅
-  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
+  # sgrad(f::Function,m::Field) = αβ -> (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   inv_metric_cf = InvMetricCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
   gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
-  covariant_basis_cf⋅(inv_metric_cf⋅gradient_f_cf)
+  (inv_metric_cf⋅gradient_f_cf)
 end
 
+# returns the contravariant component of surface gradient
 function _∇s_ad(f, Ω_atlas)
   # sgrad(f::Function) = m -> sgrad(f,m)
-  # sgrad(f::Function,m::Field) = αβ -> J(m,αβ) ⋅
-  #                                     (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
+  # sgrad(f::Function,m::Field) = αβ -> (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
   cell_field = lazy_map(m->GenericField(sgrad(_fm(f,m),m)),ambient_maps)
   CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
 end
 
-
+# returns the contravariant component of surface gradient
 function ∇s(f::Function,
             Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
   use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
 end
 
+# returns the contravariant component of surface gradient
 function ∇s(f::Function,
             Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
@@ -151,25 +152,33 @@ end
 function ∇s(f::Function,
             Ω_atlas::BFTATDMEM{Dc,Dc,Da,G,A,P,C,O};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  ∇s_parametric_space_contra = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  ∇s_parametric_space = covariant_basis_cf ⋅ ∇s_parametric_space_contra
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
 function ∇s(f::Function,
             Ω_atlas::AdaptedTriangulation{Dc,Da,<:BFTATDMEM{Dc,Dc,Da,G,A,P,C,O}};
             use_automatic_differentiation=false) where {Dc, Da, G, A, P, C, O}
-  ∇s_parametric_space = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  ∇s_parametric_space_contra = use_automatic_differentiation ? _∇s_ad(f, Ω_atlas) : _∇s_no_ad(f, Ω_atlas)
+  ambient_map_cf = AmbientMapCellField(Ω_atlas)
+  covariant_basis_cf = transpose∘∇(ambient_map_cf)
+  ∇s_parametric_space = covariant_basis_cf ⋅ ∇s_parametric_space_contra
   _compose(∇s_parametric_space, InvAmbientMapCellField(Ω_atlas))
 end
 
+# return the contravariant componet
 function _skew_∇s_no_ad(f, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   meas_cf = MeasureCellField(Ω_atlas)
   J_cf = transpose∘∇(ambient_map_cf)
   grad_f_cf = (∇(f)∘ambient_map_cf)⋅J_cf
-  skew_grad_parametric = J_cf⋅(perp∘grad_f_cf)*(1.0/meas_cf)
+  skew_grad_parametric = (perp∘grad_f_cf)*(1.0/meas_cf)
 end
 
+# return the contravariant componet
 function _skew_∇s_ad(f, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
@@ -177,11 +186,13 @@ function _skew_∇s_ad(f, Ω_atlas)
   CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
 end
 
+# return the contravariant componet
 function skew_∇s(f::Function, Ω_atlas::BFTATDMIM{2,2,Da,G,A,P,C,O};
                    use_automatic_differentiation=false) where {Da, G, A, P, C, O}
    use_automatic_differentiation ? _skew_∇s_ad(f, Ω_atlas) : _skew_∇s_no_ad(f, Ω_atlas)
 end
 
+# return the contravariant componet
 function skew_∇s(f::Function,
                   Ω_atlas::AdaptedTriangulation{2,2,<:BFTATDMIM{2,2,Da,G,A,P,C,O}};
                   use_automatic_differentiation=false) where {Da, G, A, P, C, O}
