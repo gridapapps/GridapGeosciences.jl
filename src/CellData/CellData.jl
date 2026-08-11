@@ -12,7 +12,7 @@ using GridapGeosciences.Fields
 import GridapGeosciences.Geometry: BFTATDM, BFTATDMIM, BFTATDMEM
 import GridapGeosciences.Fields: CubedSphereMap
 import Gridap.TensorValues: SymTensorValue
-import GridapGeosciences.Helpers: sqrtg, J, metric, pinvJ, perp, skew_surfdiv, surflap, sphere_surface_normal_vec
+import GridapGeosciences.Helpers: sqrtg, J, metric, inv_metric, detg, pinvJ, perp, skew_surfdiv, surflap, sphere_surface_normal_vec
 import Gridap.Geometry: FaceCompressedVector, push_normal
 
 
@@ -26,7 +26,6 @@ export InvMetricCellField
 export MeasureCellField
 export AmbientMapCellField
 export LatLonMapCellField
-export PerpMetricCellField
 
 export Δs
 export vecΔs

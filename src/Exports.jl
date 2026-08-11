@@ -51,7 +51,6 @@ end
 @publish CellData MeasureCellField
 @publish CellData AmbientMapCellField
 @publish CellData LatLonMapCellField
-@publish CellData PerpMetricCellField
 @publish CellData Δs
 @publish CellData vecΔs
 @publish CellData ∇s

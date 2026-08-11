@@ -358,22 +358,3 @@ function InvAmbientMapCellField(
   cell_inv_ambient_maps = CompressedArray(inv_ambient_maps, ptrs)
   Gridap.CellData.GenericCellField(cell_inv_ambient_maps, trian, Gridap.CellData.PhysicalDomain())
 end
-
-## The perp of the metric. i.e. R*g. Probably a cleaner way to do this with OperationCellFields
-## Just leaving it here now ...
-perp_metric(m::Field) = x -> perp(metric(m,x))
-
-function PerpMetricCellField(Ω_atlas::BFTATDMIM{Dc,Dc,Da,G,A,P,C,O}) where {Dc, Da, G, A, P, C, O}
-  # perp ∘ MetricCellField(Ω_atlas)
-  ambient_map_cf = AmbientMapCellField(Ω_atlas)
-  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
-  cell_field = lazy_map(m->GenericField(perp_metric(m)),ambient_maps)
-  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
-end
-
-function PerpMetricCellField(
-    trian :: AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}},
-) where {Dc,Dp}
-  cf = PerpMetricCellField(trian.trian)
-  Gridap.CellData.GenericCellField(get_data(cf), trian, Gridap.CellData.DomainStyle(cf))
-end
