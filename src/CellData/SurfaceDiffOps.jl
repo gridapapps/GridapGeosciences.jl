@@ -176,6 +176,7 @@ function _skew_∇s_no_ad(f, Ω_atlas)
   J_cf = transpose∘∇(ambient_map_cf)
   grad_f_cf = (∇(f)∘ambient_map_cf)⋅J_cf
   skew_grad_parametric = (perp∘grad_f_cf)*(1.0/meas_cf)
+  skew_grad_parametric
 end
 
 # return the contravariant componet
@@ -383,7 +384,8 @@ curls(u,m) = x-> 1.0/sqrtg(m,x)*metric(m,x)⋅curl(Jtu(u,m))(x)
 curls_curls(u, m) = x -> 1.0/sqrtg(m,x)*metric(m,x)⋅curl(curls(u,m))(x)
 
 ## surface divergence
-_divs(u,m) = x -> sqrtg(m)(x)*inv(J(m,x))⋅u(m)(x)
+# _divs(u,m) = x -> sqrtg(m)(x)*inv(J(m,x))⋅u(m)(x)
+_divs(u,m) = x -> sqrtg(m)(x)*contra_v(u,m)(x) # use contra_v so that pinv dispatches for 2D/3D appropriately
 divs(u, m) = x -> 1/sqrtg(m)(x)*(divergence(_divs(u,m))(x))
 
 ### covariant vector surfgrad(surfdiv u)
@@ -464,15 +466,16 @@ _my_skew_sdiv(f, m) = αβ -> detg(m,αβ)*inv_metric(m,αβ)⋅(perp(contra_v(f
 my_skew_surfdiv(f, m) = αβ ->  -1.0/sqrtg(m,αβ)*(divergence(_my_skew_sdiv(f,m))(αβ))
 curly_curl(u, m) = x -> 1/sqrtg(m)(x)*perp(gradient(my_skew_surfdiv(u,m))(x))
 
-
 # Contravariant component of ∇(∇⋅ ̃u)
 # = J *    g^{-1} gradient ( 1/√g div( √g u)   )
 # where u is contravariant component of ̃u
-_my_divs(u,m) = x -> sqrtg(m)(x)*contra_v(u,m)(x)
-my_divs(u, m) = x -> 1/sqrtg(m)(x)*(divergence(_my_divs(u,m))(x))
+# _my_divs(u,m) = x -> sqrtg(m)(x)*contra_v(u,m)(x)
+# my_divs(u, m) = x -> 1/sqrtg(m)(x)*(divergence(_my_divs(u,m))(x))
 
-my_grads_divs(u, m) = x-> gradient(my_divs(u,m))(x)
-contra_grads_divs(u, m) = x-> inv_metric(m,x)⋅my_grads_divs(u,m)(x)
+# my_grads_divs(u, m) = x-> gradient(my_divs(u,m))(x)
+
+# contravarint component of gradient(divergence)
+contra_grads_divs(u, m) = x-> inv_metric(m,x)⋅grads_divs(u,m)(x)
 
 # Contravariant component of the surface vector laplacian in 2D
 vec_laps_2D(u,m) = x ->  contra_grads_divs(u,m)(x) -1.0*curly_curl(u,m)(x)
