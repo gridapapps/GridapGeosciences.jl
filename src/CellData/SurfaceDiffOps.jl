@@ -502,24 +502,3 @@ function vecΔs_2D(f::Function,
   vecΔs_2D_trian = use_automatic_differentiation ? _vecΔs_ad_2D(f, Ω_atlas) : _vecΔs_no_ad_2D(f, Ω_atlas)
   Gridap.CellData.GenericCellField(get_data(vecΔs_2D_trian), Ω_atlas, Gridap.CellData.DomainStyle(vecΔs_2D_trian))
 end
-
-
-# Return the contravariant components of the surface gradient
-# = J *    g^{-1} gradient(f)
-sgrad_contra(f::Function,m::Field) = αβ ->  (inv_metric(m,αβ) ⋅ gradient(f(m))(αβ) )
-sgrad_contra(f::Function) = m -> sgrad_contra(f,m)
-
-function _contra_∇s_no_ad(f, Ω_atlas)
-  ambient_map_cf = AmbientMapCellField(Ω_atlas)
-  inv_metric_cf = InvMetricCellField(Ω_atlas)
-  covariant_basis_cf = transpose∘∇(ambient_map_cf)
-  gradient_f_cf = (∇(f)∘ambient_map_cf)⋅covariant_basis_cf
-  inv_metric_cf⋅gradient_f_cf
-end
-
-function _contra_∇s_ad(f, Ω_atlas)
-  ambient_map_cf = AmbientMapCellField(Ω_atlas)
-  ambient_maps = Gridap.CellData.get_data(ambient_map_cf)
-  cell_field = lazy_map(m->GenericField(sgrad_contra(_fm(f,m),m)),ambient_maps)
-  CellData.GenericCellField(cell_field,Ω_atlas,PhysicalDomain())
-end
