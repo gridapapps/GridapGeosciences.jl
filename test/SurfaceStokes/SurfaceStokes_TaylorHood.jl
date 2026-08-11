@@ -19,6 +19,7 @@ import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
 using GridapP4est
 using Test
 
+import Gridap.Fields: grad2curl
 
 ## Need to use velocity field that is tangent, but not divergence free. Thus, the
 ## incompressibility condition div u = 0 does not hold, and the Stokes system
@@ -55,11 +56,19 @@ function surface_stokes(atlas_model,
 
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
 
-  perp_metric_cf = PerpMetricCellField(Ω_atlas)
-
   ## Expanded product rule to help with weak form
   # div ( √g u) = div(u)*√g + u⋅gradient(√g)
   divg_product_rule(u) = divergence(u)*meas_cf + u⋅grad_meas_cf
+
+  ## Expand product rule of divergence( (R⋅g)⋅u)
+  # See https://github.com/gridapapps/GridapGeosciences.jl/pull/60#issuecomment-5216501843
+  grad_metric_cf = gradient(metric_cf)
+  # [i,j] = Σ_k v^k ∂g_jk/∂x_i   (product-rule term from differentiating g⋅v)
+  _cpvB(v,B) = Gridap.TensorValues.contracted_product(Val(1), v, permutedims(B,(3,1,2)))
+  function divergenceRgu(v)
+    dgv = Operation(_cpvB)(v,grad_metric_cf) + ∇(v)⋅metric_cf   # = ∇(g⋅v)
+    -1.0*Operation(grad2curl)(dgv) # div(perp(w)) = -∂w₂/∂x₁ + ∂w₁/∂x₂ = -(∂w₂/∂x₁ - ∂w₁/∂x₂) = -grad2curl(w)
+  end
 
   ## Manufactured solution
   p_cf = pX∘ambient_map_cf
@@ -91,7 +100,7 @@ function surface_stokes(atlas_model,
 
   # ## Weak form
   biform_curl((u,p),(v,q)) = ( ∫( ν*(divg_product_rule(u)*divg_product_rule(v))*(1/meas_cf) )dΩ
-                            +  ∫( -1.0*ν*(divergence(perp_metric_cf⋅u)*divergence(perp_metric_cf⋅v))*(1/meas_cf)  )dΩ
+                            +  ∫( -1.0*ν*(divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
                             )
 
   biform_u((u,p),(v,q)) = ∫( α*((u⋅(metric_cf⋅v))*meas_cf)  )dΩ - ∫( p*divg_product_rule(v)  )dΩ
@@ -123,14 +132,14 @@ function surface_stokes(atlas_model,
   eu_l2 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) )dΩ_error))
   eu_h1 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) + (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
+  ## To help with plotting, split the terms of the H1 norm
+  mass_term =  eu_l2 #sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf)   )dΩ_error))
+  grad_term = sqrt(sum(∫( (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
+
   ######### START JUMP CALCS -- for publication
   u_ambient = covariant_basis_cf⋅uh
   eu = u_contra_cf - uh
   eu_ambient = covariant_basis_cf⋅eu
-
-  ## To help with plotting, split the terms of the H1 norm
-  mass_term = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf)   )dΩ_error))
-  grad_term = sqrt(sum(∫( (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
   ## 1. restrict the ambient solution to plus and minus side
   u_tilde_plus = (eu_ambient).plus
@@ -204,7 +213,6 @@ function main(models::AbstractArray;ps=[2],_i_am_main=true)
   dir = @__DIR__
   p_convergence_auto_test(ps,models,surface_stokes,dir,uX,pX,ls;_i_am_main=_i_am_main)
 end
-
 
 
 end

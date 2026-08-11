@@ -14,6 +14,8 @@ import GridapGeosciences.CellData: deriv_det, deriv_sqrt, cpAB
 using GridapP4est
 using Test
 
+import Gridap.Fields: grad2curl
+
 uX(x) = VectorValue(x[1]*x[3], x[2]*x[3], x[3]^2 - 1)
 
 
@@ -32,16 +34,25 @@ function vector_laplacian2d(atlas_model,
 
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
   metric_cf = MetricCellField(Ω_atlas)
+  inv_metric_cf = InvMetricCellField(Ω_atlas)
   meas_cf = MeasureCellField(Ω_atlas)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   grad_meas_cf = (deriv_sqrt∘det∘metric_cf)*Operation(cpAB)(deriv_det∘metric_cf,gradient(metric_cf))
 
-  perp_metric_cf = PerpMetricCellField(Ω_atlas) # R*g
-
   ## Expanded product rule to help with weak form
   # div ( √g u) = div(u)*√g + u⋅gradient(√g)
   divg_product_rule(u) = divergence(u)*meas_cf + u⋅grad_meas_cf
+
+  ## Expand product rule of divergence( (R⋅g)⋅u)
+  # See https://github.com/gridapapps/GridapGeosciences.jl/pull/60#issuecomment-5216501843
+  grad_metric_cf = gradient(metric_cf)
+  # [i,j] = Σ_k v^k ∂g_jk/∂x_i   (product-rule term from differentiating g⋅v)
+  _cpvB(v,B) = Gridap.TensorValues.contracted_product(Val(1), v, permutedims(B,(3,1,2)))
+  function divergenceRgu(v)
+    dgv = Operation(_cpvB)(v,grad_metric_cf) + ∇(v)⋅metric_cf   # = ∇(g⋅v)
+    -1.0*Operation(grad2curl)(dgv) # div(perp(w)) = -∂w₂/∂x₁ + ∂w₁/∂x₂ = -(∂w₂/∂x₁ - ∂w₁/∂x₂) = -grad2curl(w)
+  end
 
   u_contra_cf = (pinvJ∘covariant_basis_cf)⋅(uX∘ambient_map_cf)
 
@@ -59,7 +70,7 @@ function vector_laplacian2d(atlas_model,
 
   # ## Weak form
   biform(u,v) = ( ∫( (divg_product_rule(u)*divg_product_rule(v))*(1/meas_cf) )dΩ
-               +  ∫(  -1.0*(divergence(perp_metric_cf⋅u)*divergence(perp_metric_cf⋅v))*(1/meas_cf)  )dΩ
+               +  ∫(  -1.0*(divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
                           )
   liform(v) = ∫( (rhs⋅(metric_cf⋅v))*meas_cf  )dΩ
 
@@ -75,6 +86,7 @@ function vector_laplacian2d(atlas_model,
 
   eu = u_int - uh
   eu_l2 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) )dΩ_error))
+  eu_h1 = sqrt(sum(∫( eu⋅(metric_cf⋅eu)*(meas_cf) + (gradient(eu)⊙(inv_metric_cf⋅gradient(eu)))*meas_cf  )dΩ_error))
 
  _i_am_main && println("eu = $(eu_l2)")
 
@@ -86,7 +98,7 @@ function vector_laplacian2d(atlas_model,
           cellfields=cellfields,append=false)
   end
 
-  return eu_l2, false, false
+  return eu_l2, eu_h1, false
 
 end
 
