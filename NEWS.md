@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - tests for the surface Stokes problem (2D) using the Taylor--Hood inf-sup pair, and the associated vector Laplacian problem
-in 2D. These tests required adding `∇s_contra` to the SurfaceDiffOps
+in 2D.  
 
 ### Changed
+- ` ∇s` and `skew_∇s` now return contravariant components. This aligns with the theory paper
 
 ### Removed
 
