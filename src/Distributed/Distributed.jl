@@ -47,8 +47,10 @@ import GridapGeosciences.CellData: InvMetricCellField
 import GridapGeosciences.CellData: MeasureCellField
 import GridapGeosciences.CellData: Δs
 import GridapGeosciences.CellData: ∇s
+import GridapGeosciences.CellData: vecΔs
 import GridapGeosciences.CellData: vecΔs_2D
 import GridapGeosciences.CellData: divs
+import GridapGeosciences.CellData: curls
 
 import GridapGeosciences.Geometry: BFTATDMIM,
                                    IntrinsicAtlasDiscreteModel,
