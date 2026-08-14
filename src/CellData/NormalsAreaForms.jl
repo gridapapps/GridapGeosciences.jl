@@ -118,8 +118,8 @@ end
 
 function pullback_area_form(trian::AdaptedTriangulation)
   cf = pullback_area_form(trian.trian)
-  plus = GenericCellField(get_data(cf.plus),trian,DomainStyle(cf.plus))
-  minus = GenericCellField(get_data(cf.minus),trian,DomainStyle(cf.minus))
+  plus = GenericCellField(get_data(cf.plus),trian.trian.plus,DomainStyle(cf.plus))
+  minus = GenericCellField(get_data(cf.minus),trian.trian.minus,DomainStyle(cf.minus))
   SkeletonPair(plus,minus)
 end
 

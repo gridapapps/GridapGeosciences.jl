@@ -24,7 +24,10 @@ end
 
 function hodge_laplacian_vector(
   atlas_model::Union{<:IntrinsicAtlasDiscreteModel{3,3},
-                     <:Gridap.Adaptivity.AdaptedDiscreteModel{3,3,<:IntrinsicAtlasDiscreteModel{3,3}}},
+                     <:Gridap.Adaptivity.AdaptedDiscreteModel{3,3,<:IntrinsicAtlasDiscreteModel{3,3}},
+                     <:GridapGeosciences.IntrinsicAtlasDistributedDiscreteModel{3,3},
+                     <:GridapGeosciences.AdaptedIntrinsicAtlasDistributedDiscreteModel{3,3},
+                     <:GridapGeosciences.AtlasOctreeDistributedDiscreteModel{3,3,<:Any,<:Any,<:IntrinsicManifold}},
   p_fe::Int,dir::String,uX::Function,ls=LUSolver(),return_vtk=false;
   _i_am_main=true)
 

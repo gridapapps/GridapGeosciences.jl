@@ -59,6 +59,7 @@ end
 @publish CellData skew_∇s
 @publish CellData skew_divs
 @publish CellData dagger
+@publish CellData vecΔs_2D
 @publish CellData pushforward_normal
 @publish CellData pushforward_reference_normal
 @publish CellData pushforward_parametric_normal

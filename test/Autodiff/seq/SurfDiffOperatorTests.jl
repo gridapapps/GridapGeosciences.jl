@@ -36,7 +36,10 @@ end
 ################################################################################
 
 sgrad_ambient    = ∇s(ambient_fX, Ω_ambient)
-sgrad_parametric = ∇s(ambient_fX, Ω_parametric)
+sgrad_parametric_contra = ∇s(ambient_fX, Ω_parametric)
+ambient_map_cf = AmbientMapCellField(Ω_parametric)
+covariant_basis_cf = transpose∘∇(ambient_map_cf)
+sgrad_parametric = covariant_basis_cf ⋅ sgrad_parametric_contra
 dif = sgrad_ambient(pts_ambient) .- sgrad_parametric(pts_parametric)
 max_dif = map(x -> maximum(norm.(x)), dif)
 @test all(max_dif .< 1e-12)

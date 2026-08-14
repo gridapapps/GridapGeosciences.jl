@@ -47,6 +47,7 @@ jobs:
           - mpi-multigrid
           - mpi-tutorials
           - mpi-ambient-model
+          - mpi-stokes
     steps:
       - name: Install p4est/petsc dependencies
         run: |
