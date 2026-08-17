@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed 
+
+- Bumped version of Gridap to 0.20.9. Since [PR #61](https://github.com/gridapapps/GridapGeosciences.jl/pull/61).
+
 ## [0.7.1] - 2026-08-14
 
 ### Added
