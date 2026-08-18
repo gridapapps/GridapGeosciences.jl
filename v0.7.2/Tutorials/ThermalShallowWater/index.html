@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>ThermalShallowWater · GridapGeosciences.jl</title><meta name="title" content="ThermalShallowWater · GridapGeosciences.jl"/><meta property="og:title" content="ThermalShallowWater · GridapGeosciences.jl"/><meta property="twitter:title" content="ThermalShallowWater · GridapGeosciences.jl"/><meta name="description" content="Documentation for GridapGeosciences.jl."/><meta property="og:description" content="Documentation for GridapGeosciences.jl."/><meta property="twitter:description" content="Documentation for GridapGeosciences.jl."/><meta property="og:url" content="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/ThermalShallowWater/"/><meta property="twitter:url" content="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/ThermalShallowWater/"/><link rel="canonical" href="https://gridapapps.github.io/GridapGeosciences.jl/Tutorials/ThermalShallowWater/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">GridapGeosciences.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../AdvectionUpwinding/">AdvectionUpwinding</a></li><li><a class="tocitem" href="../AmbientAdvectionSUPG/">AmbientAdvectionSUPG</a></li><li><a class="tocitem" href="../AmbientAdvectionUpwinding/">AmbientAdvectionUpwinding</a></li><li><a class="tocitem" href="../AmbientModelHodgeLaplacianScalar/">AmbientModelHodgeLaplacianScalar</a></li><li><a class="tocitem" href="../LaplaceBeltrami/">LaplaceBeltrami</a></li><li><a class="tocitem" href="../LinearBoussinesq/">LinearBoussinesq</a></li><li><a class="tocitem" href="../ShallowWater/">ShallowWater</a></li><li class="is-active"><a class="tocitem" href>ThermalShallowWater</a><ul class="internal"><li><a class="tocitem" href="#Set-up"><span>Set up</span></a></li><li><a class="tocitem" href="#Discrete-model"><span>Discrete model</span></a></li><li><a class="tocitem" href="#Triangulation"><span>Triangulation</span></a></li><li><a class="tocitem" href="#FE-Spaces"><span>FE Spaces</span></a></li><li><a class="tocitem" href="#Initial-conditions"><span>Initial conditions</span></a></li><li><a class="tocitem" href="#Weak-form"><span>Weak form</span></a></li><li><a class="tocitem" href="#Transient-problem"><span>Transient problem</span></a></li><li><a class="tocitem" href="#Post-processing"><span>Post processing</span></a></li></ul></li><li><a class="tocitem" href="../WaveEquation/">WaveEquation</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>ThermalShallowWater</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>ThermalShallowWater</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/gridapapps/GridapGeosciences.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/gridapapps/GridapGeosciences.jl/blob/master/test/Tutorials/ThermalShallowWater.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Thermal-shallow-water-equations-on-the-cubed-sphere-manifold-(intrinsic-formulation)"><a class="docs-heading-anchor" href="#Thermal-shallow-water-equations-on-the-cubed-sphere-manifold-(intrinsic-formulation)">Thermal shallow water equations on the cubed sphere manifold (intrinsic formulation)</a><a id="Thermal-shallow-water-equations-on-the-cubed-sphere-manifold-(intrinsic-formulation)-1"></a><a class="docs-heading-anchor-permalink" href="#Thermal-shallow-water-equations-on-the-cubed-sphere-manifold-(intrinsic-formulation)" title="Permalink"></a></h1><p>This example solves the thermal shallow water equations. The evolution of the prognostic variables, <span>$\widetilde{\boldsymbol{u}}$</span> and <span>$\widetilde{\varphi}$</span> is:</p><p class="math-container">\[\begin{align*}
+\partial_t \widetilde{\boldsymbol{u}}
++ \widetilde{q} \widetilde{\boldsymbol{F}}^\dagger
++ \nabla_{\gamma} \widetilde{\Phi}  + \widetilde{b}\nabla_{\gamma}\vartheta &amp;=  0  \quad \text{in} \quad \gamma\times[0,T],
+\\
+\partial_t \widetilde{\varphi}
++ \nabla_{\gamma}\cdot \widetilde{\boldsymbol{F}} &amp;= 0
+\quad  \quad \text{in} \quad \gamma\times[0,T], \\
+\partial_t \widetilde{B}
++ \nabla_{\gamma}\cdot (\widetilde{b} \widetilde{\boldsymbol{F}}) &amp;= 0
+\quad  \quad \text{in} \quad \gamma\times[0,T],
+\end{align*}\]</p><p>The diagnostic variables solve algebraic constraints:</p><p class="math-container">\[\begin{align*}
+\widetilde{\boldsymbol{F}} &amp;= \widetilde{\varphi}\widetilde{\boldsymbol{u}} , \qquad
+\widetilde{\Phi} = \frac{1}{2} \widetilde{\boldsymbol{u}}\cdot\widetilde{\boldsymbol{u}} + \frac{1}{2} \widetilde{B}  ,\qquad
+\widetilde{\vartheta} = \frac{1}{2} \widetilde{\varphi} \\
+\widetilde{q} &amp;= \frac{1 }{\widetilde{\varphi}}(\nabla_{\gamma}^\dagger\cdot \widetilde{\boldsymbol{u}}  + f) , \qquad
+\widetilde{b} = \frac{\widetilde{B}}{\widetilde{\varphi}}
+\end{align*}\]</p><p>where <span>$\gamma$</span> is the cubed sphere manifold,  <span>$g_r$</span> is the acceleration due to gravitiy, and <span>$f$</span> is the Coriolis force. We use compatible finite element pairings to solve in the parametric space of the cubed sphere. This problem is a differential algebraic equation (DAE), which is solved using a bespoke <span>$DAEFEOperator$</span> that builds on Gridap&#39;s ODE API.</p><h2 id="Set-up"><a class="docs-heading-anchor" href="#Set-up">Set up</a><a id="Set-up-1"></a><a class="docs-heading-anchor-permalink" href="#Set-up" title="Permalink"></a></h2><p>First load all required packages. In this example, we will use a distributed model and iterative solvers. So we initialise MPI.</p><pre><code class="language-julia hljs">using GridapGeosciences
+using Gridap
+using GridapSolvers
+using GridapDistributed
+using PartitionedArrays
+using MPI
+
+MPI.Init()
+ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))</code></pre><h2 id="Discrete-model"><a class="docs-heading-anchor" href="#Discrete-model">Discrete model</a><a id="Discrete-model-1"></a><a class="docs-heading-anchor-permalink" href="#Discrete-model" title="Permalink"></a></h2><p>To obtain a refined 2D parametric model, we pass <span>$\ell$</span> levels of refinement:</p><pre><code class="language-julia hljs">ℓ = 2
+radius = 1.0
+coarse_mesh = CubedSphereMesh(radius)
+omodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())</code></pre><h2 id="Triangulation"><a class="docs-heading-anchor" href="#Triangulation">Triangulation</a><a id="Triangulation-1"></a><a class="docs-heading-anchor-permalink" href="#Triangulation" title="Permalink"></a></h2><p>Now we extract the triangulation, volume and skeleton, associated to each cell:</p><pre><code class="language-julia hljs">Ω = Triangulation(omodel)
+Λ = SkeletonTriangulation(omodel)
+n_Λ = get_normal_vector(Λ)</code></pre><h2 id="FE-Spaces"><a class="docs-heading-anchor" href="#FE-Spaces">FE Spaces</a><a id="FE-Spaces-1"></a><a class="docs-heading-anchor-permalink" href="#FE-Spaces" title="Permalink"></a></h2><p>Trial and test spaces relevant to compatible finite element pairings are defined using Gridap&#39;s high level API (refer to <a href="https://doi.org/10.1016/j.jcp.2012.05.020">Cotter et al. 2012</a>).</p><pre><code class="language-julia hljs">order = 1
+R = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order+1); conformity=:H1)
+H = TransientTrialFESpace(R)
+
+V = TestFESpace(Ω, ReferenceFE(raviart_thomas,Float64,order); conformity=:HDiv)
+U = TransientTrialFESpace(V)
+
+Q = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
+P = TransientTrialFESpace(Q)</code></pre><p>The multifield FE spaces for the prognostic and diagnostic variables are:</p><pre><code class="language-julia hljs">X_prog = MultiFieldFESpace([U,P,P]) # u, p, B
+Y_prog = MultiFieldFESpace([V,Q,Q]) # u, p, B
+
+X_diag = MultiFieldFESpace([H,U,P,P]) # q, F, Φ, b
+Y_diag = MultiFieldFESpace([R,V,Q,Q]) # q, F, Φ, b</code></pre><h2 id="Initial-conditions"><a class="docs-heading-anchor" href="#Initial-conditions">Initial conditions</a><a id="Initial-conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-conditions" title="Permalink"></a></h2><p>The initial condition for velocity, fluid depth, buoyancy and Coriolis are defined as per the thermogeostrophic balance test case, in <a href="https://doi.org/10.1016/j.jcp.2023.112605">Ricardo et al. 2023</a>.</p><p>The dimensional parameters are:</p><pre><code class="language-julia hljs">aₑ = 6.37e6 # m
+gₑ = 9.8 # m/s^{-2}
+ωₑ = 7.29e-5 # s^{-1}
+Hₑ = 2.94e4/gₑ # m
+uₑ = 2*π*aₑ/(12*24*3600) # m s^{-1}</code></pre><p>Consider a length scale of <span>$a_{e}$</span> and time scale of <span>$1/\omega$</span> yields the non-dimensional parameters:</p><pre><code class="language-julia hljs">gravity = gₑ*(1/ωₑ)^2/aₑ
+ω = ωₑ*(1/ωₑ)
+H₀ = Hₑ/aₑ
+u₀ = uₑ/aₑ*(1/ωₑ)</code></pre><p>The initial conditions are defined as functions of the ambient space. They are composed with AmbientMapCellField in the weak form section below, where we also extract the contravariant components for the velocity:</p><pre><code class="language-julia hljs">function u0(xyz)
+  ζ = 0.0
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,_ = θϕr
+  u     = u₀*(cos(ϕ)*cos(ζ) + cos(θ)*sin(ϕ)*sin(ζ))
+  v     = - u₀*sin(θ)*sin(ζ)
+  function _spherical_to_cartesian_matrix(θϕr)
+    θ,ϕ,_ = θϕr
+    TensorValue(-sin(θ)       , cos(θ)       ,      0,
+                -sin(ϕ)*cos(θ),-sin(ϕ)*sin(θ), cos(ϕ),
+                cos(ϕ)*cos(θ), cos(ϕ)*sin(θ), sin(ϕ))
+  end
+  _spherical_to_cartesian_matrix(θϕr)⋅VectorValue(u,v,0)
+end
+
+
+function h0(xyz)
+  ζ = 0.0
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,_ = θϕr
+  h  = -cos(θ)*cos(ϕ)*sin(ζ) + sin(ϕ)*cos(ζ)
+  H₀- (ω*u₀  + 0.5*u₀*u₀)*h*h/gravity
+end
+
+function b0(xyz)
+  c = 0.05
+  h = h0(xyz)
+  gravity*( 1 + c *H₀^2 /h^2)
+end
+
+function B0(xyz)
+  h = h0(xyz)
+  b = b0(xyz)
+  b*h
+end
+
+function f0(xyz)
+  ζ = 0.0
+  θϕr   = xyz2θϕr(xyz)
+  θ,ϕ,_ = θϕr
+  2.0*ω*( -cos(θ)*cos(ϕ)*sin(ζ) + sin(ϕ)*cos(ζ) )
+end</code></pre><h2 id="Weak-form"><a class="docs-heading-anchor" href="#Weak-form">Weak form</a><a id="Weak-form-1"></a><a class="docs-heading-anchor-permalink" href="#Weak-form" title="Permalink"></a></h2><p>To define the weak form, we require the metric and measure, as well as the the matrix that represents the perp operator. We use an increased degree of quadrature to exactly approximate the geometrical map included in the weak form.</p><pre><code class="language-julia hljs">ambient_map_cf = AmbientMapCellField(Ω)
+g = MetricCellField(Ω)
+ginv = InvMetricCellField(Ω)
+meas = MeasureCellField(Ω)
+covariant_basis_cf = transpose∘∇(ambient_map_cf)</code></pre><p>Then converted into a cellfield, where we extract the contravariant components for the velocity:</p><pre><code class="language-julia hljs">u_cf = meas*((pinvJ∘covariant_basis_cf)⋅(u0∘ambient_map_cf))
+h_cf = h0∘ambient_map_cf
+B_cf = B0∘ambient_map_cf
+f_cf = f0∘ambient_map_cf
+Aperp = [0 -1
+        1 0]
+Rperp = TensorValue(Aperp)
+Rperp_cf = CellField(Rperp,Ω)
+dΩ = Measure(Ω,4*order)
+dΛ = Measure(Λ,4*order)</code></pre><h3 id="Diagnostic-variables"><a class="docs-heading-anchor" href="#Diagnostic-variables">Diagnostic variables</a><a id="Diagnostic-variables-1"></a><a class="docs-heading-anchor-permalink" href="#Diagnostic-variables" title="Permalink"></a></h3><p>The weak forms for the diagnostic variables are:</p><pre><code class="language-julia hljs">resq(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r)) = ∫( q*p*w*meas  )dΩ - ∫( f_cf*w*meas  )dΩ - ∫( (( (Rperp_cf⋅u)⋅ginv)⋅∇(w))*meas  )dΩ
+resF(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r)) = ∫( (F⋅ (g⋅v))*(1/meas) )dΩ - ∫( p*(u⋅(g⋅v))*(1/meas)   )dΩ
+resΦ(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r)) = ∫( Φ*ψ*meas  )dΩ - ∫( 0.5*B*ψ*meas  )dΩ - ∫( 0.5*( u ⋅(g⋅u) )*ψ*(1/meas)  )dΩ
+resb(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r)) = ∫( b*p*r*meas  )dΩ - ∫( B*r*meas  )dΩ
+
+res_y(t,((u,p,B),(q,F,Φ,b)),(w,v,ψ,r)) = (
+    resq(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r))
+  + resF(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r))
+  + resΦ(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r))
+  + resb(((u,p,B),(q,F,Φ,b)),(w,v,ψ,r))
+)
+jac_y(t,((u,p,B),(q,F,Φ,b)),(dq,dF,dΦ,db),(w,v,ψ,r)) = (
+    ∫( dq*p*w*meas  )dΩ
+  + ∫( (dF⋅ (g⋅v))*(1/meas) )dΩ
+  + ∫( dΦ*ψ*meas  )dΩ
+  + ∫( db*p*r*meas  )dΩ
+)</code></pre><h3 id="Prognostic-variables"><a class="docs-heading-anchor" href="#Prognostic-variables">Prognostic variables</a><a id="Prognostic-variables-1"></a><a class="docs-heading-anchor-permalink" href="#Prognostic-variables" title="Permalink"></a></h3><p>The weak forms for the prognostic variables are as follows, where we use SUPG stabilisation for the vorticity the velocity equation, and dG upwinding for the buoyancy in the velocity and weighted buoyancy equation. Note the temperature <span>$\vartheta = 0.5 \varphi$</span> is used directly</p><pre><code class="language-julia hljs">mass(t,(dut,dpt,dBt),(v,r,w)) = (
+    ∫( (dut⋅ (g⋅v))*(1/meas) )dΩ
+  + ∫( (dpt*r)*meas )dΩ
+  + ∫( (dBt*w)*meas )dΩ
+)
+
+res_p(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0)) = ∫( r*(∇⋅F) )dΩ
+
+function my_mean( Bu_n::Gridap.Geometry.SkeletonPair)
+  plus  = ( Bu_n.plus)
+  minus = ( Bu_n.minus)
+  0.5*( plus - minus  )
+end</code></pre><p>Upwinding function, can be extended to have soft upwinding or excessive damping</p><pre><code class="language-julia hljs">function upwinding_sign(Fn)
+  c = 0.0
+  if Fn &lt; -1e-4
+    c = -0.5
+  elseif Fn &gt; 1e-4
+    c = 0.5
+  end
+  return c
+end
+
+res_u(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0)) = (
+          ∫( ( q*( (Rperp_cf⋅ F)⋅v))  )dΩ
+        + ∫( -τ*( (q-q0)/dt )*( (Rperp_cf⋅ F)⋅v)   )dΩ
+        + ∫( -τ*(u⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1/meas)   )dΩ
+        - ∫( Φ*(∇⋅v) )dΩ
+        + ∫( 0.5*(b*(∇(0.5*p)⋅v) ) )dΩ
+        + ∫( -0.5*(b*(0.5*p))*(∇⋅v)  )dΩ
+        + ∫( -0.5*((0.5*p)*(∇(b)⋅v) ) )dΩ
+    )
+
+u_s1(((u,p,B),(q,F,Φ,b)),(v,r,w)) = (
+    ∫( -0.5*my_mean((v*b)⋅n_Λ)*jump(0.5*p)   )dΛ
+  + ∫( 0.5*my_mean((v*(0.5*p))⋅n_Λ)*jump(b)  )dΛ
+)
+
+u_s2(((u,p,B),(q,F,Φ,b)),(v,r,w)) = ∫( -0.5*( (upwinding_sign∘((F⋅ n_Λ).plus))*(v⋅n_Λ).plus )*jump(b)*jump(0.5*p)   )dΛ
+
+
+res_B(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0)) = (
+    ∫( -0.5*(b*(∇(w)⋅F) ) )dΩ
+  + ∫( 0.5*(b*w)*(∇⋅F)  )dΩ
+  + ∫( 0.5*(w*(∇(b)⋅F) ) )dΩ
+)
+
+B_s1(((u,p,B),(q,F,Φ,b)),(v,r,w)) = (
+    ∫( 0.5*my_mean((F*b)⋅n_Λ)*jump(w)   )dΛ
+  + ∫( -0.5*my_mean((F*w)⋅n_Λ)*jump(b)   )dΛ
+)
+
+B_s2(((u,p,B),(q,F,Φ,b)),(v,r,w)) = ∫( 0.5*( (upwinding_sign∘((F⋅ n_Λ).plus))*(F⋅n_Λ).plus )*jump(b)*jump(w)   )dΛ
+
+
+res_x(t,((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0)) = (
+    res_u(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0))
+  + u_s1(((u,p,B),(q,F,Φ,b)),(v,r,w))
+  + u_s2(((u,p,B),(q,F,Φ,b)),(v,r,w))
+  + res_p(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0))
+  + res_B(((u,p,B),(q,F,Φ,b)),(v,r,w),(q0,F0,Φ0,b0))
+  + B_s1(((u,p,B),(q,F,Φ,b)),(v,r,w))
+  + B_s2(((u,p,B),(q,F,Φ,b)),(v,r,w))
+)
+jac_x(t,((u,p,B),(q,F,Φ,b)),(du,dp,dB),(v,r,w),(q0,F0,Φ0,b0)) = ∫( -τ*(du⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1/meas)   )dΩ
+jac_xt(t,((u,p,B),(q,F,Φ,b)),(dut,dpt,dBt),(v,r,w),(q0,F0,Φ0,b0)) = (
+    ∫( (dut⋅ (g⋅v))*(1/meas) )dΩ
+  + ∫( (dpt*r)*meas )dΩ
+  + ∫( (dBt*w)*meas )dΩ
+)</code></pre><h2 id="Transient-problem"><a class="docs-heading-anchor" href="#Transient-problem">Transient problem</a><a id="Transient-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Transient-problem" title="Permalink"></a></h2><p>The transient problem requires a linear solver for both the prognostic and diagnostic problem. In this example, we using a Conjugate Gradient method for both.</p><pre><code class="language-julia hljs">ls_diag = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name=&quot;diagnostic_solver&quot;)
+ls_ode = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name=&quot;ode_solver&quot;)</code></pre><p>The transient parameters are:</p><pre><code class="language-julia hljs">t0 = 0.0
+tF = 2*π
+nsteps = 100
+dt = tF/nsteps
+τ = dt/2</code></pre><p>The transient operator, DAE operator and transient solution, integrated using SSPRK3, is defined as follows:</p><pre><code class="language-julia hljs">opT = TransientSemilinearFEOperator(mass,res_x,(jac_x,jac_xt),X_prog,Y_prog)
+opFE = FEOperator(res_y,jac_y,X_diag,Y_diag)
+opDAE = DAEFEOperator(opT,opFE,ls_diag)
+ode_solver = RungeKutta(ls_ode,ls_ode,dt,:EXRK_SSP_3_3)
+xh0 = interpolate_everywhere([u_cf,h_cf,B_cf],X_prog)
+solT  = solve(ode_solver,opDAE,t0,tF,xh0)</code></pre><h2 id="Post-processing"><a class="docs-heading-anchor" href="#Post-processing">Post processing</a><a id="Post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Post-processing" title="Permalink"></a></h2><p>The diagnostic solution can be extracted from the cache of the ode solution. To do so, we utilise the iterable functionality of <span>$solT$</span> as follows:</p><pre><code class="language-julia hljs">i_am_main(ranks) &amp;&amp; mkpath(&quot;thermal_shallow_water_sol&quot;)
+PartitionedArrays.barrier(ranks)
+
+it = iterate(solT)
+while !isnothing(it)
+  data, state = it
+  t, xh = data
+  odeopcache = state[2][5][2]
+  yh = odeopcache.diagnostics
+
+  uh,ph,Bh = xh
+  qh,Fh,Φh,bh = yh
+
+  i_am_main(ranks) &amp;&amp; println(t)
+
+  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,&quot;thermal_shallow_water_sol/solT_$t.vtu&quot;,
+      cellfields=[&quot;vel&quot;=&gt;covariant_basis_cf⋅(1/meas*uh),&quot;p&quot;=&gt;ph,&quot;vort&quot;=&gt;qh],
+      append=false)
+
+  it = iterate(solT, state)
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../ShallowWater/">« ShallowWater</a><a class="docs-footer-nextpage" href="../WaveEquation/">WaveEquation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 18 August 2026 21:53">Tuesday 18 August 2026</span>. Using Julia version 1.12.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
