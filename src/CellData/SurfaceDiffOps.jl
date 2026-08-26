@@ -461,7 +461,7 @@ curly_curl(u, m) = x -> 1/sqrtg(m)(x)*perp(gradient(skew_surfdiv(contra_v(u),m))
 contra_grads_divs(u, m) = x-> inv_metric(m,x)⋅grads_divs(u,m)(x)
 
 # Contravariant component of the surface vector laplacian in 2D
-vec_laps_2D(u,m) = x ->  contra_grads_divs(u,m)(x) -1.0*curly_curl(u,m)(x)
+vec_laps_2D(u,m) = x ->  contra_grads_divs(u,m)(x) + 1.0*curly_curl(u,m)(x)
 
 function _vecΔs_ad_2D(f, Ω_atlas)
   ambient_map_cf = AmbientMapCellField(Ω_atlas)

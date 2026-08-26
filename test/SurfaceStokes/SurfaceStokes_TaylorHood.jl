@@ -32,7 +32,6 @@ pX(x) = x[3]
 function surface_stokes(atlas_model,
   p_fe::Int,dir::String,uX::Function,pX::Function,ls=LUSolver(),return_vtk=false,jumpCalcs=false;
   _i_am_main=true)
-
   α = 1.0
   ν = 1.0
 
@@ -99,7 +98,7 @@ function surface_stokes(atlas_model,
 
   # ## Weak form
   biform_curl((u,p),(v,q)) = ( ∫( ν*(divg_product_rule(u)*divg_product_rule(v))*(1/meas_cf) )dΩ
-                            +  ∫( -1.0*ν*(divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
+                            +  ∫( ν*(divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
                             )
 
   biform_u((u,p),(v,q)) = ∫( α*((u⋅(metric_cf⋅v))*meas_cf)  )dΩ - ∫( p*divg_product_rule(v)  )dΩ
@@ -186,7 +185,7 @@ function surface_stokes(atlas_model,
     ## 6. Save the solution using DrWatson (needs to be installed locally)
     # n = num_cells(atlas_model)/6
     # n_ref = lvl
-    # output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc jump_norm dxx mass_term grad_term jump_norm_scaled
+    # output = @strdict eu_l2 eu_h1 ep_l2 n p_fe n_ref Dc dxx mass_term grad_term jump_norm_scaled
     # safesave(datadir(dir*"/convergence", ("stokes_nref$(n_ref)_p$(p_fe)_D$Dc.jld2")), output)
     ######### END JUMP CALCS -- for publication
 
