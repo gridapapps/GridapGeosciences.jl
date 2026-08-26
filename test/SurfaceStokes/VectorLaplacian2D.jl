@@ -70,7 +70,7 @@ function vector_laplacian2d(atlas_model,
 
   # ## Weak form
   biform(u,v) = ( ∫( (divg_product_rule(u)*divg_product_rule(v))*(1/meas_cf) )dΩ
-               +  ∫(  -1.0*(divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
+               +  ∫(  (divergenceRgu(u)*divergenceRgu(v))*(1/meas_cf)  )dΩ
                           )
   liform(v) = ∫( (rhs⋅(metric_cf⋅v))*meas_cf  )dΩ
 
