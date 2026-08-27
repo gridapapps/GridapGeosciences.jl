@@ -51,7 +51,9 @@ function get_bilinear_form(mh_lev,biform,qdegree)
   model = get_model(mh_lev)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,qdegree)
-  return (u,v) -> biform(u,v,dΩ)
+  metric_cf_lev = MetricCellField(Ω)
+  meas_cf_lev = MeasureCellField(Ω)
+  return (u,v) -> biform(u,v,dΩ,metric_cf_lev,meas_cf_lev)
 end
 
 
@@ -91,7 +93,7 @@ metric_cf = MetricCellField(Ω_atlas)
 meas_cf = MeasureCellField(Ω_atlas)
 covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
-biform_u(u,v,dΩ) = ( ∫( (u⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ
+biform_u(u,v,dΩ,metric_cf=metric_cf,meas_cf=meas_cf) = ( ∫( (u⋅ (metric_cf⋅v))*(1.0/meas_cf) )dΩ
                    + ∫(γ*(divergence(u)*divergence(v))*(1.0/meas_cf) )dΩ
                     )
 # biform_u(u,v,dΩ) = ∫( (u⋅ (v)) )dΩ + ∫(γ*(divergence(u)*divergence(v)) )dΩ
