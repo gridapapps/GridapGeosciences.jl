@@ -21,7 +21,9 @@ function get_patch_smoothers(sh,biform,qdegree)
     space = get_fe_space(shl)
     Ω  = Gridap.Geometry.PatchTriangulation(model,ptopo)
     dΩ = Measure(Ω,qdegree)
-    ap = (u,v) -> biform(u,v,dΩ)
+    metric_cf_lev = MetricCellField(Ω)
+    meas_cf_lev = MeasureCellField(Ω)
+    ap = (u,v) -> biform(u,v,dΩ,metric_cf_lev,meas_cf_lev)
     solver = PatchBasedSmoothers.PatchSolver(
       ptopo, space, space, ap;
       assembly = :star,
@@ -122,8 +124,8 @@ A, b = get_matrix(op), get_vector(op);
 
 #### solvers
 biforms = map(mhl -> get_bilinear_form(mhl,biform_u,qdegree),mh)
-# smoothers = get_patch_smoothers(tests_u,biform_u,qdegree)
-smoothers = get_block_jacobi_smoothers(tests_u)
+smoothers = get_patch_smoothers(tests_u,biform_u,qdegree)
+# smoothers = get_block_jacobi_smoothers(tests_u)
 
 prolongations = setup_prolongation_operators(tests_u,qdegree;mode=:residual)
 restrictions = setup_restriction_operators(
