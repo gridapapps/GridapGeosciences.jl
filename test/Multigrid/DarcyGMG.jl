@@ -6,6 +6,8 @@ method
     ∇ᵧ⋅ ̃u = ̃f₂
 """
 
+module DarcyGMG
+
 using Gridap
 using Gridap.Helpers
 using Gridap.Algebra
@@ -209,3 +211,7 @@ function main(models::AbstractArray;ps=[1],smoother_type=:patch,_i_am_main=true)
   γ = 1
   p_convergence_auto_test(ps,models,darcy_gmg_manifold,dir,uX,pX,γ,smoother_type;_i_am_main=_i_am_main)
 end
+
+
+
+end # module
