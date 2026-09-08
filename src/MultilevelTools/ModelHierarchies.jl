@@ -1,6 +1,6 @@
 function GridapSolvers.MultilevelTools.ModelHierarchy(
-  coarse_model::AtlasDiscreteModel,
-  n_ref_lvls::Int)
+  coarse_model::Union{AtlasDiscreteModel,Gridap.Adaptivity.AdaptedDiscreteModel{Dc,Dp,<:AtlasDiscreteModel{Dc,Dp}}},
+  n_ref_lvls::Int) where {Dc,Dp}
   println("gmg lvls = $(n_ref_lvls)")
 
   models = Vector{DiscreteModel}(undef,n_ref_lvls+1)

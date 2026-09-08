@@ -77,6 +77,15 @@ function MetricCellField(
   Gridap.CellData.GenericCellField(data, trian, Gridap.CellData.DomainStyle(cf))
 end
 
+function MetricCellField(
+    trian::Union{PatchTriangulation{Dc,Dp,<:BFTATDM},PatchTriangulation{Dc,Dp,<:AdaptedTriangulation{Dc,Dp,<:BFTATDM } }}
+) where {Dc,Dp}
+  bmodel = get_background_model(trian)
+  bmodel_trian = Triangulation(bmodel)
+
+  Gridap.CellData.GenericCellField(get_cell_metric(bmodel), bmodel_trian,  Gridap.CellData.PhysicalDomain())
+end
+
 function MeasureCellField(trian :: BFTATDM{Dc,Dp}) where {Dc,Dp}
     sqrt∘det∘MetricCellField(trian)
 end
@@ -128,6 +137,12 @@ end
 function MeasureCellField(
     trian :: Gridap.Geometry.TriangulationView{Dc,Dp,
               <:Gridap.Geometry.BoundaryTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}},
+) where {Dc,Dp}
+  sqrt∘det∘MetricCellField(trian)
+end
+
+function MeasureCellField(
+    trian::Union{PatchTriangulation{Dc,Dp,<:BFTATDM},PatchTriangulation{Dc,Dp,<:AdaptedTriangulation{Dc,Dp,<:BFTATDM}}}
 ) where {Dc,Dp}
   sqrt∘det∘MetricCellField(trian)
 end
