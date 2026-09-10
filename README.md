@@ -8,6 +8,8 @@ GridapGeosciences.jl extends the [Gridap ecosystem](https://github.com/gridap) t
 [![Build Status](https://github.com/gridapapps/GridapGeosciences.jl/workflows/CI/badge.svg?branch=master)](https://github.com/gridapapps/GridapGeosciences.jl/actions?query=workflow%3ACI)
 [![Codecov](https://codecov.io/gh/gridapapps/GridapGeosciences.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridapapps/GridapGeosciences.jl)
 [![DOI](https://zenodo.org/badge/256973985.svg)](https://doi.org/10.5281/zenodo.21927310)
+[![arXiv](https://img.shields.io/badge/arXiv-2609.08036v1-b31b1b.svg)](https://arxiv.org/abs/2609.08036v1)
+
 
 
 
