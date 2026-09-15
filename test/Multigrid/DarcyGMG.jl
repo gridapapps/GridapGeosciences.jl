@@ -28,8 +28,8 @@ function get_patch_smoothers(sh,biform,qdegree)
     space = get_fe_space(shl)
     Ω  = Gridap.Geometry.PatchTriangulation(model,ptopo)
     dΩ = Measure(Ω,qdegree)
-    metric_cf_lev = MetricCellField(Ω)
-    meas_cf_lev = MeasureCellField(Ω)
+    metric_cf_lev = MetricCellField(model)
+    meas_cf_lev = MeasureCellField(model)
     ap = (u,v) ->  biform(u,v,dΩ,metric_cf_lev,meas_cf_lev)
     solver = PatchBasedSmoothers.PatchSolver(
       ptopo, space, space, ap;
@@ -66,8 +66,8 @@ function get_bilinear_form(mh_lev,biform,qdegree)
   model = get_model(mh_lev)
   Ω = Triangulation(model)
   dΩ = Measure(Ω,qdegree)
-  metric_cf_lev = MetricCellField(Ω)
-  meas_cf_lev = MeasureCellField(Ω)
+  metric_cf_lev = MetricCellField(model)
+  meas_cf_lev = MeasureCellField(model)
   return (u,v) -> biform(u,v,dΩ,metric_cf_lev,meas_cf_lev)
 end
 
@@ -104,8 +104,8 @@ function darcy_gmg_manifold(atlas_model,
   Y = MultiFieldFESpace([V,Q];style=mfs)
 
   ambient_map_cf = AmbientMapCellField(Ω_atlas)
-  metric_cf = MetricCellField(Ω_atlas)
-  meas_cf = MeasureCellField(Ω_atlas)
+  metric_cf = MetricCellField(atlas_model)
+  meas_cf = MeasureCellField(atlas_model)
   covariant_basis_cf = transpose∘∇(ambient_map_cf)
 
   ## Manufactured solution
