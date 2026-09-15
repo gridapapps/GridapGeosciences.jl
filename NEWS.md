@@ -157,4 +157,3 @@ Bump dependencies to the latest version
 
 A changelog is not maintained for this version.
 Tagging the repo right before implementing support for distributed computing
-
