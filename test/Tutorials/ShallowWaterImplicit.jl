@@ -75,7 +75,7 @@ P = TrialFESpace(Q)
 X_prog = MultiFieldFESpace([U,P]) # u, p
 Y_prog = MultiFieldFESpace([V,Q]) # u, p
 
-#X_diag = MultiFieldFESpace([H,U,P]) # q, F, Φ
+X_diag = MultiFieldFESpace([H,U,P]) # q, F, Φ
 #Y_diag = MultiFieldFESpace([R,V,Q]) # q, F, Φ
 
 # ## Initial conditions
@@ -192,6 +192,7 @@ dt = tF/nsteps
 #solT  = solve(ode_solver,opDAE,t0,tF,xh0)
 
 x = interpolate_everywhere([u_cf,h_cf],X_prog)
+xd = interpolate_everywhere([f_cf,u_cf,h_cf],X_diag)
 # ## Post processing
 # The diagnostic solution can be extracted from the cache of the ode solution.
 # To do so, we utilise the iterable functionality of ``solT`` as follows:
@@ -201,13 +202,13 @@ PartitionedArrays.barrier(ranks)
 
 # Assemble the operators
 λ = 0.5
-Jmat((u,p),(v,q)) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ + ∫(p*q*meas)dΩ + ∫(dt*λ*f_cf*((Rperp_cf⋅u)⋅v))dΩ - ∫(dt*λ*gravity*(p*∇⋅v))dΩ + ∫(dt*λ*H₀*(q*∇⋅u))dΩ
+Jmat((u,p),(v,q)) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ + ∫(p*q*meas)dΩ + ∫(dt*λ*f_cf*((Rperp_cf⋅u)⋅v))dΩ - ∫(dt*λ*gravity*(p*(∇⋅v)))dΩ + ∫(dt*λ*H₀*(q*(∇⋅u)))dΩ
 J = assemble_matrix(Jmat, X_prog, Y_prog)
 
 Mumat(u,v) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ
 Mpmat(p,q) = ∫( (p*q)*meas )dΩ
 Mu = assemble_matrix(Mumat, U, V)
-Mp = assemble_matrix(Mumat, P, Q)
+Mp = assemble_matrix(Mpmat, P, Q)
 
 cgu = LinearSolvers.CGSolver(;rtol=1.0e-8)
 cgu_ns = numerical_setup(symbolic_setup(cgu,Mu),Mu)
@@ -216,16 +217,16 @@ cgp_ns = numerical_setup(symbolic_setup(cgp,Mp),Mp)
 gmres = LinearSolvers.GMRESSolver(10;restart=true,rtol=1.0e-8)
 gmres_ns = numerical_setup(symbolic_setup(gmres,J),J)
 
-function diagnostics(u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
+function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
   buvec(v) = ∫( h*(u⋅(g⋅v))*(1/meas) )dΩ
   bu = assemble_vector(buvec, U)
-  Fx = solve(cgu_ns, bu)
-  F = FEFunction(U, Fx)
+  get_free_dof_values(F) .= 0.0
+  solve!(get_free_dof_values(F),cgu_ns, bu)
 
   bhvec(q) = ∫( gravity*h*q*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*q*(1/meas))dΩ
   bh = assemble_vector(bhvec, P)
-  Φx = solve(cgh_ns, bh)
-  Φ = FEFunction(P, Φx)
+  get_free_dof_values(Φ) .= 0.0
+  solve!(get_free_dof_values(Φ),cgh_ns, bh)
 
   Mwmat(r,s) = ∫( r*s*h*meas )dΩ
   Mw = assemble_matrix(Mwmat, H, R)
@@ -233,19 +234,13 @@ function diagnostics(u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
   cgw_ns = numerical_setup(symbolic_setup(cgu,Mw),Mw)
   bwvec(r) = ∫( f_cf*r*meas )dΩ + ∫( (((Rperp_cf⋅u)⋅ginv)⋅∇(r))*meas)dΩ
   bw = assemble_vector(bwvec, H)
-  qx = solve(cgw_ns, bw)
-  q = FEFunction(H, qx)
-
-  F, Φ, q
+  get_free_dof_values(q) .= 0.0
+  solve!(get_free_dof_values(q),cgw_ns, bw)
 end
 
 function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf)
   τ = 0.5
-  res_u(v) = ∫( (du⋅(g⋅v))*(1/meas) )dΩ 
-           + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ 
-	   - ∫( τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ 
-	   - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
-	   - ∫( dt*Φ*(∇⋅v) )dΩ
+  res_u(v) = ( ∫( (du⋅(g⋅v))*(1/meas) )dΩ + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ - ∫( dt*Φ*(∇⋅v) )dΩ )
   res_p(r) = ∫(r*dh*meas )dΩ + ∫( dt*r*(∇⋅F) )dΩ
   res((v,r)) = res_u(v) + res_p(r)
   assemble_vector(res, X)
@@ -271,17 +266,25 @@ end
 #end
 
 u, h = x
+xv = get_free_dof_values(x)
+dx = copy(xv)
+q, F, Φ = xd
+q₀ = FEFunction(H,copy(get_free_dof_values(q)))
+u₀ = FEFunction(U,copy(get_free_dof_values(u)))
+h₀ = FEFunction(P,copy(get_free_dof_values(h)))
 for step in 1:nsteps
-  F,Φ,q = diagnostics(u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
-  q₀ = copy(q)
-  uₒ = copy(u)
-  h₀ = copy(h)
+  get_free_dof_values(q₀) .= get_free_dof_values(q)
+  get_free_dof_values(u₀) .= get_free_dof_values(u)
+  get_free_dof_values(h₀) .= get_free_dof_values(h)
   for it in 1:4
-    R = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf)
-    F,Φ,q = diagnostics(0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
-    dx = solve(gmres_ns, R)
-    get_free_dof_values(u), get_free_dof_values(h) .= x .- dx
+    diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf)
+    b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf)
+    dx .= 0.0
+    solve!(dx,gmres_ns,b)
+    xv .= xv .- dx
+    u, h = x
   end
+  u, h = x
 
   i_am_main(ranks) && println(step)
   writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step.vtu",
