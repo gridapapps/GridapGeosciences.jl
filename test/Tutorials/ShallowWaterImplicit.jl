@@ -217,19 +217,21 @@ cgp_ns = numerical_setup(symbolic_setup(cgp,Mp),Mp)
 gmres = LinearSolvers.GMRESSolver(10;restart=true,rtol=1.0e-8)
 gmres_ns = numerical_setup(symbolic_setup(gmres,J),J)
 
-function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf)
+function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf,Mu,Mh)
   buvec(v) = ∫( h*(u⋅(g⋅v))*(1/meas) )dΩ
   bu = assemble_vector(buvec, U)
+  bus = similar(bu, eltype(bu), (axes(Mu)[2],))
+  copy!(bus, bu)
   get_free_dof_values(F) .= 0.0
-  consistent!(get_free_dof_values(F)) |> wait
-  solve!(get_free_dof_values(F),cgu_ns, bu)
+  solve!(get_free_dof_values(F), cgu_ns, bus)
   consistent!(get_free_dof_values(F)) |> wait
 
   bhvec(q) = ∫( gravity*h*q*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*q*(1/meas))dΩ
   bh = assemble_vector(bhvec, P)
+  bhs = similar(bh, eltype(bh), (axes(Mh)[2],))
+  copy!(bhs, bh)
   get_free_dof_values(Φ) .= 0.0
-  consistent!(get_free_dof_values(Φ)) |> wait
-  solve!(get_free_dof_values(Φ),cgh_ns, bh)
+  solve!(get_free_dof_values(Φ), cgh_ns, bhs)
   consistent!(get_free_dof_values(Φ)) |> wait
 
   Mwmat(r,s) = ∫( r*s*h*meas )dΩ
@@ -238,9 +240,10 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   cgw_ns = numerical_setup(symbolic_setup(cgu,Mw),Mw)
   bwvec(r) = ∫( f_cf*r*meas )dΩ + ∫( (((Rperp_cf⋅u)⋅ginv)⋅∇(r))*meas)dΩ
   bw = assemble_vector(bwvec, H)
+  bws = similar(bw, eltype(bw), (axes(Mw)[2],))
+  copy!(bws, bw)
   get_free_dof_values(q) .= 0.0
-  consistent!(get_free_dof_values(q)) |> wait
-  solve!(get_free_dof_values(q),cgw_ns, bw)
+  solve!(get_free_dof_values(q), cgw_ns, bws)
   consistent!(get_free_dof_values(q)) |> wait
 end
 
@@ -283,11 +286,12 @@ for step in 1:nsteps
   get_free_dof_values(u₀) .= get_free_dof_values(u)
   get_free_dof_values(h₀) .= get_free_dof_values(h)
   for it in 1:4
-    diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf)
+    diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
     b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf)
     dx .= 0.0
-    consistent!(dx) |> wait
-    solve!(dx,gmres_ns,b)
+    bs = similar(b, eltype(b), (axes(J)[2],))
+    copy!(bs, b)
+    solve!(dx, gmres_ns, bs)
     consistent!(dx) |> wait
     xv .= xv .- dx
   end
