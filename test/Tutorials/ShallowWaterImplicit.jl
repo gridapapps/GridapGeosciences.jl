@@ -282,12 +282,9 @@ for step in 1:nsteps
     dx .= 0.0
     solve!(dx,gmres_ns,b)
     xv .= xv .- dx
-    u, h = x
   end
-  u, h = x
-
   i_am_main(ranks) && println(step)
   writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step.vtu",
-     cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"p"=>p,"vort"=>q],
+     cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
      append=false)
 end
