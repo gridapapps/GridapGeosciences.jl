@@ -222,17 +222,21 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   bu = assemble_vector(buvec, U)
   bus = similar(bu, eltype(bu), (axes(Mu)[2],))
   copy!(bus, bu)
-  get_free_dof_values(F) .= 0.0
-  solve!(get_free_dof_values(F), cgu_ns, bus)
-  consistent!(get_free_dof_values(F)) |> wait
+  Fx = similar(get_free_dof_values(F), eltype(get_free_dof_values(F)), (axes(Mu)[2],))
+  Fx .= 0
+  solve!(Fx, cgu_ns, bus)
+  consistent!(Fx) |> wait
+  get_free_dof_values(F) .= Fx
 
   bhvec(q) = ∫( gravity*h*q*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*q*(1/meas))dΩ
   bh = assemble_vector(bhvec, P)
   bhs = similar(bh, eltype(bh), (axes(Mh)[2],))
   copy!(bhs, bh)
-  get_free_dof_values(Φ) .= 0.0
-  solve!(get_free_dof_values(Φ), cgh_ns, bhs)
-  consistent!(get_free_dof_values(Φ)) |> wait
+  Φx = similar(get_free_dof_values(Φ), eltype(get_free_dof_values(Φ)), (axes(Mp)[2],))
+  Φx .= 0
+  solve!(Φx, cgh_ns, bhs)
+  consistent!(Φx) |> wait
+  get_free_dof_values(Φ) .= Φx
 
   Mwmat(r,s) = ∫( r*s*h*meas )dΩ
   Mw = assemble_matrix(Mwmat, H, R)
@@ -242,9 +246,11 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   bw = assemble_vector(bwvec, H)
   bws = similar(bw, eltype(bw), (axes(Mw)[2],))
   copy!(bws, bw)
-  get_free_dof_values(q) .= 0.0
-  solve!(get_free_dof_values(q), cgw_ns, bws)
-  consistent!(get_free_dof_values(q)) |> wait
+  qx = similar(get_free_dof_values(q), eltype(get_free_dof_values(q)), (axes(Mw)[2],))
+  qx .= 0
+  solve!(qx, cgw_ns, bws)
+  consistent!(qx) |> wait
+  get_free_dof_values(q) .= qx
 end
 
 function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf)
@@ -291,8 +297,10 @@ for step in 1:nsteps
     dx .= 0.0
     bs = similar(b, eltype(b), (axes(J)[2],))
     copy!(bs, b)
-    solve!(dx, gmres_ns, bs)
-    consistent!(dx) |> wait
+    dxs = similar(dx, eltype(dx), (axes(J)[2],))
+    solve!(dxs, gmres_ns, bs)
+    consistent!(dxs) |> wait
+    dx .= dxs
     xv .= xv .- dx
   end
   i_am_main(ranks) && println(step)
