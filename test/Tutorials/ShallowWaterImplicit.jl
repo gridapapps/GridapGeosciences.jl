@@ -253,11 +253,22 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   get_free_dof_values(q) .= qx
 end
 
-function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf)
+function extract_vector(du::TensorValue{2})
+  VectorValue(du[1,1], du[2,2])
+end
+
+function mag(u::VectorValue{2})
+  sqrt(u[1]*u[1] + u[2]*u[2])
+end
+
+function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   τ = 0.5
-  res_u(v) = ( ∫( (du⋅(g⋅v))*(1/meas) )dΩ + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ - ∫( dt*Φ*(∇⋅v) )dΩ )
+  res_u(v) = ∫( (du⋅(g⋅v))*(1/meas) )dΩ + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( dt*Φ*(∇⋅v) )dΩ
   res_p(r) = ∫(r*dh*meas )dΩ + ∫( dt*r*(∇⋅F) )dΩ
-  res((v,r)) = res_u(v) + res_p(r)
+  res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
+  dx = 1.0
+  #res_d(v) = ∫(dt*dx*dx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Γ)*jump((extract_vector∘∇(F))⋅n_Γ))dΓ
+  res((v,r)) = res_u(v) + res_p(r) + res_d(v)
   assemble_vector(res, X)
 end
 
@@ -287,13 +298,19 @@ q, F, Φ = xd
 q₀ = FEFunction(H,copy(get_free_dof_values(q)))
 u₀ = FEFunction(U,copy(get_free_dof_values(u)))
 h₀ = FEFunction(P,copy(get_free_dof_values(h)))
+qᵢ = FEFunction(H,copy(get_free_dof_values(q)))
+uᵢ = FEFunction(U,copy(get_free_dof_values(u)))
+hᵢ = FEFunction(P,copy(get_free_dof_values(h)))
+writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_init",
+   cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
+   append=false)
 for step in 1:nsteps
   get_free_dof_values(q₀) .= get_free_dof_values(q)
   get_free_dof_values(u₀) .= get_free_dof_values(u)
   get_free_dof_values(h₀) .= get_free_dof_values(h)
   for it in 1:4
     diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
-    b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf)
+    b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf,0.5*(u₀+u))
     dx .= 0.0
     bs = similar(b, eltype(b), (axes(J)[2],))
     copy!(bs, b)
@@ -304,7 +321,20 @@ for step in 1:nsteps
     xv .= xv .- dx
   end
   i_am_main(ranks) && println(step)
-  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step.vtu",
+  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step",
      cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
      append=false)
+end
+
+qᵢ= qᵢ - q
+uᵢ= uᵢ - u
+hᵢ= hᵢ - h
+
+Eq = sum(∫(qᵢ*qᵢ)dΩ)
+Eu = sum(∫(uᵢ⋅uᵢ)dΩ)
+Eh = sum(∫(hᵢ*hᵢ)dΩ)
+if (i_am_main(ranks))
+  println(Eq)
+  println(Eu)
+  println(Eh)
 end
