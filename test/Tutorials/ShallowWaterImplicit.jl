@@ -220,23 +220,25 @@ gmres_ns = numerical_setup(symbolic_setup(gmres,J),J)
 function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf,Mu,Mh)
   buvec(v) = ∫( h*(u⋅(g⋅v))*(1/meas) )dΩ
   bu = assemble_vector(buvec, U)
-  bus = similar(bu, eltype(bu), (axes(Mu)[2],))
+  bus = allocate_in_domain(Mu)
   copy!(bus, bu)
-  Fx = similar(get_free_dof_values(F), eltype(get_free_dof_values(F)), (axes(Mu)[2],))
-  Fx .= 0
+  Fx = allocate_in_domain(Mu)
+  fill!(Fx, 0.0)
   solve!(Fx, cgu_ns, bus)
   consistent!(Fx) |> wait
   get_free_dof_values(F) .= Fx
+  consistent!(get_free_dof_values(F)) |> wait
 
   bhvec(q) = ∫( gravity*h*q*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*q*(1/meas))dΩ
   bh = assemble_vector(bhvec, P)
-  bhs = similar(bh, eltype(bh), (axes(Mh)[2],))
+  bhs = allocate_in_domain(Mh)
   copy!(bhs, bh)
-  Φx = similar(get_free_dof_values(Φ), eltype(get_free_dof_values(Φ)), (axes(Mp)[2],))
-  Φx .= 0
+  Φx = allocate_in_domain(Mh)
+  fill!(Φx, 0.0)
   solve!(Φx, cgh_ns, bhs)
   consistent!(Φx) |> wait
   get_free_dof_values(Φ) .= Φx
+  consistent!(get_free_dof_values(Φ)) |> wait
 
   Mwmat(r,s) = ∫( r*s*h*meas )dΩ
   Mw = assemble_matrix(Mwmat, H, R)
@@ -244,13 +246,13 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   cgw_ns = numerical_setup(symbolic_setup(cgu,Mw),Mw)
   bwvec(r) = ∫( f_cf*r*meas )dΩ + ∫( (((Rperp_cf⋅u)⋅ginv)⋅∇(r))*meas)dΩ
   bw = assemble_vector(bwvec, H)
-  bws = similar(bw, eltype(bw), (axes(Mw)[2],))
   copy!(bws, bw)
-  qx = similar(get_free_dof_values(q), eltype(get_free_dof_values(q)), (axes(Mw)[2],))
-  qx .= 0
+  qx = allocate_in_domain(Mw)
+  fill!(qx, 0.0)
   solve!(qx, cgw_ns, bws)
   consistent!(qx) |> wait
   get_free_dof_values(q) .= qx
+  consistent!(get_free_dof_values(q)) |> wait
 end
 
 function extract_vector(du::TensorValue{2})
@@ -268,7 +270,7 @@ function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
   dx = 1.0
   #res_d(v) = ∫(dt*dx*dx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Γ)*jump((extract_vector∘∇(F))⋅n_Γ))dΓ
-  res((v,r)) = res_u(v) + res_p(r) #+ res_d(v)
+  res((v,r)) = res_u(v) + res_p(r) + res_d(v)
   assemble_vector(res, X)
 end
 
@@ -311,14 +313,15 @@ for step in 1:nsteps
   for it in 1:4
     diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
     b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf,0.5*(u₀+u))
-    dx .= 0.0
-    bs = similar(b, eltype(b), (axes(J)[2],))
+    bs = allocate_in_domain(J)
     copy!(bs, b)
-    dxs = similar(dx, eltype(dx), (axes(J)[2],))
+    dxs = allocate_in_domain(J)
+    fill!(dxs, 0.0)
     solve!(dxs, gmres_ns, bs)
     consistent!(dxs) |> wait
     dx .= dxs
     xv .= xv .- dx
+    consistent!(xv) |> wait
   end
   i_am_main(ranks) && println(step)
   writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step",
