@@ -246,6 +246,7 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   cgw_ns = numerical_setup(symbolic_setup(cgu,Mw),Mw)
   bwvec(r) = ∫( f_cf*r*meas )dΩ + ∫( (((Rperp_cf⋅u)⋅ginv)⋅∇(r))*meas)dΩ
   bw = assemble_vector(bwvec, H)
+  bws = allocate_in_domain(Mw)
   copy!(bws, bw)
   qx = allocate_in_domain(Mw)
   fill!(qx, 0.0)
