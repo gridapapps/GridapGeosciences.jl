@@ -268,7 +268,7 @@ function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
   dx = 1.0
   #res_d(v) = ∫(dt*dx*dx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Γ)*jump((extract_vector∘∇(F))⋅n_Γ))dΓ
-  res((v,r)) = res_u(v) + res_p(r) + res_d(v)
+  res((v,r)) = res_u(v) + res_p(r) #+ res_d(v)
   assemble_vector(res, X)
 end
 
@@ -322,7 +322,7 @@ for step in 1:nsteps
   end
   i_am_main(ranks) && println(step)
   writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step",
-     cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
+     cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q,"F"=>covariant_basis_cf⋅(1/meas*F),"Phi"=>Φ],
      append=false)
 end
 
