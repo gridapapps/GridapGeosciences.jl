@@ -210,11 +210,11 @@ Mpmat(p,q) = ∫( (p*q)*meas )dΩ
 Mu = assemble_matrix(Mumat, U, V)
 Mp = assemble_matrix(Mpmat, P, Q)
 
-cgu = LinearSolvers.CGSolver(;rtol=1.0e-8)
+cgu = CGSolver(;rtol=1.0e-12)
 cgu_ns = numerical_setup(symbolic_setup(cgu,Mu),Mu)
-cgp = LinearSolvers.CGSolver(;rtol=1.0e-8)
+cgp = CGSolver(;rtol=1.0e-12)
 cgp_ns = numerical_setup(symbolic_setup(cgp,Mp),Mp)
-gmres = LinearSolvers.GMRESSolver(10;restart=true,rtol=1.0e-8)
+gmres = GMRESSolver(100;restart=true,rtol=1.0e-12)
 gmres_ns = numerical_setup(symbolic_setup(gmres,J),J)
 
 function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rperp_cf,Mu,Mh)
@@ -229,7 +229,7 @@ function diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgh_ns,f_cf,Rper
   get_free_dof_values(F) .= Fx
   consistent!(get_free_dof_values(F)) |> wait
 
-  bhvec(q) = ∫( gravity*h*q*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*q*(1/meas))dΩ
+  bhvec(p) = ∫( gravity*h*p*meas )dΩ + ∫( 0.5*(u⋅(g⋅u))*p*(1/meas))dΩ
   bh = assemble_vector(bhvec, P)
   bhs = allocate_in_domain(Mh)
   copy!(bhs, bh)
