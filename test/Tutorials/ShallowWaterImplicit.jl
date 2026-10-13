@@ -179,7 +179,7 @@ f_cf = f0∘ambient_map_cf
 # The transient parameters are:
 t0 = 0.0
 tF = 12.0*24.0*3600.0
-nsteps = 100
+nsteps = 50
 dt = tF/nsteps
 τ = dt/2
 
@@ -298,6 +298,7 @@ u, h = x
 xv = get_free_dof_values(x)
 dx = copy(xv)
 q, F, Φ = xd
+diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
 q₀ = FEFunction(H,copy(get_free_dof_values(q)))
 u₀ = FEFunction(U,copy(get_free_dof_values(u)))
 h₀ = FEFunction(P,copy(get_free_dof_values(h)))
