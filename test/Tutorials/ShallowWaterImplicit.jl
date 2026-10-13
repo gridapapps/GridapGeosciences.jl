@@ -60,15 +60,12 @@ omodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_s
 # using Gridap's high level API (refer to [Cotter et al. 2012](https://doi.org/10.1016/j.jcp.2012.05.020)).
 order = 1
 R = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order+1); conformity=:H1)
-#H = TransientTrialFESpace(R)
 H = TrialFESpace(R)
 
 V = TestFESpace(Ω, ReferenceFE(raviart_thomas,Float64,order); conformity=:HDiv)
-#U = TransientTrialFESpace(V)
 U = TrialFESpace(V)
 
 Q = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order); conformity=:L2)
-#P = TransientTrialFESpace(Q)
 P = TrialFESpace(Q)
 
 # The multifield FE spaces for the prognostic and diagnostic variables are:
@@ -76,7 +73,6 @@ X_prog = MultiFieldFESpace([U,P]) # u, p
 Y_prog = MultiFieldFESpace([V,Q]) # u, p
 
 X_diag = MultiFieldFESpace([H,U,P]) # q, F, Φ
-#Y_diag = MultiFieldFESpace([R,V,Q]) # q, F, Φ
 
 # ## Initial conditions
 # The initial condition for velocity, fluid depth and Coriolis are defined
@@ -147,49 +143,12 @@ u_cf = meas*((pinvJ∘transpose∘∇(ambient_map_cf))⋅(u0∘ambient_map_cf))
 h_cf = h0∘ambient_map_cf
 f_cf = f0∘ambient_map_cf
 
-# ### Diagnostic variables
-# The weak forms for the diagnostic variables are:
-#resq(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( q*p*w*meas )dΩ - ∫( f_cf*w*meas )dΩ - ∫( (((Rperp_cf⋅u)⋅ginv)⋅∇(w))*meas)dΩ
-#resF(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( (F⋅(g⋅v))*(1/meas) )dΩ - ∫( p*(u⋅(g⋅v))*(1/meas))dΩ
-#resΦ(((u,p),(q,F,Φ)),(w,v,ψ)) = ∫( Φ*ψ*meas )dΩ - ∫( gravity*p*ψ*meas  )dΩ - ∫( 0.5*(u⋅(g⋅u))ψ*(1/meas))dΩ
-
-#res_y(t,((u,p),(q,F,Φ)),(w,v,ψ)) = resq(((u,p),(q,F,Φ)),(w,v,ψ)) + resF(((u,p),(q,F,Φ)),(w,v,ψ)) + resΦ(((u,p),(q,F,Φ)),(w,v,ψ))
-#jac_y(t,((u,p),(q,F,Φ)),(dq,dF,dΦ),(w,v,ψ)) = ∫( dq*p*w*meas )dΩ + ∫( (dF⋅(g⋅v))*(1/meas) )dΩ + ∫( dΦ*ψ*meas  )dΩ
-
-# ### Prognostic variables
-# The weak forms for the prognostic variables are as follows, where we use
-# SUPG stabilisation in the velocity equation
-#res_p(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = ∫( r*(∇⋅F) )dΩ
-#res_u(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = ( ∫( ( q*( (Rperp_cf⋅F)⋅v)))dΩ
-#                              + ∫( -τ*( (q-q0)/dt)*( (Rperp_cf⋅F)⋅v))dΩ
-#                              + ∫( -τ*(u⋅∇(q))*( (Rperp_cf⋅ F)⋅v)*(1/meas))dΩ
-#                              - ∫( Φ*(∇⋅v) )dΩ )
-
-#mass(t,(dut,dpt),(v,r)) = ∫( (dut⋅(g⋅v))*(1/meas) )dΩ + ∫( (dpt*r)*meas )dΩ
-#res_x(t,((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) = res_u(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0)) + res_p(((u,p),(q,F,Φ)),(v,r),(q0,F0,Φ0))
-#jac_x(t,((u,p),(q,F,Φ)),(du,dp),(v,r),(q0,F0,Φ0)) = ∫( -τ*(du⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas))dΩ
-#jac_xt(t,((u,p),(q,F,Φ)),(dut,dpt),(v,r),(q0,F0,Φ0)) =  ∫( (dut⋅(g⋅v))*(1/meas) )dΩ + ∫((dpt*r)*meas )dΩ
-
-# ## Transient problem
-# The transient problem requires a linear solver for both the prognostic and diagnostic problem.
-# In this example, we using a Conjugate Gradient method for both.
-#ls_diag = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="diagnostic_solver")
-#ls_ode = CGSolver(JacobiLinearSolver();rtol=1e-12,verbose=i_am_main(ranks),name="ode_solver")
-
 # The transient parameters are:
 t0 = 0.0
 tF = 12.0*24.0*3600.0
-nsteps = 50
+nsteps = 100
 dt = tF/nsteps
 τ = dt/2
-
-# The transient operator, DAE operator and transient solution, integrated using SSPRK3, is defined as follows:
-#opT = TransientSemilinearFEOperator(mass,res_x,(jac_x,jac_xt),X_prog,Y_prog)
-#opFE = FEOperator(res_y,jac_y,X_diag,Y_diag)
-#opDAE = DAEFEOperator(opT,opFE,ls_diag)
-#ode_solver = RungeKutta(ls_ode,ls_ode,dt,:EXRK_SSP_3_3)
-#xh0 = interpolate_everywhere([u_cf,h_cf],X_prog)
-#solT  = solve(ode_solver,opDAE,t0,tF,xh0)
 
 x = interpolate_everywhere([u_cf,h_cf],X_prog)
 xd = interpolate_everywhere([f_cf,u_cf,h_cf],X_diag)
@@ -274,25 +233,6 @@ function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   res((v,r)) = res_u(v) + res_p(r) + res_d(v)
   assemble_vector(res, X)
 end
-
-#it = iterate(solT)
-#while !isnothing(it)
-#  data, state = it
-#  t, xh = data
-#  odeopcache = state[2][5][2]
-#  yh = odeopcache.diagnostics
-
-#  uh,ph = xh
-#  qh,Fh,Φh = yh
-
-#  i_am_main(ranks) && println(t)
-
-#  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$t.vtu",
-#     cellfields=["vel"=>covariant_basis_cf⋅(1/meas*uh),"p"=>ph,"vort"=>qh],
-#     append=false)
-
-#  global it = iterate(solT, state)
-#end
 
 u, h = x
 xv = get_free_dof_values(x)
