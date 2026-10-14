@@ -40,6 +40,7 @@ using GridapSolvers.LinearSolvers
 using GridapDistributed
 using PartitionedArrays
 using MPI
+using Printf
 
 MPI.Init()
 ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))
@@ -145,8 +146,8 @@ f_cf = f0∘ambient_map_cf
 
 # The transient parameters are:
 t0 = 0.0
-tF = 12.0*24.0*3600.0
-nsteps = 100
+tF = 6.0*24.0*3600.0
+nsteps = 50
 dt = tF/nsteps
 τ = dt/2
 
@@ -245,14 +246,15 @@ h₀ = FEFunction(P,copy(get_free_dof_values(h)))
 qᵢ = FEFunction(H,copy(get_free_dof_values(q)))
 uᵢ = FEFunction(U,copy(get_free_dof_values(u)))
 hᵢ = FEFunction(P,copy(get_free_dof_values(h)))
-writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_init",
+str_padded = @sprintf("shallow_water_sol_%02d/solT_init", ℓ)
+writevtk_with_cell_geomap(LatLonMapCellField(Ω), Ω, str_padded,
    cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
    append=false)
 for step in 1:nsteps
   get_free_dof_values(q₀) .= get_free_dof_values(q)
   get_free_dof_values(u₀) .= get_free_dof_values(u)
   get_free_dof_values(h₀) .= get_free_dof_values(h)
-  for it in 1:4
+  for it in 1:100
     diagnostics!(q,F,Φ,0.5*(u₀+u),0.5*(h₀+h),dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
     b = assemble_residual(u-u₀,h-h₀,dt,F,Φ,q,q₀,dΩ,meas,g,X_prog,f_cf,Rperp_cf,0.5*(u₀+u))
     bs = allocate_in_domain(J)
@@ -264,22 +266,32 @@ for step in 1:nsteps
     dx .= dxs
     xv .= xv .- dx
     consistent!(xv) |> wait
+
+    dxsq = dot(dx, dx)
+    xsq = dot(xv, xv)
+    err = sqrt(dxsq/xsq)
+    i_am_main(ranks) && @printf("%03d\t%03d\t%.6e\n", step, it, err)
+    if (err < 1.0e-9)
+      break
+    end
   end
   i_am_main(ranks) && println(step)
-  writevtk_with_cell_geomap(LatLonMapCellField(Ω),Ω,"shallow_water_sol/solT_$step",
+  str_padded = @sprintf("shallow_water_sol_%02d/solT_%04d", ℓ, step)
+  writevtk_with_cell_geomap(LatLonMapCellField(Ω), Ω, str_padded,
      cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q,"F"=>covariant_basis_cf⋅(1/meas*F),"Phi"=>Φ],
      append=false)
 end
 
+Eu0 = sum(∫(uᵢ⋅uᵢ)dΩ)
+Eh0 = sum(∫(hᵢ*hᵢ)dΩ)
 qᵢ= qᵢ - q
 uᵢ= uᵢ - u
 hᵢ= hᵢ - h
-
 Eq = sum(∫(qᵢ*qᵢ)dΩ)
 Eu = sum(∫(uᵢ⋅uᵢ)dΩ)
 Eh = sum(∫(hᵢ*hᵢ)dΩ)
 if (i_am_main(ranks))
   println(Eq)
-  println(Eu)
-  println(Eh)
+  println(Eu/Eu0)
+  println(Eh/Eh0)
 end
