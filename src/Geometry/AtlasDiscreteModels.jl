@@ -397,3 +397,71 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
      ManifoldStyle(model),
    )
 end
+
+###############
+# simplexify  #
+###############
+
+# Per-cell data of the parent cells, carried over to the simplices. A
+# `CompressedArray` stays compressed: the ambient maps and the metric hold one
+# entry per chart, not one per cell.
+_inherit_cell_data(a::CompressedArray, cell_to_parent) =
+  CompressedArray(a.values, a.ptrs[cell_to_parent])
+_inherit_cell_data(a, cell_to_parent) = a[cell_to_parent]
+
+"""
+    Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...) -> AtlasDiscreteModel
+
+Split every cell of `model` into simplices, and give each simplex the chart
+coordinates of the nodes it keeps, together with the ambient map and the metric
+of the cell it comes from.
+
+The charts are unchanged as maps: a simplex parametrizes part of the chart its
+parent cell parametrized, over the reference simplex instead of the reference
+cell. `kwargs` are forwarded to `simplexify` on the cell polytopes, so e.g.
+`positive=true` applies as it does for any grid.
+
+The chart coordinates of the nodes are what is split, because a node of an atlas
+has no single pair of chart coordinates: the charts are per cell, and a node on
+the seam of two of them is named by each.
+"""
+function Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...)
+  g = model.atlas_grid
+  param_grid = g.param_grid
+
+  # The same local split, applied in the same cell-major order, that
+  # `simplexify_connectivity` uses to build the connectivity, so that a simplex
+  # and the cell it comes from line up.
+  ctype_to_polytope, cell_to_ctype =
+    compress_cell_data(Gridap.Geometry.get_cell_polytopes(param_grid))
+  ctype_to_lnodes = map(p -> first(simplexify(p; kwargs...)), ctype_to_polytope)
+  cell_lnodes(cell) = ctype_to_lnodes[cell_to_ctype[cell]]
+
+  cells = 1:num_cells(param_grid)
+  cell_to_parent = [cell for cell in cells for _ in cell_lnodes(cell)]
+  cell_chart_coords = [g.cell_chart_coords[cell][lnodes]
+                       for cell in cells for lnodes in cell_lnodes(cell)]
+
+  simplex_model = simplexify(
+    Gridap.Geometry.UnstructuredDiscreteModel(
+      Gridap.Geometry.UnstructuredGrid(param_grid),
+      Gridap.Geometry.UnstructuredGridTopology(model.grid_topology),
+      model.face_labeling,
+    );
+    kwargs...
+  )
+
+  AtlasDiscreteModel(
+    AtlasGrid(
+      Gridap.Geometry.get_grid(simplex_model),
+      cell_chart_coords,
+      _inherit_cell_data(g.cell_ambient_maps, cell_to_parent),
+      _inherit_cell_data(g.cell_metric, cell_to_parent),
+      Gridap.Geometry.OrientationStyle(g),
+      ManifoldStyle(g),
+    ),
+    Gridap.Geometry.get_grid_topology(simplex_model),
+    Gridap.Geometry.get_face_labeling(simplex_model),
+  )
+end
+
