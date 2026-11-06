@@ -10,6 +10,8 @@ using Test
 @testset "PoissonCylinderTests" begin include("PoissonCylinderTests.jl") end
 @testset "QuadratureCylinderTests" begin include("QuadratureCylinderTests.jl") end
 @testset "RefinementOrderingTests" begin include("RefinementOrderingTests.jl") end
+@testset "AtlasRefinementTests" begin include("AtlasRefinementTests.jl") end
+@testset "SimplexifyAtlasTests" begin include("SimplexifyAtlasTests.jl") end
 @testset "CubedSphereTests" begin include("CubedSphereTests.jl") end
 @testset "CylinderTests" begin include("CylinderTests.jl") end
 @testset "MobiusTests" begin include("MobiusTests.jl") end

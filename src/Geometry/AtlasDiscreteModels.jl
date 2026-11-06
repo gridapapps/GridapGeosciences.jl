@@ -409,22 +409,6 @@ _inherit_cell_data(a::CompressedArray, cell_to_parent) =
   CompressedArray(a.values, a.ptrs[cell_to_parent])
 _inherit_cell_data(a, cell_to_parent) = a[cell_to_parent]
 
-"""
-    Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...) -> AtlasDiscreteModel
-
-Split every cell of `model` into simplices, and give each simplex the chart
-coordinates of the nodes it keeps, together with the ambient map and the metric
-of the cell it comes from.
-
-The charts are unchanged as maps: a simplex parametrizes part of the chart its
-parent cell parametrized, over the reference simplex instead of the reference
-cell. `kwargs` are forwarded to `simplexify` on the cell polytopes, so e.g.
-`positive=true` applies as it does for any grid.
-
-The chart coordinates of the nodes are what is split, because a node of an atlas
-has no single pair of chart coordinates: the charts are per cell, and a node on
-the seam of two of them is named by each.
-"""
 function Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...)
   g = model.atlas_grid
   param_grid = g.param_grid
