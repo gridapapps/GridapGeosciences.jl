@@ -42,19 +42,42 @@ using PartitionedArrays
 using MPI
 using Printf
 
+function sgn(un)
+  un < 0.0 ? -1.0*un : un
+end
+
+function extract_vector(du::TensorValue{2})
+  VectorValue(du[1,1], du[2,2])
+end
+
+function mag(u::VectorValue{2})
+  sqrt(u[1]*u[1] + u[2]*u[2])
+end
+
 MPI.Init()
 ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)))
 
+# Convergence results:
+# ℓ = 3, nsteps = 25, wₑ = 757.587905420978, uₑ = 0.00013971454937170496, hₑ = 2.201218238439908e-6
+# ℓ = 4, nsteps = 50, wₑ = 57.3402239214266, uₑ = 8.755115158169267e-6, hₑ = 1.2837350282417836e-7
+
 # ## Discrete model
 # To obtain a refined 2D parametric model, we pass $\ell$ levels of refinement:
-ℓ = 2
-radius = 6371220.0
+#ℓ = 2
+ℓ = 3
+#ℓ = 4
+#ℓ = 5
+#radius = 6371220.0
+radius = 1.0
 coarse_mesh = CubedSphereMesh(radius)
 omodel = AtlasOctreeDistributedDiscreteModel(ranks, coarse_mesh, ℓ; manifold_style=IntrinsicManifold())
 
 # ## Triangulation
 # Now we extract the triangulated and the panel ids associated to each cell:
 Ω = Triangulation(omodel)
+
+Λ = SkeletonTriangulation(omodel)
+n_Λ = get_normal_vector(Λ)
 
 # ## FE Spaces
 # Trial and test spaces relevant to compatible finite element pairings are defined
@@ -80,17 +103,17 @@ X_diag = MultiFieldFESpace([H,U,P]) # q, F, Φ
 # as per the Williamson 2 test case, in [Williamson et al. 1992](https://doi.org/10.1016/S0021-9991(05)80016-6).
 #
 # The dimensional parameters are:
-aₑ = radius # m
-gₑ = 9.80616 # m/s^{-2}
+aₑ = 6.37e6 # m
+gₑ = 9.8 #0616 # m/s^{-2}
 ωₑ = 7.29e-5 # s^{-1}
 Hₑ = 2.94e4/gₑ # m
 uₑ = 2*π*aₑ/(12*24*3600) # m s^{-1}
 
 # Consider a length scale of $a_{e}$ and time scale of $1/\omega$ yields the non-dimensional parameters:
-gravity = gₑ#*(1/ωₑ)^2/aₑ
-ω = ωₑ#*(1/ωₑ)
-H₀ = Hₑ#/aₑ
-u₀ = uₑ#/aₑ*(1/ωₑ)
+gravity = gₑ*(1/ωₑ)^2/aₑ
+ω = ωₑ*(1/ωₑ)
+H₀ = Hₑ/aₑ
+u₀ = uₑ/aₑ*(1/ωₑ)
 
 # The initial conditions are defined as a function of the forward map as follows:
 function u0(xyz)
@@ -138,6 +161,8 @@ Rperp = TensorValue(Aperp)
 Rperp_cf = CellField(Rperp,Ω)
 dΩ = Measure(Ω,3*(order+1))
 
+dΛ = Measure(Λ,3*(order+1))
+
 # Then converted into a cellfield, where we extract the contravariant components
 # for the velocity:
 u_cf = meas*((pinvJ∘transpose∘∇(ambient_map_cf))⋅(u0∘ambient_map_cf))
@@ -146,10 +171,21 @@ f_cf = f0∘ambient_map_cf
 
 # The transient parameters are:
 t0 = 0.0
-tF = 6.0*24.0*3600.0
-nsteps = 50
+#tF = 6.0*24.0*3600.0
+#tF = 2*π
+tF = π
+#nsteps = 12
+#nsteps = 12*2
+nsteps = 25
+#nsteps = 50
+#nsteps = 100
+#nsteps = 200
 dt = tF/nsteps
 τ = dt/2
+
+# mean grid spacing
+ae = 4.0 * π * radius * radius
+Δx = sqrt(4.0 * π * radius * radius / (6 * 2^ℓ * 2^ℓ))
 
 x = interpolate_everywhere([u_cf,h_cf],X_prog)
 xd = interpolate_everywhere([f_cf,u_cf,h_cf],X_diag)
@@ -157,12 +193,15 @@ xd = interpolate_everywhere([f_cf,u_cf,h_cf],X_diag)
 # The diagnostic solution can be extracted from the cache of the ode solution.
 # To do so, we utilise the iterable functionality of ``solT`` as follows:
 
-i_am_main(ranks) && mkpath("shallow_water_sol")
 PartitionedArrays.barrier(ranks)
 
 # Assemble the operators
 λ = 0.5
 Jmat((u,p),(v,q)) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ + ∫(p*q*meas)dΩ + ∫(dt*λ*f_cf*((Rperp_cf⋅u)⋅v))dΩ - ∫(dt*λ*gravity*(p*(∇⋅v)))dΩ + ∫(dt*λ*H₀*(q*(∇⋅u)))dΩ
+# Interior penalty stabilisation - TODO: add the metric terms 
+#Jmad_d((u,p),(v,q)) = ∫(λ*dt*Δx*Δx*0.5*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(u))⋅n_Λ))dΛ
+#Jmad_d((u,p),(v,q)) = ∫(λ*dt*Δx*Δx*jump(∇⋅v)*jump(∇⋅u))dΛ
+#Jmat = Jmat_u + Jmat_d
 J = assemble_matrix(Jmat, X_prog, Y_prog)
 
 Mumat(u,v) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ
@@ -170,9 +209,9 @@ Mpmat(p,q) = ∫( (p*q)*meas )dΩ
 Mu = assemble_matrix(Mumat, U, V)
 Mp = assemble_matrix(Mpmat, P, Q)
 
-cgu = CGSolver(;rtol=1.0e-12)
+cgu = CGSolver(JacobiLinearSolver();rtol=1.0e-12)
 cgu_ns = numerical_setup(symbolic_setup(cgu,Mu),Mu)
-cgp = CGSolver(;rtol=1.0e-12)
+cgp = CGSolver(JacobiLinearSolver();rtol=1.0e-12)
 cgp_ns = numerical_setup(symbolic_setup(cgp,Mp),Mp)
 gmres = GMRESSolver(100;restart=true,rtol=1.0e-12)
 gmres_ns = numerical_setup(symbolic_setup(gmres,J),J)
@@ -229,10 +268,22 @@ function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   res_u(v) = ∫( (du⋅(g⋅v))*(1/meas) )dΩ + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( dt*Φ*(∇⋅v) )dΩ
   res_p(r) = ∫(r*dh*meas )dΩ + ∫( dt*r*(∇⋅F) )dΩ
   res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
-  dx = 1.0
-  #res_d(v) = ∫(dt*dx*dx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Γ)*jump((extract_vector∘∇(F))⋅n_Γ))dΓ
-  res((v,r)) = res_u(v) + res_p(r) + res_d(v)
+  # Interior penalty stabilisation - TODO: add the metric terms 
+  #res_d(v) = ∫(dt*Δx*Δx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(F))⋅n_Λ))dΛ
+  #https://github.com/davelee2804/tsw_eigs/blob/grav_wave_test/src/distributed_euler_flux_solve_eta_grav_wave.jl
+  #α = 1.0 / H₀
+  #res_d(v) = ∫(λ*dt*Δx*Δx*0.5*α*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(F))⋅n_Λ))dΛ
+  #res_d(v) = ∫(λ*1.0*dt*Δx*Δx*α*jump(∇⋅(v))*jump(∇⋅(F)))dΛ
+  res((v,r)) = res_u(v) + res_p(r) #+ res_d(v)
   assemble_vector(res, X)
+end
+
+function assemble_rhs!(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,U,P,f_cf,Rperp_cf,u₀,h₀,u,h,a₀,a)
+  τ = 0.0
+  res_u(v) = ∫( ((a₀*u₀ + a*u)⋅(g⋅v))*(1/meas) )dΩ - ∫( a*dt*q*( (Rperp_cf⋅F)⋅v) )dΩ + ∫( a*dt*Φ*(∇⋅v) )dΩ + ∫( a*τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ + ∫( a*τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
+  res_p(r) = ∫(r*(a₀*h + a*h)*meas )dΩ - ∫( a*dt*r*(∇⋅F) )dΩ
+  get_free_dof_values(du) .= assemble_vector(res_u, U)
+  get_free_dof_values(dh) .= assemble_vector(res_p, P)
 end
 
 u, h = x
@@ -246,9 +297,11 @@ h₀ = FEFunction(P,copy(get_free_dof_values(h)))
 qᵢ = FEFunction(H,copy(get_free_dof_values(q)))
 uᵢ = FEFunction(U,copy(get_free_dof_values(u)))
 hᵢ = FEFunction(P,copy(get_free_dof_values(h)))
+Fu = FEFunction(U,copy(get_free_dof_values(u)))
+Fh = FEFunction(P,copy(get_free_dof_values(h)))
 str_padded = @sprintf("shallow_water_sol_%02d/solT_init", ℓ)
 writevtk_with_cell_geomap(LatLonMapCellField(Ω), Ω, str_padded,
-   cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q],
+   cellfields=["vel"=>covariant_basis_cf⋅(1/meas*u),"h"=>h,"vort"=>q,"f"=>f_cf],
    append=false)
 for step in 1:nsteps
   get_free_dof_values(q₀) .= get_free_dof_values(q)
@@ -271,10 +324,29 @@ for step in 1:nsteps
     xsq = dot(xv, xv)
     err = sqrt(dxsq/xsq)
     i_am_main(ranks) && @printf("%03d\t%03d\t%.6e\n", step, it, err)
-    if (err < 1.0e-9)
+    if (err < 1.0e-8)
       break
     end
   end
+
+  # rk stage 1
+  #diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
+  #assemble_rhs!(Fu,Fh,dt,F,Φ,q,q₀,dΩ,meas,g,U,P,f_cf,Rperp_cf,u₀,h₀,u,h,0.0,1.0)
+  #solve!(get_free_dof_values(u), cgu_ns, get_free_dof_values(Fu))
+  #solve!(get_free_dof_values(h), cgp_ns, get_free_dof_values(Fh))
+
+  #rk stage 2
+  #diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
+  #assemble_rhs!(Fu,Fh,dt,F,Φ,q,q₀,dΩ,meas,g,U,P,f_cf,Rperp_cf,u₀,h₀,u,h,0.75,0.25)
+  #solve!(get_free_dof_values(u), cgu_ns, get_free_dof_values(Fu))
+  #solve!(get_free_dof_values(h), cgp_ns, get_free_dof_values(Fh))
+
+  #rk stage 3
+  #diagnostics!(q,F,Φ,u,h,dΩ,meas,g,ginv,U,P,H,R,cgu_ns,cgp_ns,f_cf,Rperp_cf,Mu,Mp)
+  #assemble_rhs!(Fu,Fh,dt,F,Φ,q,q₀,dΩ,meas,g,U,P,f_cf,Rperp_cf,u₀,h₀,u,h,1.0/3.0,2.0/3.0)
+  #solve!(get_free_dof_values(u), cgu_ns, get_free_dof_values(Fu))
+  #solve!(get_free_dof_values(h), cgp_ns, get_free_dof_values(Fh))
+
   i_am_main(ranks) && println(step)
   str_padded = @sprintf("shallow_water_sol_%02d/solT_%04d", ℓ, step)
   writevtk_with_cell_geomap(LatLonMapCellField(Ω), Ω, str_padded,
