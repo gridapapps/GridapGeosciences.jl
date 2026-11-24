@@ -9,17 +9,15 @@ module RefinementOrderingTests
 # what refine(model, n) calls for UnstructuredDiscreteModel).
 #
 # _build_atlas_grid uses refine(coarse_unstr, 2^num_refinements) — a single call
-# with subdivision factor n=2^K — and relies on parent-major ordering when it sets
-#   child_ids = repeat(1:n_per_chart, ncharts)
-# coarse_unstr is obtained by converting the input coarse_model to
-# UnstructuredDiscreteModel unconditionally (see _build_atlas_grid step 1).
+# with subdivision factor n=2^K.  coarse_unstr is obtained by converting the input
+# coarse_model to UnstructuredDiscreteModel unconditionally (see _build_atlas_grid step 1).
 #
 # Key facts verified here:
 #   1. refine(UnstructuredDiscreteModel, 2): 4 children/cell, parent-major
 #   2. refine(UnstructuredDiscreteModel, 4): one-shot 16 children/cell, parent-major
 #   3. Two sequential refine(.,2) give identical coarse-parent mapping as one-shot refine(.,4)
 #   4. refine(CartesianDiscreteModel, 4): lexicographic ordering, NOT parent-major
-#      (demonstrates why the Unstructured conversion in _build_atlas_grid is required)
+#      (the Unstructured conversion in _build_atlas_grid makes the ordering parent-major)
 #
 
 using Gridap

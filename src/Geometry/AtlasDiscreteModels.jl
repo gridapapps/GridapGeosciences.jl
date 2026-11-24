@@ -280,12 +280,11 @@ refined `AtlasDiscreteModel` together with its parent and the refinement glue.
 
 The refined atlas grid inherits ambient maps and metric from each parent cell.
 New per-cell chart coordinates are obtained by composing the parent-cell's
-ref-to-chart map with the sub-cell reference positions from the refinement rule,
-exactly as in `_build_atlas_grid`.
+ref-to-chart map with the sub-cell reference positions from the parent's refinement
+rule, exactly as in `_build_atlas_grid`.
 """
 function Gridap.Adaptivity.refine(model::AtlasDiscreteModel{Dc}, args...; kwargs...) where Dc
   g = model.atlas_grid
-  n_old_cells = Gridap.Geometry.num_cells(g)
 
   # Build an UnstructuredDiscreteModel from the current atlas components so that
   # Gridap's refinement machinery (uniformly_refine + blocked_refinement_glue)
@@ -302,22 +301,15 @@ function Gridap.Adaptivity.refine(model::AtlasDiscreteModel{Dc}, args...; kwargs
   ref_model        = adapted.model
   cell_to_old_cell = Vector{Int}(glue.n2o_faces_map[Dc + 1])
 
-  # Sub-cell reference coordinates from the (uniform) refinement rule
-  rrule      = glue.refinement_rules[1]
-  ref_cgrid  = Gridap.Adaptivity.get_ref_grid(rrule)
-  ref_coords = Gridap.Geometry.get_cell_coordinates(Gridap.Geometry.get_grid(ref_cgrid))
-  n_per_cell = Gridap.Geometry.num_cells(Gridap.Geometry.get_grid(ref_cgrid))
+  # Sub-cell reference coordinates from the refinement rule of each parent cell
+  ref_per_new_cell = _new_cell_ref_coords(glue, cell_to_old_cell)
 
   # Per-old-cell maps: ref-element → chart coordinates
   reffe     = Gridap.Geometry.get_reffes(g)[1]
   shapefuns = Gridap.ReferenceFEs.get_shapefuns(reffe)
   Ψ_maps    = map(corners -> linear_combination(corners, shapefuns), g.cell_chart_coords)
 
-  # Tile ref_coords and apply the parent-cell Ψ map lazily.
-  # blocked_refinement_glue guarantees parent-major ordering, so child_ids
-  # cycles 1..n_per_cell once for every parent cell.
-  child_ids             = repeat(1:n_per_cell, n_old_cells)
-  ref_per_new_cell      = lazy_map(Reindex(ref_coords), child_ids)
+  # Apply the parent-cell Ψ map lazily
   cell_Ψ                = lazy_map(Reindex(Ψ_maps), cell_to_old_cell)
   new_cell_chart_coords = lazy_map(evaluate, cell_Ψ, ref_per_new_cell)
 
@@ -396,4 +388,55 @@ function Gridap.Geometry.Grid(::Type{ReferenceFE{Dcg}},
      Gridap.Geometry.OrientationStyle(cell_param_grid),
      ManifoldStyle(model),
    )
+end
+
+###############
+# simplexify  #
+###############
+
+# Per-cell data of the parent cells, carried over to the simplices. A
+# `CompressedArray` stays compressed: the ambient maps and the metric hold one
+# entry per chart, not one per cell.
+_inherit_cell_data(a::CompressedArray, cell_to_parent) =
+  CompressedArray(a.values, a.ptrs[cell_to_parent])
+_inherit_cell_data(a, cell_to_parent) = a[cell_to_parent]
+
+function Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...)
+  g = model.atlas_grid
+  param_grid = g.param_grid
+
+  # The same local split, applied in the same cell-major order, that
+  # `simplexify_connectivity` uses to build the connectivity, so that a simplex
+  # and the cell it comes from line up.
+  ctype_to_polytope, cell_to_ctype =
+    compress_cell_data(Gridap.Geometry.get_cell_polytopes(param_grid))
+  ctype_to_lnodes = map(p -> first(simplexify(p; kwargs...)), ctype_to_polytope)
+  cell_lnodes(cell) = ctype_to_lnodes[cell_to_ctype[cell]]
+
+  cells = 1:num_cells(param_grid)
+  cell_to_parent = [cell for cell in cells for _ in cell_lnodes(cell)]
+  cell_chart_coords = [g.cell_chart_coords[cell][lnodes]
+                       for cell in cells for lnodes in cell_lnodes(cell)]
+
+  simplex_model = simplexify(
+    Gridap.Geometry.UnstructuredDiscreteModel(
+      Gridap.Geometry.UnstructuredGrid(param_grid),
+      Gridap.Geometry.UnstructuredGridTopology(model.grid_topology),
+      model.face_labeling,
+    );
+    kwargs...
+  )
+
+  AtlasDiscreteModel(
+    AtlasGrid(
+      Gridap.Geometry.get_grid(simplex_model),
+      cell_chart_coords,
+      _inherit_cell_data(g.cell_ambient_maps, cell_to_parent),
+      _inherit_cell_data(g.cell_metric, cell_to_parent),
+      Gridap.Geometry.OrientationStyle(g),
+      ManifoldStyle(g),
+    ),
+    Gridap.Geometry.get_grid_topology(simplex_model),
+    Gridap.Geometry.get_face_labeling(simplex_model),
+  )
 end
