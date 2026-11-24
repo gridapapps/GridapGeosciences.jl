@@ -198,6 +198,56 @@ function _chart_maps(g::AtlasGrid)
 end
 
 # ----------------------------------------------------------
+# Corners of the refined cells in their parent reference element
+# ----------------------------------------------------------
+
+"""
+    CellCornersMap <: Map
+
+`Map` returning the coordinates of the nodes of the cell `cell` of a grid, given the
+node coordinates `nodes` and the connectivity `cell_to_nodes` of the grid.
+"""
+struct CellCornersMap <: Gridap.Arrays.Map end
+
+Gridap.Arrays.return_cache(::CellCornersMap, nodes, cell_to_nodes::Table, cell) =
+  CachedArray(similar(nodes, 0))
+
+function Gridap.Arrays.evaluate!(cache, ::CellCornersMap, nodes, cell_to_nodes::Table, cell)
+  (; data, ptrs) = cell_to_nodes
+  offset = ptrs[cell] - 1
+  setsize!(cache, (ptrs[cell+1] - ptrs[cell],))
+  corners = cache.array
+  for i in eachindex(corners)
+    corners[i] = nodes[data[offset+i]]
+  end
+  corners
+end
+
+"""
+    _new_cell_ref_coords(glue::AdaptivityGlue, cell_to_old_cell)
+
+Return a lazy array whose `i`-th entry is the vector of corners of the refined cell `i`
+in the reference element of its parent cell `cell_to_old_cell[i]`.
+
+The corners are listed in the order of the refined grid's connectivity, which each
+parent's own refinement rule encodes: on simplices it depends on the global vertex ids
+of the parent, so the rules vary from cell to cell.
+
+The corners are read from the reference grids of the distinct refinement rules, and are
+not stored per refined cell.
+"""
+function _new_cell_ref_coords(glue::AdaptivityGlue, cell_to_old_cell)
+  ref_grid(rr) = Gridap.Geometry.get_grid(Gridap.Adaptivity.get_ref_grid(rr))
+  old_cell_nodes         = lazy_map(rr -> get_node_coordinates(ref_grid(rr)), glue.refinement_rules)
+  old_cell_cell_to_nodes = lazy_map(rr -> Table(get_cell_node_ids(ref_grid(rr))), glue.refinement_rules)
+
+  lazy_map(CellCornersMap(),
+           lazy_map(Reindex(old_cell_nodes), cell_to_old_cell),
+           lazy_map(Reindex(old_cell_cell_to_nodes), cell_to_old_cell),
+           glue.n2o_cell_to_child_id)
+end
+
+# ----------------------------------------------------------
 # _build_atlas_grid: shared private constructor
 # ----------------------------------------------------------
 
@@ -240,7 +290,7 @@ function _build_atlas_grid(
   #    Convert to UnstructuredDiscreteModel unconditionally so that refine(model, n)
   #    always dispatches to uniformly_refine → blocked_refinement_glue (parent-major).
   #    CartesianDiscreteModel.refine would use _create_cartesian_f2c_maps instead,
-  #    giving lexicographic ordering that would silently break the coord tiling below.
+  #    giving lexicographic ordering.
   #    See test_refinement_ordering.jl for a verification of parent-major ordering.
   coarse_unstr = Gridap.Geometry.UnstructuredDiscreteModel(coarse_model)
   ncharts      = Gridap.Geometry.num_cells(coarse_unstr)
@@ -258,26 +308,20 @@ function _build_atlas_grid(
     fine_model    = adapted.model
     cell_to_chart = Vector{Int}(glue.n2o_faces_map[Dc+1])
 
-    # ── 2. Get reference positions from the refinement rule's ref model ─────────
-    #    compute_reference_grid(p, n_factor) produces the n_factor×n_factor ref grid
-    #    directly — no further refinement needed.
-    ref_model   = Gridap.Adaptivity.get_ref_grid(glue.refinement_rules[1])
-    ref_coords  = Gridap.Geometry.get_cell_coordinates(Gridap.Geometry.get_grid(ref_model))
-    n_per_chart = Gridap.Geometry.num_cells(Gridap.Geometry.get_grid(ref_model))
+    # ── 2. Get reference positions from the refinement rule of each chart ───────
+    #    The ref grid of a rule is the reference element subdivided n_factor times
+    #    per direction — no further refinement needed.
+    ref_per_fine = _new_cell_ref_coords(glue, cell_to_chart)
 
     # ── 3. Build per-chart local maps Ψ_k : ref_element → coarse_chart_coords[k] ──
     reffe     = Gridap.Geometry.get_reffes(Gridap.Geometry.get_grid(coarse_unstr))[1]
     shapefuns = Gridap.ReferenceFEs.get_shapefuns(reffe)
     Ψ_maps    = map(corners -> linear_combination(corners, shapefuns), coarse_chart_coords)
 
-    # ── 4. Tile ref_coords and apply Ψ_k lazily ──────────────────────────────────
-    #    child_ids[i] = position of fine cell i within its coarse block (1..n_per_chart).
-    #    Valid because blocked_refinement_glue guarantees parent-major ordering.
+    # ── 4. Apply Ψ_k lazily ──────────────────────────────────────────────────────
     #    LinearCombinationField supports array evaluate! directly — no Broadcasting needed.
-    child_ids    = repeat(1:n_per_chart, ncharts)
-    ref_per_fine = lazy_map(Reindex(ref_coords), child_ids)
-    chart_Ψ      = lazy_map(Reindex(Ψ_maps), cell_to_chart)
-    local_lazy   = lazy_map(evaluate, chart_Ψ, ref_per_fine)
+    chart_Ψ    = lazy_map(Reindex(Ψ_maps), cell_to_chart)
+    local_lazy = lazy_map(evaluate, chart_Ψ, ref_per_fine)
   end
 
   # ── 5. Resolve orientation_style ─────────────────────────────────────────

@@ -280,12 +280,11 @@ refined `AtlasDiscreteModel` together with its parent and the refinement glue.
 
 The refined atlas grid inherits ambient maps and metric from each parent cell.
 New per-cell chart coordinates are obtained by composing the parent-cell's
-ref-to-chart map with the sub-cell reference positions from the refinement rule,
-exactly as in `_build_atlas_grid`.
+ref-to-chart map with the sub-cell reference positions from the parent's refinement
+rule, exactly as in `_build_atlas_grid`.
 """
 function Gridap.Adaptivity.refine(model::AtlasDiscreteModel{Dc}, args...; kwargs...) where Dc
   g = model.atlas_grid
-  n_old_cells = Gridap.Geometry.num_cells(g)
 
   # Build an UnstructuredDiscreteModel from the current atlas components so that
   # Gridap's refinement machinery (uniformly_refine + blocked_refinement_glue)
@@ -302,22 +301,15 @@ function Gridap.Adaptivity.refine(model::AtlasDiscreteModel{Dc}, args...; kwargs
   ref_model        = adapted.model
   cell_to_old_cell = Vector{Int}(glue.n2o_faces_map[Dc + 1])
 
-  # Sub-cell reference coordinates from the (uniform) refinement rule
-  rrule      = glue.refinement_rules[1]
-  ref_cgrid  = Gridap.Adaptivity.get_ref_grid(rrule)
-  ref_coords = Gridap.Geometry.get_cell_coordinates(Gridap.Geometry.get_grid(ref_cgrid))
-  n_per_cell = Gridap.Geometry.num_cells(Gridap.Geometry.get_grid(ref_cgrid))
+  # Sub-cell reference coordinates from the refinement rule of each parent cell
+  ref_per_new_cell = _new_cell_ref_coords(glue, cell_to_old_cell)
 
   # Per-old-cell maps: ref-element → chart coordinates
   reffe     = Gridap.Geometry.get_reffes(g)[1]
   shapefuns = Gridap.ReferenceFEs.get_shapefuns(reffe)
   Ψ_maps    = map(corners -> linear_combination(corners, shapefuns), g.cell_chart_coords)
 
-  # Tile ref_coords and apply the parent-cell Ψ map lazily.
-  # blocked_refinement_glue guarantees parent-major ordering, so child_ids
-  # cycles 1..n_per_cell once for every parent cell.
-  child_ids             = repeat(1:n_per_cell, n_old_cells)
-  ref_per_new_cell      = lazy_map(Reindex(ref_coords), child_ids)
+  # Apply the parent-cell Ψ map lazily
   cell_Ψ                = lazy_map(Reindex(Ψ_maps), cell_to_old_cell)
   new_cell_chart_coords = lazy_map(evaluate, cell_Ψ, ref_per_new_cell)
 
@@ -448,4 +440,3 @@ function Gridap.ReferenceFEs.simplexify(model::AtlasDiscreteModel; kwargs...)
     Gridap.Geometry.get_face_labeling(simplex_model),
   )
 end
-

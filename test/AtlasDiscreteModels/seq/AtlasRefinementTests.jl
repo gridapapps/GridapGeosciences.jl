@@ -46,8 +46,7 @@ chart_coords(model) = GridapGeosciences.get_atlas_grid(model).cell_chart_coords
     fine_grid.cell_metric[cell] === coarse_grid.cell_metric[parent[cell]]
   end
 
-  # Every parent keeps exactly its 2^Dc children, which is what lets the chart
-  # coordinates be built by tiling one parent's sub-cell positions.
+  # Every parent keeps exactly its 2^Dc children.
   @test all(p -> count(==(p), parent) == 2^Dc, 1:num_cells(coarse))
 end
 
