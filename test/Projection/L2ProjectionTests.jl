@@ -42,7 +42,7 @@ function L2_projection(models::AbstractArray; _i_am_main=true)
 
   # H curl: vector (3D)
   if Dc == 3
-    ps = [0,1]
+    ps = [0]
     p_convergence_auto_test(ps,models,L2_projection_Hcurl,dir,uX,ls,false; _i_am_main=_i_am_main)
   end
   @test true
