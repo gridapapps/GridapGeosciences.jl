@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Implemented `simplexify(::AtlasDiscreteModel)`, and made refinement compatible with simplex meshes (on serial meshes).
+
 ### Changed
 - Fixed sign error in Stokes and vector Laplacian test. Since [Pr #63](https://github.com/gridapapps/GridapGeosciences.jl/pull/63)
 
