@@ -7,6 +7,7 @@ using Test
 @testset "HdivCylinderTests" begin include("HdivCylinderTests.jl") end
 @testset "MetricFieldsTests" begin include("MetricFieldsTests.jl") end
 @testset "PoissonCylinderIntrinsicTests" begin include("PoissonCylinderIntrinsicTests.jl") end
+@testset "PoissonCylinderSimplicesTests" begin include("PoissonCylinderSimplicesTests.jl") end
 @testset "PoissonCylinderTests" begin include("PoissonCylinderTests.jl") end
 @testset "QuadratureCylinderTests" begin include("QuadratureCylinderTests.jl") end
 @testset "RefinementGeometryTests" begin include("RefinementGeometryTests.jl") end
