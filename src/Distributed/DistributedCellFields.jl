@@ -129,6 +129,18 @@ function MetricCellField(
   GridapDistributed.DistributedCellField(fields, trian)
 end
 
+function MetricCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Union{PatchTriangulation{Dc,Dp,<:BFTATDM},
+                                    PatchTriangulation{Dc,Dp,<:AdaptedTriangulation{Dc,Dp,<:BFTATDM}}} }}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+
+  fields = map(ghosted_trian.trians) do t
+    MetricCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
+
 function InvMetricCellField(
     trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Union{BFTATDM{Dc,Dp},
                                                                    Gridap.Adaptivity.AdaptedTriangulation{Dc,Dp,<:BFTATDM{Dc,Dp}}}}}
@@ -220,6 +232,17 @@ function MeasureCellField(
   GridapDistributed.DistributedCellField(fields, trian)
 end
 
+function MeasureCellField(
+    trian::DistributedTriangulation{Dc,Dp,<:AbstractArray{<:Union{PatchTriangulation{Dc,Dp,<:BFTATDM},
+                                    PatchTriangulation{Dc,Dp,<:AdaptedTriangulation{Dc,Dp,<:BFTATDM}}} }}
+) where {Dc,Dp}
+  ghosted_trian = add_ghost_cells(trian)
+
+  fields = map(ghosted_trian.trians) do t
+    MeasureCellField(t)
+  end
+  GridapDistributed.DistributedCellField(fields, ghosted_trian)
+end
 
 function pullback_area_form(trian::DistributedTriangulation)
   fields = map(trian.trians) do t
