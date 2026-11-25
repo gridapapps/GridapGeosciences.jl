@@ -54,7 +54,7 @@ function transient_shallow_water_solver(atlas_model::Union{<:DiscreteModel{2,2},
   Dc = num_cell_dims(atlas_model)
   lvl = nref(atlas_model)
 
-  _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
+  _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc ")
 
   ls_ode, ls_diag = lss
 

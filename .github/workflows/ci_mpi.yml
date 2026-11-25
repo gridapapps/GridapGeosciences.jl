@@ -39,7 +39,10 @@ jobs:
         testcase:
           - mpi-atlas-discrete-models
           - mpi-l2-projection
-          - mpi-laplacian
+          - mpi-laplacian-helmholtz
+          - mpi-laplacian-hodge-scalar
+          - mpi-laplacian-hodge-vector
+          - mpi-laplacian-laplace-beltrami
           - mpi-geophysical
           - mpi-transient
           - mpi-geometry
@@ -70,7 +73,7 @@ jobs:
           mkdir -p $SOURCES_DIR
           tar xzf $ROOT_DIR/$TAR_FILE -C $SOURCES_DIR --strip-components=1
           cd $SOURCES_DIR
-          ./configure --prefix=$P4EST_INSTALL --without-blas --without-lapack --enable-mpi -disable-dependency-tracking
+          ./configure --prefix=$P4EST_INSTALL --without-blas --without-lapack --enable-mpi -disable-dependency-tracking LIBS="-lm"
           make --quiet
           make --quiet install
           rm -rf $ROOT_DIR/$TAR_FILE $SOURCES_DIR

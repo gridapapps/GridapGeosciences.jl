@@ -69,6 +69,22 @@ if TESTCASE ∈ ("all", "mpi", "mpi-laplacian")
   include("Laplacian/mpi/runtests.jl")
 end
 
+if TESTCASE == "mpi-laplacian-helmholtz"
+  include("Laplacian/mpi/HelmholtzTests.jl")
+end
+
+if TESTCASE == "mpi-laplacian-hodge-scalar"
+  include("Laplacian/mpi/HodgeLaplacianScalarTests.jl")
+end
+
+if TESTCASE == "mpi-laplacian-hodge-vector"
+  include("Laplacian/mpi/HodgeLaplacianVectorTests.jl")
+end
+
+if TESTCASE == "mpi-laplacian-laplace-beltrami"
+  include("Laplacian/mpi/LaplaceBeltramiTests.jl")
+end
+
 if TESTCASE ∈ ("all", "mpi", "mpi-geophysical")
   include("Geophysical/mpi/runtests.jl")
 end
