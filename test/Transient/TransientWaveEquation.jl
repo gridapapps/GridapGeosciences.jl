@@ -30,7 +30,7 @@ function transient_wave_solver(atlas_model::Union{<:DiscreteModel{2,2},<:GridapD
   Dc = num_cell_dims(atlas_model)
   lvl = nref(atlas_model)
 
-  _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc")
+  _i_am_main && println("nref = $lvl; p_fe = $p_fe; Dc = $Dc ")
 
   ## finite element solver
   degree = 5*(p_fe+1)
