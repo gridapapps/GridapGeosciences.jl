@@ -39,7 +39,10 @@ jobs:
         testcase:
           - mpi-atlas-discrete-models
           - mpi-l2-projection
-          - mpi-laplacian
+          - mpi-laplacian-helmholtz
+          - mpi-laplacian-hodge-scalar
+          - mpi-laplacian-hodge-vector
+          - mpi-laplacian-laplace-beltrami
           - mpi-geophysical
           - mpi-transient
           - mpi-geometry
