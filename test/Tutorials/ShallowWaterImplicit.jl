@@ -60,11 +60,17 @@ ranks = distribute_with_mpi(LinearIndices((prod(MPI.Comm_size(MPI.COMM_WORLD)),)
 # Convergence results:
 # ℓ = 3, nsteps = 25, wₑ = 757.587905420978, uₑ = 0.00013971454937170496, hₑ = 2.201218238439908e-6
 # ℓ = 4, nsteps = 50, wₑ = 57.3402239214266, uₑ = 8.755115158169267e-6, hₑ = 1.2837350282417836e-7
+# With damping:  ∫(dt*Δx*Δx*α*jump(∇⋅(v))*jump(∇⋅(F)))dΛ
+# ℓ = 3, nsteps = 25, wₑ = 758.4397554495848, 0.00013811009771932074, 1.8957021435219012e-6
+# ℓ = 4, nsteps = 50, wₑ = 57.358375455480065, 8.65884211674044e-6, 1.2222155633024925e-7
+# With damping:  ∫(dt*Δx*Δx*α*jump(∇⋅(v))*jump(∇⋅(F)))dΛ, order=2
+# ℓ = 2, nsteps = 25, 220.96990045150184, 1.5582102934404516e-6, 4.71966415470421e-8
+# ℓ = 3, nsteps = 50, 7.608762195779974, 9.229111236077984e-9, 6.671831701726178e-10
 
 # ## Discrete model
 # To obtain a refined 2D parametric model, we pass $\ell$ levels of refinement:
-#ℓ = 2
-ℓ = 3
+ℓ = 2
+#ℓ = 3
 #ℓ = 4
 #ℓ = 5
 #radius = 6371220.0
@@ -82,7 +88,8 @@ n_Λ = get_normal_vector(Λ)
 # ## FE Spaces
 # Trial and test spaces relevant to compatible finite element pairings are defined
 # using Gridap's high level API (refer to [Cotter et al. 2012](https://doi.org/10.1016/j.jcp.2012.05.020)).
-order = 1
+#order = 1
+order = 2
 R = TestFESpace(Ω, ReferenceFE(lagrangian,Float64,order+1); conformity=:H1)
 H = TrialFESpace(R)
 
@@ -159,8 +166,8 @@ Aperp = [0.0 -1.0
         1.0 0.0]
 Rperp = TensorValue(Aperp)
 Rperp_cf = CellField(Rperp,Ω)
+Rperp_cf_e = CellField(Rperp,Λ)
 dΩ = Measure(Ω,3*(order+1))
-
 dΛ = Measure(Λ,3*(order+1))
 
 # Then converted into a cellfield, where we extract the contravariant components
@@ -174,8 +181,6 @@ t0 = 0.0
 #tF = 6.0*24.0*3600.0
 #tF = 2*π
 tF = π
-#nsteps = 12
-#nsteps = 12*2
 nsteps = 25
 #nsteps = 50
 #nsteps = 100
@@ -197,11 +202,12 @@ PartitionedArrays.barrier(ranks)
 
 # Assemble the operators
 λ = 0.5
-Jmat((u,p),(v,q)) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ + ∫(p*q*meas)dΩ + ∫(dt*λ*f_cf*((Rperp_cf⋅u)⋅v))dΩ - ∫(dt*λ*gravity*(p*(∇⋅v)))dΩ + ∫(dt*λ*H₀*(q*(∇⋅u)))dΩ
+Jmat((u,p),(v,q)) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ + ∫(p*q*meas)dΩ + ∫(dt*λ*f_cf*((Rperp_cf⋅u)⋅v))dΩ - ∫(dt*λ*gravity*(p*(∇⋅v)))dΩ + ∫(dt*λ*h_cf*((∇⋅u)*q))dΩ + ∫(λ*dt*Δx*Δx*jump(∇⋅v)*jump(∇⋅u))dΛ
 # Interior penalty stabilisation - TODO: add the metric terms 
-#Jmad_d((u,p),(v,q)) = ∫(λ*dt*Δx*Δx*0.5*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(u))⋅n_Λ))dΛ
-#Jmad_d((u,p),(v,q)) = ∫(λ*dt*Δx*Δx*jump(∇⋅v)*jump(∇⋅u))dΛ
-#Jmat = Jmat_u + Jmat_d
+#+ ∫(λ*dt*Δx*Δx*jump(∇⋅v)*jump(∇⋅u))dΛ
+#+ ∫(dt*λ*H₀*(q*(∇⋅u)))dΩ + ∫(λ*dt*Δx*Δx*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(u))⋅n_Λ))dΛ
+#+ ∫(dt*λ*jump((Rperp_cf_e⋅n_Λ)⋅u)*jump((Rperp_cf_e⋅n_Λ)⋅v))dΛ
+#+ ∫(dt*λ*jump((Rperp_cf_e⋅n_Λ)⋅u)*jump((Rperp_cf_e⋅n_Λ)⋅((g⋅v)*(1.0/meas))))dΛ
 J = assemble_matrix(Jmat, X_prog, Y_prog)
 
 Mumat(u,v) = ∫( (u⋅(g⋅v))*(1/meas) )dΩ
@@ -267,14 +273,16 @@ function assemble_residual(du,dh,dt,F,Φ,q,q₀,dΩ,meas,g,X,f_cf,Rperp_cf,u)
   τ = 0.5
   res_u(v) = ∫( (du⋅(g⋅v))*(1/meas) )dΩ + ∫( dt*q*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( dt*Φ*(∇⋅v) )dΩ
   res_p(r) = ∫(r*dh*meas )dΩ + ∫( dt*r*(∇⋅F) )dΩ
-  res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
+  #res_d(v) = ∫( -τ*(q-q₀)*( (Rperp_cf⋅F)⋅v) )dΩ - ∫( τ*dt*(u⋅∇(q))*( (Rperp_cf⋅F)⋅v)*(1/meas) )dΩ
   # Interior penalty stabilisation - TODO: add the metric terms 
   #res_d(v) = ∫(dt*Δx*Δx*0.5*((mag∘(u.plus)) + (mag∘(u.minus)))*mean(α)*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(F))⋅n_Λ))dΛ
   #https://github.com/davelee2804/tsw_eigs/blob/grav_wave_test/src/distributed_euler_flux_solve_eta_grav_wave.jl
-  #α = 1.0 / H₀
-  #res_d(v) = ∫(λ*dt*Δx*Δx*0.5*α*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(F))⋅n_Λ))dΛ
-  #res_d(v) = ∫(λ*1.0*dt*Δx*Δx*α*jump(∇⋅(v))*jump(∇⋅(F)))dΛ
-  res((v,r)) = res_u(v) + res_p(r) #+ res_d(v)
+  α = 1.0 / H₀
+  res_d(v) = ∫(dt*Δx*Δx*α*jump(∇⋅(v))*jump(∇⋅(F)))dΛ
+  #res_d(v) = ∫(dt*Δx*Δx*α*jump((extract_vector∘∇(v))⋅n_Λ)*jump((extract_vector∘∇(F))⋅n_Λ))dΛ
+  #res_d(v) = ∫(dt*α*jump(((g⋅v)*(1.0/meas))⋅(Rperp_cf_e⋅n_Λ))*jump(F⋅(Rperp_cf_e⋅n_Λ)))dΛ
+  #res_d(v) = ∫(dt*α*jump(v⋅(Rperp_cf_e⋅n_Λ))*jump(F⋅(Rperp_cf_e⋅n_Λ)))dΛ
+  res((v,r)) = res_u(v) + res_p(r) + res_d(v)
   assemble_vector(res, X)
 end
 
@@ -324,7 +332,8 @@ for step in 1:nsteps
     xsq = dot(xv, xv)
     err = sqrt(dxsq/xsq)
     i_am_main(ranks) && @printf("%03d\t%03d\t%.6e\n", step, it, err)
-    if (err < 1.0e-8)
+    #if (err < 1.0e-8)
+    if (err < 1.0e-7)
       break
     end
   end
