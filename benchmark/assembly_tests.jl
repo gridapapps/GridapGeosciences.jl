@@ -11,10 +11,10 @@ dir = datadir()*"/assembly"
 
 
 RADIUS = 1.0
+degree = 24
 
-p_fe = 1
-degree = 6*(p_fe+1)
 
+p_fe = 3
 
 for NUM_REF in collect(1:6)
 
@@ -29,11 +29,9 @@ for NUM_REF in collect(1:6)
   inv_metric_cf = InvMetricCellField(Ω_atlas)
   meas_cf = MeasureCellField(Ω_atlas)
 
-  poisson_int(u,v) =  ∫( ( gradient(v)⋅ (inv_metric_cf⋅ gradient(u) ) )*meas_cf )dΩ
-  A_int = assemble_matrix(poisson_int,U,V )
+  K = meas_cf * inv_metric_cf
 
-
-  make_poisson_int(dΩ, ginv, meas) = (u,v) -> ∫( (∇(v) ⋅ (ginv ⋅ ∇(u))) * meas )dΩ
+  make_poisson_int(dΩ, K) = (u,v) -> ∫( ∇(v) ⋅ (K ⋅ ∇(u))  )dΩ
 
 
   #### extrinisic
@@ -46,15 +44,12 @@ for NUM_REF in collect(1:6)
   V_ext = TestFESpace(ext_model, ReferenceFE(lagrangian,Float64,p_fe); conformity=:H1)
   U_ext = TrialFESpace(V_ext)
 
-  poisson_ext(u,v) =  ∫(  gradient(v)⋅ gradient(u)  )dΩ_ext
-  A_ext =  assemble_matrix(poisson_ext,U_ext,V_ext )
-
-  make_poisson_ext(dΩ)             = (u,v) -> ∫( ∇(v) ⋅ ∇(u) )dΩ
+  make_poisson_ext(dΩ) = (u,v) -> ∫( ∇(v) ⋅ ∇(u) )dΩ
 
 
-  ###
+  ### benchmark
 
-  a_int = make_poisson_int(dΩ, inv_metric_cf, meas_cf)
+  a_int = make_poisson_int(dΩ, K)
   a_ext = make_poisson_ext(dΩ_ext)
 
   b_int = @benchmark assemble_matrix($a_int, $U, $V)
@@ -85,8 +80,7 @@ colors = [_colors[1] _colors[2] _colors[3]]
 dir = datadir()*"/assembly"
 df = collect_results(dir)
 
-
-for p in [1,2]
+for p in [1,2,3]
   b_ext = df[df.p_fe .== p,:b_ext]
   b_int = df[df.p_fe .== p, :b_int]
 
